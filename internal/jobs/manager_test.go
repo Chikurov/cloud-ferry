@@ -245,6 +245,28 @@ func TestResumeRejectsNestedDestConflictWithActiveJob(t *testing.T) {
 	}
 }
 
+func TestResumeRejectsChildDestConflictWithActiveJob(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	if _, err := manager.Start(context.Background(), store.Account{ID: "a1", Remote: "cf_a1"}, Source{}, "/downloads/tree", "copy"); err != nil {
+		t.Fatalf("first start: %v", err)
+	}
+	// The paused job would write inside the active tree.
+	if err := st.AddJob(store.Job{
+		ID: "paused", AccountID: "a1", Status: store.StatusInterrupted,
+		Source: "cf_a1:", Dest: "/downloads/tree/sub", Group: "migrate/paused", CreatedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("add paused job: %v", err)
+	}
+
+	before := fake.count("sync/copy")
+	if _, err := manager.Resume(context.Background(), "paused"); !errors.Is(err, ErrConflict) {
+		t.Fatalf("err = %v, want ErrConflict", err)
+	}
+	if got := fake.count("sync/copy"); got != before {
+		t.Fatalf("sync/copy calls = %d, want %d", got, before)
+	}
+}
+
 func TestRecoverFinalisesJobFinishedWhileDown(t *testing.T) {
 	manager, fake, st := newTestManager(t)
 	fake.responses["job/status"] = map[string]any{
@@ -354,6 +376,28 @@ func TestResumeAllowsFinishedOldRcloneJob(t *testing.T) {
 	}
 	if got := fake.count("sync/copy"); got != 1 {
 		t.Fatalf("sync/copy calls = %d, want 1", got)
+	}
+}
+
+func TestResumeRefusesWhenOldJobStatusIsUnknown(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	fake.errors = map[string]error{"job/status": errors.New("dial unix /run/rclone/rclone.sock: connect: connection refused")}
+	if err := st.AddJob(store.Job{
+		ID: "j1", Status: store.StatusInterrupted, RcloneJobID: 7, ExecuteID: "exec-1",
+		Source: "cf_a1:", Dest: "/downloads/yandex", Group: "g",
+	}); err != nil {
+		t.Fatalf("add: %v", err)
+	}
+
+	if _, err := manager.Resume(context.Background(), "j1"); err == nil || errors.Is(err, ErrConflict) {
+		t.Fatalf("err = %v, want a retryable failure instead of a second launch", err)
+	}
+	if got := fake.count("sync/copy"); got != 0 {
+		t.Fatalf("sync/copy calls = %d, want 0", got)
+	}
+	stored, _ := st.Job("j1")
+	if stored.Status != store.StatusInterrupted {
+		t.Fatalf("status = %q, want interrupted (job must not be claimed)", stored.Status)
 	}
 }
 
@@ -516,7 +560,9 @@ func TestPollKeepsJobRunningWhenRcloneIsUnavailable(t *testing.T) {
 	}
 
 	for i := 0; i < maxStatusFailures*3; i++ {
-		manager.Poll(context.Background())
+		if manager.Poll(context.Background()) {
+			t.Fatal("Poll reported a reachable engine while the socket was down")
+		}
 	}
 
 	stored, _ := st.Job("j1")
@@ -531,11 +577,56 @@ func TestPollKeepsJobRunningWhenRcloneIsUnavailable(t *testing.T) {
 	// still applies.
 	fake.errors["job/status"] = &rc.APIError{Method: "job/status", Status: http.StatusInternalServerError, Body: "couldn't find job"}
 	for i := 0; i < maxStatusFailures; i++ {
-		manager.Poll(context.Background())
+		if !manager.Poll(context.Background()) {
+			t.Fatal("Poll reported an unreachable engine after rclone answered")
+		}
 	}
 	stored, _ = st.Job("j1")
 	if stored.Status != store.StatusInterrupted {
 		t.Fatalf("status = %q, want interrupted after a real lost-job answer", stored.Status)
+	}
+}
+
+func TestPollKeepsJobRunningOnOtherStatusError(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	// rclone answered, but not with "job not found". That does not prove the
+	// transfer is gone, so the record must stay resumable as running.
+	fake.errors = map[string]error{"job/status": &rc.APIError{Method: "job/status", Status: http.StatusInternalServerError, Body: "internal error"}}
+	if err := st.AddJob(store.Job{
+		ID: "j1", Status: store.StatusRunning, RcloneJobID: 7, Group: "migrate/j1",
+		Source: "cf_a1:", Dest: "/downloads/yandex",
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	for i := 0; i < maxStatusFailures*3; i++ {
+		manager.Poll(context.Background())
+	}
+
+	stored, _ := st.Job("j1")
+	if stored.Status != store.StatusRunning {
+		t.Fatalf("status = %q, want running after non-missing status errors", stored.Status)
+	}
+	if got := fake.count("job/stop"); got != 0 {
+		t.Fatalf("job/stop calls = %d, want 0", got)
+	}
+}
+
+func TestNextPollDelayDoublesAndCaps(t *testing.T) {
+	cases := []struct {
+		in   time.Duration
+		want time.Duration
+	}{
+		{2 * time.Second, 4 * time.Second},
+		{4 * time.Second, 8 * time.Second},
+		{8 * time.Second, 16 * time.Second},
+		{16 * time.Second, maxPollBackoff},
+		{maxPollBackoff, maxPollBackoff},
+	}
+	for _, tc := range cases {
+		if got := nextPollDelay(tc.in); got != tc.want {
+			t.Fatalf("nextPollDelay(%v) = %v, want %v", tc.in, got, tc.want)
+		}
 	}
 }
 

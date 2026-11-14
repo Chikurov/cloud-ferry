@@ -1,12 +1,17 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -111,8 +116,18 @@ func (f *fakeEngine) find(method string) (recordedCall, bool) {
 
 func newTestServer(t *testing.T) (*httptest.Server, *store.Store, *fakeEngine) {
 	t.Helper()
+	server, st, engine, _, _ := newTestServerWith(t, nil)
+	return server, st, engine
+}
 
-	st, err := store.Open(t.TempDir())
+// newTestServerWith also allows the test to adjust the server config and to
+// reach the live Server (to inspect pending device flows) and the state
+// directory (to inspect state.json on disk).
+func newTestServerWith(t *testing.T, configure func(*Config)) (*httptest.Server, *store.Store, *fakeEngine, *Server, string) {
+	t.Helper()
+
+	dir := t.TempDir()
+	st, err := store.Open(dir)
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -127,20 +142,24 @@ func newTestServer(t *testing.T) (*httptest.Server, *store.Store, *fakeEngine) {
 		"operations/stat":  map[string]any{"item": map[string]any{"IsDir": true}},
 	}}
 	manager := jobs.NewManager(st, engine, jobs.Options{})
-	api, err := New(Config{
+	cfg := Config{
 		Store:     st,
 		Rclone:    engine,
 		Jobs:      manager,
 		Downloads: "/downloads",
 		Version:   "test",
-	})
+	}
+	if configure != nil {
+		configure(&cfg)
+	}
+	api, err := New(cfg)
 	if err != nil {
 		t.Fatalf("new server: %v", err)
 	}
 	handler := api.Handler()
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
-	return server, st, engine
+	return server, st, engine, api, dir
 }
 
 func doJSON(t *testing.T, client *http.Client, method, url string, body any) (*http.Response, map[string]any) {
@@ -884,29 +903,347 @@ func TestBasicAuthProtectsStandaloneInstall(t *testing.T) {
 	}
 }
 
-func TestDeviceFlowConnectsAccount(t *testing.T) {
-	var tokenCalls int32
-	oauth := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// fakeYandex emulates Yandex's device flow and records the client credentials
+// of every request, so tests can prove which OAuth app the server used.
+type fakeYandex struct {
+	mu      sync.Mutex
+	device  []url.Values
+	token   []url.Values
+	pending int
+}
+
+// newFakeYandex points the yandex package at a local fake. pending is how many
+// token polls answer "authorization_pending" before the token is issued.
+func newFakeYandex(t *testing.T, expiresIn, pending int) *fakeYandex {
+	t.Helper()
+	fake := &fakeYandex{pending: pending}
+	var deviceCodes int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
 		switch r.URL.Path {
 		case "/device/code":
-			_, _ = w.Write([]byte(`{"device_code":"dc-1","user_code":"h5nbcr6c","verification_url":"https://oauth.yandex.ru/device","interval":5,"expires_in":300}`))
+			fake.mu.Lock()
+			fake.device = append(fake.device, r.PostForm)
+			fake.mu.Unlock()
+			code := atomic.AddInt32(&deviceCodes, 1)
+			fmt.Fprintf(w, `{"device_code":"dc-%d","user_code":"h5nbcr6c","verification_url":"https://oauth.yandex.ru/device","interval":1,"expires_in":%d}`, code, expiresIn)
 		case "/token":
-			if atomic.AddInt32(&tokenCalls, 1) == 1 {
+			fake.mu.Lock()
+			fake.token = append(fake.token, r.PostForm)
+			isPending := fake.pending > 0
+			if isPending {
+				fake.pending--
+			}
+			fake.mu.Unlock()
+			if isPending {
 				w.WriteHeader(http.StatusBadRequest)
 				_, _ = w.Write([]byte(`{"error":"authorization_pending","error_description":"pending"}`))
 				return
 			}
 			_, _ = w.Write([]byte(`{"access_token":"at","refresh_token":"rt","expires_in":3600}`))
 		default:
-			t.Fatalf("unexpected path %s", r.URL.Path)
+			t.Errorf("unexpected Yandex path %s", r.URL.Path)
 		}
 	}))
-	defer oauth.Close()
 	previous := yandex.Endpoint
-	yandex.Endpoint = oauth.URL
-	t.Cleanup(func() { yandex.Endpoint = previous })
+	yandex.Endpoint = server.URL
+	t.Cleanup(func() {
+		yandex.Endpoint = previous
+		server.Close()
+	})
+	return fake
+}
 
+func (f *fakeYandex) deviceForms() []url.Values {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]url.Values(nil), f.device...)
+}
+
+func (f *fakeYandex) tokenForms() []url.Values {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]url.Values(nil), f.token...)
+}
+
+const (
+	testYandexClientID     = "server-client-id"
+	testYandexClientSecret = "server-client-secret"
+)
+
+func withServerYandexCredentials(cfg *Config) {
+	cfg.YandexClientID = testYandexClientID
+	cfg.YandexClientSecret = testYandexClientSecret
+}
+
+// startDeviceFlow starts a flow and returns its id and the decoded response.
+func startDeviceFlow(t *testing.T, server *httptest.Server, body any) (string, map[string]any) {
+	t.Helper()
+	resp, decoded := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/oauth/yandex/device/start", body)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("device start status = %d, body = %v", resp.StatusCode, decoded)
+	}
+	flowID, _ := decoded["flowId"].(string)
+	if flowID == "" {
+		t.Fatalf("device start has no flowId: %v", decoded)
+	}
+	return flowID, decoded
+}
+
+func TestYandexStatusWithoutServerCredentials(t *testing.T) {
+	server, _, _, _, _ := newTestServerWith(t, nil)
+
+	resp, body := doJSON(t, server.Client(), http.MethodGet, server.URL+"/api/oauth/yandex/status", nil)
+	if resp.StatusCode != http.StatusOK || body["available"] != false {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+}
+
+func TestYandexStatusWithServerCredentials(t *testing.T) {
+	server, _, _, _, _ := newTestServerWith(t, withServerYandexCredentials)
+
+	resp, body := doJSON(t, server.Client(), http.MethodGet, server.URL+"/api/oauth/yandex/status", nil)
+	if resp.StatusCode != http.StatusOK || body["available"] != true {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	if len(body) != 1 {
+		t.Fatalf("status must expose only availability, body = %v", body)
+	}
+}
+
+func TestYandexStatusNeedsBothCredentials(t *testing.T) {
+	server, _, _, _, _ := newTestServerWith(t, func(cfg *Config) {
+		cfg.YandexClientID = testYandexClientID
+	})
+
+	resp, body := doJSON(t, server.Client(), http.MethodGet, server.URL+"/api/oauth/yandex/status", nil)
+	if resp.StatusCode != http.StatusOK || body["available"] != false {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+}
+
+func TestDeviceFlowUsesServerCredentials(t *testing.T) {
+	fake := newFakeYandex(t, 300, 1)
+	server, st, engine, _, dir := newTestServerWith(t, withServerYandexCredentials)
+
+	// No client credentials in the body: the server's own app is used.
+	flowID, start := startDeviceFlow(t, server, map[string]any{"name": "Яндекс"})
+	if start["userCode"] != "h5nbcr6c" || start["verificationUrl"] == "" {
+		t.Fatalf("start body = %v", start)
+	}
+
+	device := fake.deviceForms()
+	if len(device) != 1 || device[0].Get("client_id") != testYandexClientID {
+		t.Fatalf("device/code did not use the server app: %v", device)
+	}
+	if device[0].Get("client_secret") != "" {
+		t.Fatalf("device/code must not carry the client secret: %v", device[0])
+	}
+
+	resp, body := doJSON(t, server.Client(), http.MethodGet, server.URL+"/api/oauth/yandex/device/"+flowID, nil)
+	if resp.StatusCode != http.StatusOK || body["status"] != "pending" {
+		t.Fatalf("pending: %d %v", resp.StatusCode, body)
+	}
+	resp, body = doJSON(t, server.Client(), http.MethodGet, server.URL+"/api/oauth/yandex/device/"+flowID, nil)
+	if resp.StatusCode != http.StatusOK || body["status"] != "done" {
+		t.Fatalf("done: %d %v", resp.StatusCode, body)
+	}
+
+	tokens := fake.tokenForms()
+	if len(tokens) != 2 {
+		t.Fatalf("token polls = %d, want 2", len(tokens))
+	}
+	for _, form := range tokens {
+		if form.Get("client_id") != testYandexClientID || form.Get("client_secret") != testYandexClientSecret {
+			t.Fatalf("token poll must use the server app, form = %v", form)
+		}
+		if form.Get("grant_type") != "device_code" || form.Get("code") == "" {
+			t.Fatalf("token poll form = %v", form)
+		}
+	}
+
+	accounts := st.Accounts()
+	if len(accounts) != 1 || accounts[0].Provider != "yandex-oauth" {
+		t.Fatalf("accounts = %+v", accounts)
+	}
+
+	call, ok := engine.find("config/create")
+	if !ok {
+		t.Fatal("config/create was not called")
+	}
+	params, _ := call.input["parameters"].(map[string]any)
+	if params["client_id"] != testYandexClientID {
+		t.Fatalf("remote client_id = %v, want the server app", params["client_id"])
+	}
+	if params["client_secret"] != testYandexClientSecret {
+		t.Fatalf("remote client_secret is missing: rclone could not refresh the token, params = %v", params)
+	}
+	tokenJSON, _ := params["token"].(string)
+	for _, want := range []string{`"access_token":"at"`, `"refresh_token":"rt"`, `"expiry"`} {
+		if !strings.Contains(tokenJSON, want) {
+			t.Fatalf("token %q is missing %s", tokenJSON, want)
+		}
+	}
+
+	// The account record on disk never keeps the OAuth app secret.
+	raw, err := os.ReadFile(filepath.Join(dir, "state.json"))
+	if err != nil {
+		t.Fatalf("read state.json: %v", err)
+	}
+	if strings.Contains(string(raw), testYandexClientSecret) {
+		t.Fatalf("client secret leaked into state.json: %s", raw)
+	}
+}
+
+func TestDeviceFlowServerCredentialsTakePriority(t *testing.T) {
+	fake := newFakeYandex(t, 300, 0)
+	server, _, _, _, _ := newTestServerWith(t, withServerYandexCredentials)
+
+	startDeviceFlow(t, server, map[string]any{
+		"name": "Яндекс", "clientId": "body-client-id", "clientSecret": "body-client-secret",
+	})
+
+	device := fake.deviceForms()
+	if len(device) != 1 || device[0].Get("client_id") != testYandexClientID {
+		t.Fatalf("body credentials must not override the server app: %v", device)
+	}
+}
+
+func TestDeviceFlowRequiresCredentialsWithoutServerConfig(t *testing.T) {
+	fake := newFakeYandex(t, 300, 0)
+	server, _, _, _, _ := newTestServerWith(t, nil)
+
+	for _, body := range []map[string]any{
+		{},
+		{"clientId": "cid"},
+		{"clientSecret": "secret"},
+	} {
+		resp, decoded := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/oauth/yandex/device/start", body)
+		if resp.StatusCode != http.StatusBadRequest {
+			t.Fatalf("body %v: status = %d, want 400", body, resp.StatusCode)
+		}
+		if decoded["error"] == nil {
+			t.Fatalf("body %v: no error message: %v", body, decoded)
+		}
+	}
+	if got := len(fake.deviceForms()); got != 0 {
+		t.Fatalf("rejected starts reached Yandex %d times", got)
+	}
+
+	// Explicit body credentials still work when the server has no own app.
+	startDeviceFlow(t, server, map[string]any{"clientId": "body-cid", "clientSecret": "body-secret"})
+	device := fake.deviceForms()
+	if len(device) != 1 || device[0].Get("client_id") != "body-cid" {
+		t.Fatalf("device/code forms = %v", device)
+	}
+}
+
+func TestDeviceFlowRejectsTooManyFlows(t *testing.T) {
+	fake := newFakeYandex(t, 300, 0)
+	server, _, _, api, _ := newTestServerWith(t, withServerYandexCredentials)
+
+	for i := 0; i < maxDeviceFlows; i++ {
+		startDeviceFlow(t, server, nil)
+	}
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/oauth/yandex/device/start", nil)
+	if resp.StatusCode != http.StatusTooManyRequests {
+		t.Fatalf("over-limit status = %d, body = %v", resp.StatusCode, body)
+	}
+	if got := len(fake.deviceForms()); got != maxDeviceFlows {
+		t.Fatalf("the rejected start must not reach Yandex: %d device/code calls", got)
+	}
+
+	// Expired flows are pruned, so they do not hold their slots forever.
+	api.flowsMu.Lock()
+	for _, flow := range api.flows {
+		flow.expiresAt = time.Now().Add(-time.Minute)
+	}
+	api.flowsMu.Unlock()
+
+	startDeviceFlow(t, server, nil)
+	if got := len(fake.deviceForms()); got != maxDeviceFlows+1 {
+		t.Fatalf("device/code calls after pruning = %d, want %d", got, maxDeviceFlows+1)
+	}
+}
+
+func TestDeviceFlowExpires(t *testing.T) {
+	newFakeYandex(t, 1800, 1) // Yandex offers half an hour; the server caps it
+	server, _, _, api, _ := newTestServerWith(t, withServerYandexCredentials)
+
+	flowID, _ := startDeviceFlow(t, server, nil)
+
+	api.flowsMu.Lock()
+	flow, ok := api.flows[flowID]
+	var expiresAt time.Time
+	if ok {
+		expiresAt = flow.expiresAt
+	}
+	api.flowsMu.Unlock()
+	if !ok {
+		t.Fatalf("flow %q was not recorded", flowID)
+	}
+	remaining := time.Until(expiresAt)
+	if remaining > deviceFlowMaxLifetime+time.Second || remaining < deviceFlowMaxLifetime-time.Minute {
+		t.Fatalf("flow lifetime = %v, want the %v cap", remaining, deviceFlowMaxLifetime)
+	}
+
+	resp, body := doJSON(t, server.Client(), http.MethodGet, server.URL+"/api/oauth/yandex/device/"+flowID, nil)
+	if resp.StatusCode != http.StatusOK || body["status"] != "pending" {
+		t.Fatalf("live flow: %d %v", resp.StatusCode, body)
+	}
+
+	api.flowsMu.Lock()
+	api.flows[flowID].expiresAt = time.Now().Add(-time.Second)
+	api.flowsMu.Unlock()
+
+	resp, _ = doJSON(t, server.Client(), http.MethodGet, server.URL+"/api/oauth/yandex/device/"+flowID, nil)
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expired flow status = %d, want 404", resp.StatusCode)
+	}
+}
+
+func TestDeviceFlowDoesNotLeakServerSecret(t *testing.T) {
+	var buf bytes.Buffer
+	previousWriter := log.Writer()
+	log.SetOutput(&buf)
+	t.Cleanup(func() { log.SetOutput(previousWriter) })
+
+	newFakeYandex(t, 300, 0)
+	server, _, _, _, _ := newTestServerWith(t, withServerYandexCredentials)
+
+	resp, start := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/oauth/yandex/device/start", map[string]any{"name": "Яндекс"})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("start status = %d, body = %v", resp.StatusCode, start)
+	}
+	flowID, _ := start["flowId"].(string)
+
+	resp, done := doJSON(t, server.Client(), http.MethodGet, server.URL+"/api/oauth/yandex/device/"+flowID, nil)
+	if resp.StatusCode != http.StatusOK || done["status"] != "done" {
+		t.Fatalf("done: %d %v", resp.StatusCode, done)
+	}
+
+	for name, payload := range map[string]map[string]any{"start": start, "done": done} {
+		encoded, err := json.Marshal(payload)
+		if err != nil {
+			t.Fatalf("marshal %s: %v", name, err)
+		}
+		if strings.Contains(string(encoded), testYandexClientSecret) {
+			t.Fatalf("client secret leaked into the %s response: %s", name, encoded)
+		}
+	}
+	logs := buf.String()
+	if strings.Contains(logs, testYandexClientSecret) {
+		t.Fatalf("client secret leaked into the log: %s", logs)
+	}
+	if !strings.Contains(logs, "client id "+testYandexClientID) {
+		t.Fatalf("log should name only the public client id: %q", logs)
+	}
+}
+
+func TestDeviceFlowConnectsAccount(t *testing.T) {
+	fake := newFakeYandex(t, 300, 1)
 	server, st, engine := newTestServer(t)
+
 	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/oauth/yandex/device/start", map[string]any{
 		"name": "Яндекс", "clientId": "cid", "clientSecret": "secret",
 	})
@@ -916,6 +1253,10 @@ func TestDeviceFlowConnectsAccount(t *testing.T) {
 	flowID, _ := body["flowId"].(string)
 	if flowID == "" || body["userCode"] != "h5nbcr6c" {
 		t.Fatalf("start body = %v", body)
+	}
+	// Without its own app the server still accepts credentials from the body.
+	if forms := fake.deviceForms(); len(forms) != 1 || forms[0].Get("client_id") != "cid" {
+		t.Fatalf("device/code forms = %v", forms)
 	}
 
 	resp, body = doJSON(t, server.Client(), http.MethodGet, server.URL+"/api/oauth/yandex/device/"+flowID, nil)
@@ -1309,6 +1650,23 @@ func TestStateExposesSourcePaths(t *testing.T) {
 	paths, _ := job["sourcePaths"].([]any)
 	if len(paths) != 1 || paths[0] != "Фото" {
 		t.Fatalf("sourcePaths = %v", job["sourcePaths"])
+	}
+}
+
+func TestHumanBytesUnits(t *testing.T) {
+	cases := []struct {
+		n    int64
+		want string
+	}{
+		{0, "0 Б"},
+		{1024, "1,0 КБ"},
+		{1536, "1,5 КБ"},
+		{5 << 30, "5,0 ГБ"},
+	}
+	for _, tc := range cases {
+		if got := humanBytes(tc.n); got != tc.want {
+			t.Fatalf("humanBytes(%d) = %q, want %q", tc.n, got, tc.want)
+		}
 	}
 }
 

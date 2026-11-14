@@ -27,6 +27,9 @@ const maxStoredFailures = 200
 
 const maxStatusFailures = 3
 
+// maxPollBackoff caps the pause between polls while rclone is unreachable.
+const maxPollBackoff = 30 * time.Second
+
 // ErrConflict means the job is in a state that does not allow the action.
 var ErrConflict = errors.New("job state conflict")
 
@@ -123,7 +126,7 @@ func VerifySources(ctx context.Context, caller Caller, remote string, paths []st
 		err := caller.Call(callCtx, "operations/stat", map[string]any{"fs": remote + ":", "remote": p}, &out)
 		cancel()
 		if err != nil {
-			if isMissingSource(err) {
+			if IsMissingSource(err) {
 				return &SourceNotFoundError{Path: p}
 			}
 			return fmt.Errorf("verify %s: %w", p, err)
@@ -135,9 +138,10 @@ func VerifySources(ctx context.Context, caller Caller, remote string, paths []st
 	return nil
 }
 
-// isMissingSource reports whether an rclone error means "there is no such
-// folder", as opposed to an auth or network failure.
-func isMissingSource(err error) bool {
+// IsMissingSource reports whether an rclone error means "there is no such
+// folder", as opposed to an auth or network failure. The HTTP layer uses it to
+// tell a missing cloud folder from an outage when it sizes folders for the UI.
+func IsMissingSource(err error) bool {
 	var apiErr *rc.APIError
 	if !errors.As(err, &apiErr) {
 		return false
@@ -147,6 +151,26 @@ func isMissingSource(err error) bool {
 	}
 	body := strings.ToLower(apiErr.Body)
 	for _, marker := range []string{"not found", "does not exist", "no such file"} {
+		if strings.Contains(body, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+// isMissingJob reports whether rclone answered that the engine job does not
+// exist. Only such an answer proves the transfer is gone: a transport failure
+// or another rc error means the job may still be running.
+func isMissingJob(err error) bool {
+	var apiErr *rc.APIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+	if apiErr.Status == http.StatusNotFound {
+		return true
+	}
+	body := strings.ToLower(apiErr.Body)
+	for _, marker := range []string{"couldn't find job", "job not found", "no such job"} {
 		if strings.Contains(body, marker) {
 			return true
 		}
@@ -314,11 +338,22 @@ func sameTransfer(job store.Job, status rcloneStatus) bool {
 	return job.ExecuteID == "" || status.ExecuteID == "" || status.ExecuteID == job.ExecuteID
 }
 
-// reattach reports whether the rclone job behind job is still alive and
-// belongs to this record (same executeId).
-func (m *Manager) reattach(ctx context.Context, job store.Job) bool {
+// oldJobAlive reports whether the rclone job behind job is still running and
+// belongs to this record (same executeId). A non-nil error means the engine
+// could not prove the transfer is gone, so Resume must not start a second one.
+func (m *Manager) oldJobAlive(ctx context.Context, job store.Job) (bool, error) {
+	if job.RcloneJobID == 0 {
+		return false, nil
+	}
 	status, err := m.statusOf(ctx, job)
-	return err == nil && !status.Finished && sameTransfer(job, status)
+	if err != nil {
+		if rc.IsUnavailable(err) || !isMissingJob(err) {
+			return false, err
+		}
+		// rclone answered and no longer knows the job: resuming is safe.
+		return false, nil
+	}
+	return !status.Finished && sameTransfer(job, status), nil
 }
 
 // claimDest reserves a destination for one transfer. It reports ErrConflict
@@ -412,15 +447,20 @@ func (m *Manager) Resume(ctx context.Context, id string) (store.Job, error) {
 		}
 	}
 	// The previous record may point at an rclone job that is still running:
-	// starting a second transfer into the same folder would corrupt it.
-	if m.reattach(ctx, job) {
+	// starting a second transfer into the same folder would corrupt it. If the
+	// engine cannot be asked at all, refuse instead of risking a second copy.
+	alive, err := m.oldJobAlive(ctx, job)
+	if err != nil {
+		return store.Job{}, fmt.Errorf("check previous rclone job for %s: %w", id, err)
+	}
+	if alive {
 		return store.Job{}, ErrConflict
 	}
 
 	group := newGroup(id)
 	startedAt := time.Now().UTC()
 	claimed := false
-	err := m.claimDest(job.Dest, func() error {
+	err = m.claimDest(job.Dest, func() error {
 		if err := m.store.UpdateJob(id, func(j *store.Job) bool {
 			if j.Status != store.StatusFailed && j.Status != store.StatusInterrupted && j.Status != store.StatusCanceled {
 				return false
@@ -594,20 +634,27 @@ func (m *Manager) stopRclone(ctx context.Context, jobID int64) {
 	}
 }
 
-// Poll refreshes every running job once.
-func (m *Manager) Poll(ctx context.Context) {
+// Poll refreshes every running job once. It reports whether rclone answered
+// every status request: false means the engine is unreachable, so Run backs off
+// instead of hammering a socket that is still starting.
+func (m *Manager) Poll(ctx context.Context) bool {
+	reachable := true
 	for _, job := range m.store.Jobs() {
 		if job.Status != store.StatusRunning {
 			continue
 		}
-		m.pollOne(ctx, job)
+		if !m.pollOne(ctx, job) {
+			reachable = false
+		}
 	}
+	return reachable
 }
 
-func (m *Manager) pollOne(ctx context.Context, job store.Job) {
+func (m *Manager) pollOne(ctx context.Context, job store.Job) bool {
 	callCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
+	reachable := true
 	var stats struct {
 		Bytes          int64   `json:"bytes"`
 		TotalBytes     int64   `json:"totalBytes"`
@@ -618,7 +665,8 @@ func (m *Manager) pollOne(ctx context.Context, job store.Job) {
 		Errors         int64   `json:"errors"`
 		ElapsedTime    float64 `json:"elapsedTime"`
 	}
-	if err := m.rc.Call(callCtx, "core/stats", map[string]any{"group": job.Group}, &stats); err == nil {
+	statsErr := m.rc.Call(callCtx, "core/stats", map[string]any{"group": job.Group}, &stats)
+	if statsErr == nil {
 		if updateErr := m.store.UpdateJob(job.ID, func(j *store.Job) bool {
 			if j.Status != store.StatusRunning || j.RcloneJobID != job.RcloneJobID {
 				return false
@@ -632,13 +680,15 @@ func (m *Manager) pollOne(ctx context.Context, job store.Job) {
 		}); updateErr != nil {
 			log.Printf("jobs: save stats for %s: %v", job.ID, updateErr)
 		}
+	} else if rc.IsUnavailable(statsErr) {
+		reachable = false
 	}
 
 	// A stored job without an engine job cannot be followed: it is already
 	// gone, so there is nothing to stop and nothing to wait for.
 	if job.RcloneJobID == 0 {
 		m.markInterrupted(job.ID, "Скачивание прервалось: приложение перезапустилось.")
-		return
+		return reachable
 	}
 
 	status, err := m.statusOf(ctx, job)
@@ -648,7 +698,13 @@ func (m *Manager) pollOne(ctx context.Context, job store.Job) {
 			// writing files. A transport failure is not a lost transfer: keep
 			// the job running and retry on the next poll.
 			log.Printf("jobs: poll %s: rclone is unavailable: %v", job.ID, err)
-			return
+			return false
+		}
+		if !isMissingJob(err) {
+			// rclone answered with some other error. The job may well be alive,
+			// so do not count this as a lost transfer; a later poll will tell.
+			log.Printf("jobs: poll %s: rclone answered with %v", job.ID, err)
+			return reachable
 		}
 		if failures := m.bumpStatusError(job.ID); failures >= maxStatusFailures {
 			m.resetStatusError(job.ID)
@@ -658,19 +714,20 @@ func (m *Manager) pollOne(ctx context.Context, job store.Job) {
 			m.stopRclone(ctx, job.RcloneJobID)
 			m.markInterrupted(job.ID, "Скачивание прервалось: приложение перезапустилось.")
 		}
-		return
+		return reachable
 	}
 	m.resetStatusError(job.ID)
 
 	// A re-used job id from a restarted rclone belongs to a different transfer.
 	if !sameTransfer(job, status) {
 		m.markInterrupted(job.ID, "Скачивание прервалось: приложение перезапустилось.")
-		return
+		return true
 	}
 	if !status.Finished {
-		return
+		return true
 	}
 	m.finalize(job, status)
+	return true
 }
 
 // finalize writes the terminal state of a job from the engine status answer.
@@ -794,18 +851,35 @@ func (m *Manager) Check(ctx context.Context, id string) (store.CheckResult, erro
 	return result, nil
 }
 
-// Run polls until ctx is done.
+// Run polls until ctx is done. While rclone is unreachable the delay doubles,
+// up to maxPollBackoff, so a restarting engine is not hit every couple of
+// seconds; the first successful poll restores the normal cadence.
 func (m *Manager) Run(ctx context.Context) {
-	ticker := time.NewTicker(m.opts.PollEvery)
-	defer ticker.Stop()
+	delay := m.opts.PollEvery
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
-			m.Poll(ctx)
+		case <-timer.C:
+			if m.Poll(ctx) {
+				delay = m.opts.PollEvery
+			} else {
+				delay = nextPollDelay(delay)
+			}
+			timer.Reset(delay)
 		}
 	}
+}
+
+// nextPollDelay doubles the wait between polls, capped at maxPollBackoff.
+func nextPollDelay(delay time.Duration) time.Duration {
+	next := delay * 2
+	if next > maxPollBackoff {
+		return maxPollBackoff
+	}
+	return next
 }
 
 // applyHint enriches a failed job with a human explanation when the error is

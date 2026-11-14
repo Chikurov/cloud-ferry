@@ -24,7 +24,7 @@ import (
 	"cloudferry/internal/store"
 )
 
-const version = "0.2.2"
+const version = "0.2.3"
 
 func main() {
 	listen := flag.String("listen", envOr("LISTEN_ADDR", "0.0.0.0:3000"), "HTTP listen address")
@@ -38,6 +38,10 @@ func main() {
 	configPath := flag.String("rclone-config", envOr("RCLONE_CONFIG", "/config/rclone.conf"), "rclone config path (used with --spawn-rclone)")
 	basicUser := flag.String("basic-user", os.Getenv("CF_BASIC_USER"), "optional HTTP basic auth user")
 	basicPass := flag.String("basic-pass", os.Getenv("CF_BASIC_PASS"), "optional HTTP basic auth password")
+	// The app's own Yandex OAuth app. Env only, not flags: a secret in argv is
+	// visible to every local process.
+	yandexClientID := envEither("CF_YANDEX_CLIENT_ID", "YANDEX_CLIENT_ID")
+	yandexClientSecret := envEither("CF_YANDEX_CLIENT_SECRET", "YANDEX_CLIENT_SECRET")
 	transfers := flag.Int("transfers", envInt("CLOUDFERRY_TRANSFERS", 8), "rclone --transfers default")
 	checkers := flag.Int("checkers", envInt("CLOUDFERRY_CHECKERS", 16), "rclone --checkers default")
 	tpsLimit := flag.Int("tpslimit", envInt("CLOUDFERRY_TPSLIMIT", 20), "rclone --tpslimit default (Yandex API allows 40 rps)")
@@ -47,6 +51,8 @@ func main() {
 	if *healthcheck {
 		os.Exit(runHealthcheck(healthcheckTarget(*listen), *basicUser, *basicPass))
 	}
+
+	logYandexAppCredentials(yandexClientID, yandexClientSecret)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -111,6 +117,9 @@ func main() {
 		Version:   version,
 		BasicUser: *basicUser,
 		BasicPass: *basicPass,
+		// Own OAuth app credentials make the device flow ask only for the code.
+		YandexClientID:     yandexClientID,
+		YandexClientSecret: yandexClientSecret,
 	})
 	if err != nil {
 		log.Fatalf("init http api: %v", err)
@@ -194,11 +203,35 @@ func spawnRclone(socket, configPath, user, pass string) (func(), error) {
 	}, nil
 }
 
+// logYandexAppCredentials reports whether the app's own Yandex OAuth app is
+// configured. Only the public client id is logged, never the secret.
+func logYandexAppCredentials(clientID, clientSecret string) {
+	clientID = strings.TrimSpace(clientID)
+	clientSecret = strings.TrimSpace(clientSecret)
+	switch {
+	case clientID != "" && clientSecret != "":
+		log.Printf("yandex oauth: own app credentials configured (client id %s)", clientID)
+	case clientID != "" || clientSecret != "":
+		log.Print("yandex oauth: own app credentials need both client id and secret, ignoring them")
+	}
+}
+
 func envOr(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
 	}
 	return fallback
+}
+
+// envEither returns the first non-empty value among keys, so the new CF_* name
+// works alongside the historical YANDEX_* one.
+func envEither(keys ...string) string {
+	for _, key := range keys {
+		if v := os.Getenv(key); v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 func envInt(key string, fallback int) int {

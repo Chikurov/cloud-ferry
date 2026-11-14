@@ -53,6 +53,11 @@ type Config struct {
 	Version   string
 	BasicUser string // optional HTTP basic auth for standalone installs
 	BasicPass string
+	// YandexClientID and YandexClientSecret are the app's own OAuth app
+	// credentials. When both are set, the device flow runs on them and the
+	// user only enters the confirmation code.
+	YandexClientID     string
+	YandexClientSecret string
 }
 
 // Server serves the UI and the JSON API.
@@ -60,11 +65,13 @@ type Server struct {
 	cfg Config
 	mux *http.ServeMux
 
-	flowsMu sync.Mutex
-	flows   map[string]*deviceFlow
+	flowsMu          sync.Mutex
+	flows            map[string]*deviceFlow
+	flowReservations int
 
 	cloud   *cloudInformer
 	folders *cloudFoldersCache
+	sizes   *cloudSizesCache
 }
 
 // New builds the HTTP handler.
@@ -75,12 +82,15 @@ func New(cfg Config) (*Server, error) {
 	if len(cfg.DestRoots) == 0 {
 		cfg.DestRoots = []string{cfg.Downloads}
 	}
+	cfg.YandexClientID = strings.TrimSpace(cfg.YandexClientID)
+	cfg.YandexClientSecret = strings.TrimSpace(cfg.YandexClientSecret)
 	s := &Server{
 		cfg:     cfg,
 		mux:     http.NewServeMux(),
 		flows:   map[string]*deviceFlow{},
 		cloud:   newCloudInformer(cfg.Store, cfg.Rclone, time.Now),
 		folders: newCloudFoldersCache(time.Now),
+		sizes:   newCloudSizesCache(time.Now),
 	}
 	if err := s.routes(); err != nil {
 		return nil, err
@@ -161,12 +171,14 @@ func (s *Server) routes() error {
 	s.mux.HandleFunc("GET /api/accounts/validate", s.handleValidateAccountMethodGuard)
 	s.mux.HandleFunc("POST /api/oauth/yandex/start", s.handleYandexAuthURL)
 	s.mux.HandleFunc("POST /api/oauth/yandex/finish", s.handleYandexFinish)
+	s.mux.HandleFunc("GET /api/oauth/yandex/status", s.handleYandexStatus)
 	s.mux.HandleFunc("POST /api/oauth/yandex/device/start", s.handleDeviceStart)
 	s.mux.HandleFunc("GET /api/oauth/yandex/device/{id}", s.handleDeviceStatus)
 	s.mux.HandleFunc("DELETE /api/oauth/yandex/device/{id}", s.handleDeviceCancel)
 	s.mux.HandleFunc("DELETE /api/accounts/{id}", s.handleDeleteAccount)
 	s.mux.HandleFunc("POST /api/accounts/{id}/probe", s.handleProbe)
 	s.mux.HandleFunc("GET /api/accounts/{id}/folders", s.handleCloudFolders)
+	s.mux.HandleFunc("POST /api/cloud/sizes", s.handleCloudSizes)
 	s.mux.HandleFunc("POST /api/preflight", s.handlePreflight)
 	s.mux.HandleFunc("POST /api/jobs/preflight", s.handlePreflight)
 	s.mux.HandleFunc("POST /api/jobs", s.handleCreateJob)

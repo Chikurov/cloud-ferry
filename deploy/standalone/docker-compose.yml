@@ -31,6 +31,10 @@ services:
       DEST_ROOTS: /downloads
       CF_BASIC_USER: ${CF_BASIC_USER:-}
       CF_BASIC_PASS: ${CF_BASIC_PASS:-}
+      # Необязательно: своё OAuth-приложение Яндекса. С ним вход идёт по коду,
+      # без ввода ID и секрета в интерфейсе.
+      CF_YANDEX_CLIENT_ID: ${CF_YANDEX_CLIENT_ID:-}
+      CF_YANDEX_CLIENT_SECRET: ${CF_YANDEX_CLIENT_SECRET:-}
     volumes:
       - ${CF_DATA:?CF_DATA must be set in .env}/state:/data
       - ${CF_DATA}/run:/run/rclone

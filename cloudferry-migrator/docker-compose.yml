@@ -9,7 +9,7 @@ services:
     # compose at app start. Set it once with `make set-owner OWNER=<login>`.
     # The digest is the linux/amd64+linux/arm64 manifest-list digest printed by
     # `make digest` (or the publish CI job); pin it with `make pin-digest`.
-    image: ghcr.io/chikurov/cloud-ferry:0.2.2@sha256:0000000000000000000000000000000000000000000000000000000000000000
+    image: ghcr.io/chikurov/cloud-ferry:0.2.3@sha256:0000000000000000000000000000000000000000000000000000000000000000
     restart: on-failure
     init: true
     user: "1000:1000"
@@ -22,6 +22,11 @@ services:
       DOWNLOADS_DIR: /downloads
       DEST_ROOTS: /downloads,/destination
       CLOUDFERRY_TRANSFERS: ${CLOUDFERRY_TRANSFERS:-8}
+      # Своё OAuth-приложение Яндекса (необязательно): включает вход по коду
+      # без ввода ID и секрета. Значения задаются в настройках приложения
+      # Umbrel; в пакет реальные секреты не попадают.
+      CF_YANDEX_CLIENT_ID: ${CF_YANDEX_CLIENT_ID:-}
+      CF_YANDEX_CLIENT_SECRET: ${CF_YANDEX_CLIENT_SECRET:-}
     volumes:
       - ${APP_DATA_DIR}/data/state:/data
       - ${APP_DATA_DIR}/data/run:/run/rclone

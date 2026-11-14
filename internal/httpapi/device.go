@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -26,6 +27,15 @@ type deviceFlow struct {
 const deviceDeviceID = "umbrel-cloud-ferry"
 const deviceDeviceName = "Umbrel"
 
+// Each pending flow holds a Yandex device code and one of our slots until it is
+// confirmed or expires, so an unbounded number of starts would let one caller
+// exhaust the server. The lifetime cap also keeps an abandoned flow from
+// occupying a slot for long.
+const (
+	maxDeviceFlows        = 5
+	deviceFlowMaxLifetime = 10 * time.Minute
+)
+
 type deviceStartRequest struct {
 	Name         string `json:"name"`
 	ClientID     string `json:"clientId"`
@@ -38,40 +48,68 @@ func (s *Server) handleDeviceStart(w http.ResponseWriter, r *http.Request) {
 		s.badRequest(w, err)
 		return
 	}
-	clientID := strings.TrimSpace(req.ClientID)
-	clientSecret := strings.TrimSpace(req.ClientSecret)
+
+	// The server's own OAuth app takes priority: with it configured the user
+	// only enters the confirmation code. Credentials in the body are still
+	// accepted when the server has none, so older clients keep working.
+	clientID, clientSecret, serverCredentials := s.yandexServerCredentials()
+	if !serverCredentials {
+		clientID = strings.TrimSpace(req.ClientID)
+		clientSecret = strings.TrimSpace(req.ClientSecret)
+	}
 	if clientID == "" || clientSecret == "" {
 		writeError(w, http.StatusBadRequest, "Нужны ID и секрет приложения: без них Яндекс не выдаст код.")
 		return
 	}
+	if !s.reserveDeviceFlow(time.Now()) {
+		writeError(w, http.StatusTooManyRequests, "Слишком много одновременных входов. Завершите начатый или повторите через несколько минут.")
+		return
+	}
+	// Only the public client id may be logged: the secret stays out of logs.
+	log.Printf("yandex oauth: device flow started for client id %s", clientID)
 
 	ctx, cancel := contextWithTimeout(r, 30*time.Second)
 	defer cancel()
 	auth, err := yandex.RequestDeviceCode(ctx, clientID, deviceDeviceID, deviceDeviceName)
 	if err != nil {
+		s.releaseDeviceFlowReservation()
 		s.fail(w, http.StatusBadGateway, oauthMessage(err), err)
 		return
 	}
 
+	lifetime := deviceFlowLifetime(auth)
 	flow := &deviceFlow{
 		id:           randomID(),
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		name:         limitName(req.Name),
 		deviceCode:   auth.DeviceCode,
-		expiresAt:    time.Now().Add(time.Duration(auth.ExpiresIn) * time.Second),
+		expiresAt:    time.Now().Add(lifetime),
 	}
-	s.flowsMu.Lock()
-	s.flows[flow.id] = flow
-	s.flowsMu.Unlock()
+	s.storeDeviceFlow(flow)
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"flowId":          flow.id,
 		"userCode":        auth.UserCode,
 		"verificationUrl": auth.VerificationURL,
 		"interval":        auth.Interval,
-		"expiresIn":       auth.ExpiresIn,
+		"expiresIn":       int(lifetime / time.Second),
 	})
+}
+
+// handleYandexStatus tells the UI whether the app has its own OAuth app, so it
+// either hides the client credentials or asks for them. The credentials
+// themselves are never returned.
+func (s *Server) handleYandexStatus(w http.ResponseWriter, r *http.Request) {
+	_, _, available := s.yandexServerCredentials()
+	writeJSON(w, http.StatusOK, map[string]bool{"available": available})
+}
+
+// yandexServerCredentials reports the app's own OAuth app credentials. Both
+// parts must be set: a lone client id cannot refresh a token later.
+func (s *Server) yandexServerCredentials() (clientID, clientSecret string, ok bool) {
+	return s.cfg.YandexClientID, s.cfg.YandexClientSecret,
+		s.cfg.YandexClientID != "" && s.cfg.YandexClientSecret != ""
 }
 
 func (s *Server) handleDeviceStatus(w http.ResponseWriter, r *http.Request) {
@@ -131,6 +169,59 @@ func (s *Server) dropFlow(id string) {
 	s.flowsMu.Lock()
 	defer s.flowsMu.Unlock()
 	delete(s.flows, id)
+}
+
+// reserveDeviceFlow claims one of the limited concurrent-flow slots. Expired
+// flows are pruned first, so an abandoned flow never blocks a new start. The
+// reservation is held while Yandex issues the device code, so simultaneous
+// starts cannot overshoot the limit.
+func (s *Server) reserveDeviceFlow(now time.Time) bool {
+	s.flowsMu.Lock()
+	defer s.flowsMu.Unlock()
+	s.pruneFlowsLocked(now)
+	if len(s.flows)+s.flowReservations >= maxDeviceFlows {
+		return false
+	}
+	s.flowReservations++
+	return true
+}
+
+// storeDeviceFlow records a started flow and consumes its reservation.
+func (s *Server) storeDeviceFlow(flow *deviceFlow) {
+	s.flowsMu.Lock()
+	defer s.flowsMu.Unlock()
+	if s.flowReservations > 0 {
+		s.flowReservations--
+	}
+	s.flows[flow.id] = flow
+}
+
+// releaseDeviceFlowReservation gives the slot back when Yandex rejected the
+// start, so a failed request does not count against the limit.
+func (s *Server) releaseDeviceFlowReservation() {
+	s.flowsMu.Lock()
+	defer s.flowsMu.Unlock()
+	if s.flowReservations > 0 {
+		s.flowReservations--
+	}
+}
+
+func (s *Server) pruneFlowsLocked(now time.Time) {
+	for id, flow := range s.flows {
+		if now.After(flow.expiresAt) {
+			delete(s.flows, id)
+		}
+	}
+}
+
+// deviceFlowLifetime keeps a pending flow for at most ten minutes, even when
+// Yandex offers a longer window: a slot must not be held indefinitely.
+func deviceFlowLifetime(auth yandex.DeviceAuth) time.Duration {
+	lifetime := time.Duration(auth.ExpiresIn) * time.Second
+	if lifetime <= 0 || lifetime > deviceFlowMaxLifetime {
+		return deviceFlowMaxLifetime
+	}
+	return lifetime
 }
 
 // createYandexAccount writes the token into rclone and records the account.

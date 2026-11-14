@@ -44,7 +44,7 @@
       <div class="setup-steps" id="setup-steps" aria-hidden="true"></div>
       <div id="setup-body"></div>
       <p class="setup-hint" id="setup-error" role="alert"></p>
-      <div class="setup-actions">
+      <div class="setup-actions" id="setup-actions">
         <button class="btn btn--secondary" id="setup-back" type="button">Отмена</button>
         <p class="setup-status" id="setup-status" role="status" aria-live="polite"></p>
         <button class="btn btn--primary" id="setup-next" type="button">Подключиться</button>
@@ -69,8 +69,10 @@
             <svg class="icon account-chip-chev" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div class="menu" id="account-menu" role="menu" aria-labelledby="account-chip" hidden>
-            <button class="menu-item" type="button" role="menuitem" tabindex="0" data-menu="probe"><span class="menu-item-label">Проверить подключение</span></button>
-            <button class="menu-item" type="button" role="menuitem" tabindex="-1" data-menu="reconnect">Войти заново</button>
+            <button class="menu-item menu-item--stack" type="button" role="menuitem" tabindex="0" data-menu="probe" title="Проверяет доступ к диску и обновляет занятое место">
+              <span class="menu-item-label">Проверить подключение</span>
+              <span class="menu-item-note">Проверит доступ и обновит занятое место</span>
+            </button>
             <div class="menu-sep" role="separator" aria-hidden="true"></div>
             <button class="menu-item menu-item--danger" type="button" role="menuitem" tabindex="-1" data-menu="disconnect">Выйти</button>
           </div>
@@ -84,12 +86,29 @@
   <dialog id="folder-dialog" class="modal" aria-labelledby="folder-title" aria-describedby="folder-note">
     <div class="modal-head">
       <div class="modal-heading">
+        <p class="modal-kicker" id="folder-kicker" hidden></p>
         <h2 class="modal-title" id="folder-title" tabindex="-1">Папка в облаке</h2>
         <p class="modal-note" id="folder-note">Отметьте папки, которые нужно скачать.</p>
       </div>
       <button class="btn btn--ghost btn--icon" type="button" data-dialog-close aria-label="Закрыть">
         <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11m0-11-11 11"/></svg>
       </button>
+    </div>
+    <div class="flow-source" id="flow-source-bar" hidden>
+      <label class="switch-row" for="folder-all">
+        <span class="switch-copy">
+          <span class="switch-title">Весь диск</span>
+          <span class="switch-note" id="folder-all-note">Все папки и файлы Яндекс Диска</span>
+        </span>
+        <span class="switch-control">
+          <input id="folder-all" type="checkbox" role="switch" aria-describedby="folder-all-note">
+          <span class="switch-track" aria-hidden="true"></span>
+        </span>
+      </label>
+      <div class="flow-source-meta">
+        <p class="flow-count" id="folder-count" role="status" aria-live="polite">Выбрано: 0 из 20</p>
+        <ul class="chips" id="folder-chips" aria-label="Выбранные папки" hidden></ul>
+      </div>
     </div>
     <div class="folder-crumbs" id="folder-crumbs" aria-label="Текущая папка"></div>
     <div class="folder-body" id="folder-body"></div>
@@ -102,15 +121,35 @@
       <button class="btn btn--primary" type="button" id="folder-create-submit">Создать</button>
       <button class="btn btn--secondary" type="button" id="folder-create-cancel">Отмена</button>
     </div>
-    <div class="folder-chips" id="folder-chips" role="list" aria-label="Выбранные папки" hidden></div>
     <div class="modal-foot">
+      <button class="btn btn--secondary" type="button" id="folder-back" hidden>Назад</button>
       <button class="btn btn--secondary" type="button" id="folder-create" hidden>Создать папку</button>
-      <span class="folder-free" id="folder-free"></span>
-      <span class="folder-count" id="folder-count" aria-live="polite"></span>
       <p class="folder-limit" id="folder-limit" role="alert" hidden></p>
       <div class="modal-actions">
-        <button class="btn btn--secondary" type="button" data-dialog-close>Отмена</button>
-        <button class="btn btn--primary" type="button" id="folder-choose">Выбрать папку</button>
+        <button class="btn btn--quiet" type="button" data-dialog-close>Отмена</button>
+        <button class="btn btn--primary" type="button" id="folder-choose">Выбрать эту папку</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="review-dialog" class="modal modal--review" aria-labelledby="review-title" aria-describedby="review-note">
+    <div class="modal-head">
+      <div class="modal-heading">
+        <p class="modal-kicker">Шаг 3 из 3</p>
+        <h2 class="modal-title" id="review-title" tabindex="-1">Проверка</h2>
+        <p class="modal-note" id="review-note">Сверьте выбор перед скачиванием.</p>
+      </div>
+      <button class="btn btn--ghost btn--icon" type="button" data-dialog-close aria-label="Закрыть">
+        <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11m0-11-11 11"/></svg>
+      </button>
+    </div>
+    <div class="review-body" id="review-body"></div>
+    <p class="form-error modal-error" id="review-error" role="alert" hidden></p>
+    <div class="modal-foot">
+      <button class="btn btn--secondary" type="button" id="review-back">Назад</button>
+      <div class="modal-actions">
+        <button class="btn btn--secondary" type="button" id="review-estimate">Узнать объём</button>
+        <button class="btn btn--primary" type="button" id="review-start">Скачать</button>
       </div>
     </div>
   </dialog>
