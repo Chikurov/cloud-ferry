@@ -1,0 +1,1535 @@
+{
+  "generatedAt": "2026-11-14T13:06:22.131Z",
+  "environment": {
+    "browser": "Chrome 157.0.8103.79 headless via CDP",
+    "server": "Go 1.27.3, cmd/cloudferry on 127.0.0.1:48771",
+    "rclone": "fake rc over unix socket /tmp/cf-flow/fake.sock",
+    "edgeStates": "deterministic fetch overlay (window.__cfOverride) for needs-auth/offline/4xx/5xx/device flow",
+    "viewports": [
+      "1000x780",
+      "500x780",
+      "390x844"
+    ]
+  },
+  "suites": [
+    {
+      "name": "real",
+      "description": "Реальный Go-сервер + fake rclone rc: happy path, шапка, меню, мастер, пикеры, скачивание, пауза/продолжение, выход",
+      "checks": 76,
+      "passed": 76,
+      "failed": 0,
+      "details": [
+        {
+          "name": "home loads with account and running job",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "home shows running status",
+          "ok": true,
+          "detail": "{\"actual\":\"Идёт скачивание\",\"expected\":\"Идёт скачивание\"}"
+        },
+        {
+          "name": "home shows source and dest",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "menu opens on chip click",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "menu items",
+          "ok": true,
+          "detail": "{\"actual\":[\"Проверить подключение\",\"Войти заново\",\"Выйти\"],\"expected\":[\"Проверить подключение\",\"Войти заново\",\"Выйти\"]}"
+        },
+        {
+          "name": "menu focus starts on first item",
+          "ok": true,
+          "detail": "{\"actual\":\"probe\",\"expected\":\"probe\"}"
+        },
+        {
+          "name": "End focuses last menu item",
+          "ok": true,
+          "detail": "{\"actual\":\"disconnect\",\"expected\":\"disconnect\"}"
+        },
+        {
+          "name": "Home focuses first menu item",
+          "ok": true,
+          "detail": "{\"actual\":\"probe\",\"expected\":\"probe\"}"
+        },
+        {
+          "name": "ArrowDown moves menu focus",
+          "ok": true,
+          "detail": "{\"actual\":\"reconnect\",\"expected\":\"reconnect\"}"
+        },
+        {
+          "name": "Escape closes menu and restores chip focus",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "outside click closes menu",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "probe shows success toast with usage",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "probe clears busy state",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "reconnect opens setup step 0",
+          "ok": true,
+          "detail": "{\"actual\":\"Шаг 1 из 3\",\"expected\":\"Шаг 1 из 3\"}"
+        },
+        {
+          "name": "reconnect pauses active job and warns",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "setup shows replacement notice",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "setup back is visible as Отмена",
+          "ok": true,
+          "detail": "{\"actual\":{\"hidden\":false,\"text\":\"Отмена\"},\"expected\":{\"hidden\":false,\"text\":\"Отмена\"}}"
+        },
+        {
+          "name": "back from setup returns home",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "paused job shows Продолжить",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "resume moves job back to running",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "pause moves job to paused and focus stays in region",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "pause toast shown",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cloud dialog opens on title",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cloud dialog title",
+          "ok": true,
+          "detail": "{\"actual\":\"Выберите папки\",\"expected\":\"Выберите папки\"}"
+        },
+        {
+          "name": "cloud dialog lists root folders",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cloud dialog choose label is Сохранить",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cloud dialog count starts with whole disk hint",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "nested folders load on expand",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "expand aria-expanded true",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "parent checkbox is indeterminate when child selected",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "selected child chip appears",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "selecting parent disables descendant checkbox",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "selecting parent replaces child in chips",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cloud count after 3 selections",
+          "ok": true,
+          "detail": "{\"actual\":\"Выбрано: 3 папки\",\"expected\":\"Выбрано: 3 папки\"}"
+        },
+        {
+          "name": "cloud chips show 3",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cloud count after removing chip",
+          "ok": true,
+          "detail": "{\"actual\":\"Выбрано: 2 папки\",\"expected\":\"Выбрано: 2 папки\"}"
+        },
+        {
+          "name": "focus stays in dialog after chip removal",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cloud summary saved",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "focus returns to source summary after save",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "Escape closes cloud dialog",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "Escape does not change saved source",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "focus returns to summary after Esc",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "server dialog title",
+          "ok": true,
+          "detail": "{\"actual\":\"Папка на сервере\",\"expected\":\"Папка на сервере\"}"
+        },
+        {
+          "name": "server dialog crumbs visible",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "server dialog shows free space",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "server dialog opens at typed path",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "server choose label",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "crumb navigates to root",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "server entries listed",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "server choose writes path to input",
+          "ok": true,
+          "detail": "{\"actual\":\"/tmp/cf-flow/downloads/yandex\",\"expected\":\"/tmp/cf-flow/downloads/yandex\"}"
+        },
+        {
+          "name": "focus returns to dest input after choose",
+          "ok": true,
+          "detail": "{\"id\":\"dest-path\",\"cls\":\"\",\"tag\":\"INPUT\",\"open\":false,\"log\":[[33049,\"dest-path\",\"\"],[33050,\"BUTTON\",\"btn btn--secondary btn--browse\"],[33051,\"folder-title\",\"modal-title\"],[33566,\"BUTTON\",\"folder-row\"],[34203,\"folder-choose\",\"btn btn--primary\"],[34705,\"BUTTON\",\"btn btn--secondary btn--browse\"],[34707,\"dest-path\",\"\"]],\"dlg\":[[\"choose-click\",34706,false]]}"
+        },
+        {
+          "name": "server Esc keeps dest value",
+          "ok": true,
+          "detail": "{\"actual\":\"/tmp/cf-flow/downloads/yandex\",\"expected\":\"/tmp/cf-flow/downloads/yandex\"}"
+        },
+        {
+          "name": "start transfer creates one job",
+          "ok": true,
+          "detail": "{\"before\":1,\"after\":2}"
+        },
+        {
+          "name": "newest job is running",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "newest job destination correct",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "newest job keeps selected source folders",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "active job shown in Сейчас",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "audit job paused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "double submit creates only one job",
+          "ok": true,
+          "detail": "{\"before\":2,\"after\":3}"
+        },
+        {
+          "name": "double submit shows no conflict banner",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "new job pause shows Продолжить",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "new job resume shows running",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "home no horizontal overflow at 1000",
+          "ok": true,
+          "detail": "{\"sw\":1000,\"bw\":1000,\"iw\":1000}"
+        },
+        {
+          "name": "home no horizontal overflow at 500",
+          "ok": true,
+          "detail": "{\"sw\":500,\"bw\":500,\"iw\":500}"
+        },
+        {
+          "name": "home no horizontal overflow at 390",
+          "ok": true,
+          "detail": "{\"sw\":390,\"bw\":390,\"iw\":390}"
+        },
+        {
+          "name": "home has no nameless buttons or unlabeled fields",
+          "ok": true,
+          "detail": "[]"
+        },
+        {
+          "name": "exit dialog focuses title",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "exit dialog explains consequence",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "Escape cancels exit dialog and returns focus to chip",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "successful exit shows empty state",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "focus after exit is on connect tile",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "exit success toast shown",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "account removed from server",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "active jobs stopped before exit",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no JS/console errors on real happy path",
+          "ok": true,
+          "detail": "[]"
+        },
+        {
+          "name": "no failed network requests on real happy path",
+          "ok": true,
+          "detail": "[]"
+        }
+      ]
+    },
+    {
+      "name": "onboarding",
+      "description": "Онбординг: пустой экран, три способа входа, device flow, ошибки сервера, офлайн, ошибки пикера и лимит 20",
+      "checks": 80,
+      "passed": 80,
+      "failed": 0,
+      "details": [
+        {
+          "name": "empty home offers connect tile",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "empty home hides account chip",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "empty home has no dead fields",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "empty home no overflow 1000",
+          "ok": true,
+          "detail": {
+            "sw": 1000,
+            "bw": 1000,
+            "iw": 1000
+          }
+        },
+        {
+          "name": "empty home no overflow 390",
+          "ok": true,
+          "detail": {
+            "sw": 390,
+            "bw": 390,
+            "iw": 390
+          }
+        },
+        {
+          "name": "connect tile opens setup",
+          "ok": true,
+          "detail": {
+            "actual": "Шаг 1 из 3",
+            "expected": "Шаг 1 из 3"
+          }
+        },
+        {
+          "name": "setup cancel visible on first launch",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "webdav explains Yandex 360",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "webdav explains 2–3 hours delay",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "oauth instruction links to app creation",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "oauth instruction names disk.read/disk.info rights",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "oauth instruction names redirect URI",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "token field asks for JSON",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "token placeholder is full JSON example",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "token note requires refresh_token and expiry",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "invalid token JSON is rejected client-side",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "invalid token marks textarea invalid",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "token without refresh_token is rejected",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "Enter submits setup step 0",
+          "ok": true,
+          "detail": {
+            "actual": "Шаг 2 из 3",
+            "expected": "Шаг 2 из 3"
+          }
+        },
+        {
+          "name": "webdav connect shows success toast",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "empty dest is rejected",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "Enter submits setup step 1",
+          "ok": true,
+          "detail": {
+            "actual": "Шаг 3 из 3",
+            "expected": "Шаг 3 из 3"
+          }
+        },
+        {
+          "name": "summary shows account and folder",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "final button named Перейти к скачиванию",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "Изменить папку returns to step 1",
+          "ok": true,
+          "detail": {
+            "actual": "Шаг 2 из 3",
+            "expected": "Шаг 2 из 3"
+          }
+        },
+        {
+          "name": "dest input preserved after back",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "final step opens home",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "setup cancel returns to empty home",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "setup no overflow at 390 (webdav)",
+          "ok": true,
+          "detail": {
+            "sw": 390,
+            "bw": 390,
+            "iw": 390
+          }
+        },
+        {
+          "name": "setup has no nameless controls",
+          "ok": true,
+          "detail": []
+        },
+        {
+          "name": "no JS errors in setup validation flow",
+          "ok": true,
+          "detail": []
+        },
+        {
+          "name": "webdav 502 shown as setup error",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "setup button available after 502",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "server field error marks login",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "server field error text shown",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "typing clears field error",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "device flow validates client id",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "device flow validates client secret",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "device panel shows code and link",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "device panel shows expiry hint",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "device flow disables connect button",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "device flow disables client fields",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "expired device code shows server message",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "connect button enabled after expiry",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "focus returned to connect after expiry",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "device flow restarts with new code",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "device cancel hides panel",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "device cancel returns focus to connect",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "device start 502 shown as setup error",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "device start failure re-enables button",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "device success moves to step 2",
+          "ok": true,
+          "detail": {
+            "actual": "Шаг 2 из 3",
+            "expected": "Шаг 2 из 3"
+          }
+        },
+        {
+          "name": "device success toast shown",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "device success proceeds to step 3",
+          "ok": true,
+          "detail": {
+            "actual": "Шаг 3 из 3",
+            "expected": "Шаг 3 из 3"
+          }
+        },
+        {
+          "name": "device success ends on home",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "home after connect focuses Скачать",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "exit error stays inside dialog",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "exit error text readable",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "exit confirm re-enabled after error",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no exit error toast",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "offline start shows offline screen",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "offline screen has retry",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "offline retry boots the app",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "offline after boot shows dot",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "offline after boot shows retry toast",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "offline retry restores connection",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "offline toast closes after retry",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cloud 404 shows error state",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cloud 404 offers retry",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cloud 404 does not tell to type path",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cloud retry loads folders",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "empty cloud folder list shows empty state",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "empty cloud save still available for whole disk",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "limit caps selection at 20",
+          "ok": true,
+          "detail": {
+            "actual": 20,
+            "expected": 20
+          }
+        },
+        {
+          "name": "limit shows explanation",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "limit counter shows 20",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "limit error clears after removing a chip",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "focus stays in dialog after limit removal",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "nested folder error offers retry",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "nested folder retry loads children",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "folder dialog has no nameless controls",
+          "ok": true,
+          "detail": []
+        }
+      ]
+    },
+    {
+      "name": "states",
+      "description": "Состояния заданий (failed/done/paused/queued/verifying/needs-auth/unknown), ошибки формы, повторные действия, серверный пикер и truncated",
+      "checks": 58,
+      "passed": 58,
+      "failed": 0,
+      "details": [
+        {
+          "name": "failed state pill says Ошибка",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "failed state explains error",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "failed state offers Повторить",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "failed state offers copy list",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "failed state shows partial count",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "copy list success toast",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "copy failure offers retry",
+          "ok": true,
+          "detail": [
+            {
+              "title": "Не удалось скопировать",
+              "actions": [
+                "Повторить"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "copy retry keeps dialog usable",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "Повторить resumes the job",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "resume toast shown",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "failed home has no nameless controls",
+          "ok": true,
+          "detail": []
+        },
+        {
+          "name": "paused state shows Пауза and Продолжить",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "paused state explains resume",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "queued state label",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "queued state can be paused",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "queued percent is 0",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "verifying state label",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "verifying state has no dead pause button",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "done state shows Готово",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "done state shows date",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "done state shows what was downloaded",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "empty history shows no-downloads message",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "needs-auth now shows re-login",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "needs-auth storage says Нужен вход",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "needs-auth blocks folder picker with login action",
+          "ok": true,
+          "detail": [
+            {
+              "title": "Нужно войти заново",
+              "actions": [
+                "Войти заново"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "needs-auth blocks download with clear banner",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "needs-auth focuses reconnect action",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "needs-auth reconnect opens setup",
+          "ok": true,
+          "detail": {
+            "actual": "Шаг 1 из 3",
+            "expected": "Шаг 1 из 3"
+          }
+        },
+        {
+          "name": "unknown status is explained, not idle",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "unknown status pill is human",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "unknown status offers refresh",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "refresh keeps unknown state without error",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "refresh failure shows retry toast",
+          "ok": true,
+          "detail": [
+            {
+              "title": "Не удалось обновить данные",
+              "actions": [
+                "Повторить"
+              ]
+            },
+            {
+              "title": "Нет связи с сервером",
+              "actions": [
+                "Повторить"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "400 sourcePaths marks source summary",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "400 sourcePaths shows inline field error",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "400 sourcePaths does not show banner",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "source summary error clears after picker action",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "400 destPath marks destination input",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "400 destPath shows inline error",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "409 shows banner",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "502 shows retryable banner",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "download shows busy state while sending",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "form marked aria-busy while sending",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "probe failure offers retry",
+          "ok": true,
+          "detail": [
+            {
+              "title": "Не удалось проверить подключение",
+              "actions": [
+                "Повторить"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "probe retry succeeds",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "probe auth failure offers login again",
+          "ok": true,
+          "detail": [
+            {
+              "title": "Нужно войти заново",
+              "actions": [
+                "Войти заново"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "login-again toast opens setup",
+          "ok": true,
+          "detail": {
+            "actual": "Шаг 1 из 3",
+            "expected": "Шаг 1 из 3"
+          }
+        },
+        {
+          "name": "folder dialog offline shows retry state",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "folder dialog retry after offline loads",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "error home no overflow at 500",
+          "ok": true,
+          "detail": {
+            "sw": 500,
+            "iw": 500
+          }
+        },
+        {
+          "name": "error home no overflow at 390",
+          "ok": true,
+          "detail": {
+            "sw": 390,
+            "iw": 390
+          }
+        },
+        {
+          "name": "error home has no nameless controls",
+          "ok": true,
+          "detail": []
+        },
+        {
+          "name": "no JS errors across mocked states",
+          "ok": true,
+          "detail": []
+        },
+        {
+          "name": "server picker 404 shows error",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "server picker 404 advises manual path",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "server picker 404 offers retry",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "server picker recovers via root crumb",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "truncated cloud listing is explained",
+          "ok": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "name": "layout",
+      "description": "Адаптив 1000/500/390, клавиатура, фокус-трап диалогов, ARIA-имена",
+      "checks": 30,
+      "passed": 30,
+      "failed": 0,
+      "details": [
+        {
+          "name": "home scrollWidth==innerWidth at 1000",
+          "ok": true,
+          "detail": {
+            "sw": 1000,
+            "dsw": 1000,
+            "bw": 1000,
+            "iw": 1000
+          }
+        },
+        {
+          "name": "account menu fits viewport at 1000",
+          "ok": true,
+          "detail": {
+            "l": 627,
+            "r": 847,
+            "t": 62,
+            "b": 221,
+            "w": 220
+          }
+        },
+        {
+          "name": "folder dialog fits viewport at 1000",
+          "ok": true,
+          "detail": {
+            "d": {
+              "l": 280,
+              "r": 720,
+              "t": 182.5,
+              "b": 597.5,
+              "w": 440
+            },
+            "w": 1000,
+            "h": 780
+          }
+        },
+        {
+          "name": "no horizontal overflow with dialog at 1000",
+          "ok": true,
+          "detail": {
+            "sw": 1000,
+            "dsw": 1000,
+            "bw": 1000,
+            "iw": 1000
+          }
+        },
+        {
+          "name": "home scrollWidth==innerWidth at 500",
+          "ok": true,
+          "detail": {
+            "sw": 500,
+            "dsw": 500,
+            "bw": 500,
+            "iw": 500
+          }
+        },
+        {
+          "name": "account menu fits viewport at 500",
+          "ok": true,
+          "detail": {
+            "l": 247,
+            "r": 467,
+            "t": 62,
+            "b": 221,
+            "w": 220
+          }
+        },
+        {
+          "name": "folder dialog fits viewport at 500",
+          "ok": true,
+          "detail": {
+            "d": {
+              "l": 30,
+              "r": 470,
+              "t": 182.5,
+              "b": 597.5,
+              "w": 440
+            },
+            "w": 500,
+            "h": 780
+          }
+        },
+        {
+          "name": "no horizontal overflow with dialog at 500",
+          "ok": true,
+          "detail": {
+            "sw": 500,
+            "dsw": 500,
+            "bw": 500,
+            "iw": 500
+          }
+        },
+        {
+          "name": "home scrollWidth==innerWidth at 390",
+          "ok": true,
+          "detail": {
+            "sw": 390,
+            "dsw": 390,
+            "bw": 390,
+            "iw": 390
+          }
+        },
+        {
+          "name": "account menu fits viewport at 390",
+          "ok": true,
+          "detail": {
+            "l": 141,
+            "r": 361,
+            "t": 64,
+            "b": 223,
+            "w": 220
+          }
+        },
+        {
+          "name": "folder dialog fits viewport at 390",
+          "ok": true,
+          "detail": {
+            "d": {
+              "l": 17,
+              "r": 373,
+              "t": 204.5,
+              "b": 639.5,
+              "w": 356
+            },
+            "w": 390,
+            "h": 844
+          }
+        },
+        {
+          "name": "no horizontal overflow with dialog at 390",
+          "ok": true,
+          "detail": {
+            "sw": 390,
+            "dsw": 390,
+            "bw": 390,
+            "iw": 390
+          }
+        },
+        {
+          "name": "setup scrollWidth==innerWidth at 1000",
+          "ok": true,
+          "detail": {
+            "sw": 1000,
+            "dsw": 1000,
+            "bw": 1000,
+            "iw": 1000
+          }
+        },
+        {
+          "name": "setup card fits width at 1000",
+          "ok": true,
+          "detail": {
+            "l": 240,
+            "r": 760,
+            "t": 76,
+            "b": 779,
+            "w": 520
+          }
+        },
+        {
+          "name": "setup scrollWidth==innerWidth at 500",
+          "ok": true,
+          "detail": {
+            "sw": 500,
+            "dsw": 500,
+            "bw": 500,
+            "iw": 500
+          }
+        },
+        {
+          "name": "setup card fits width at 500",
+          "ok": true,
+          "detail": {
+            "l": 16,
+            "r": 484,
+            "t": 76,
+            "b": 797,
+            "w": 468
+          }
+        },
+        {
+          "name": "setup scrollWidth==innerWidth at 390",
+          "ok": true,
+          "detail": {
+            "sw": 390,
+            "dsw": 390,
+            "bw": 390,
+            "iw": 390
+          }
+        },
+        {
+          "name": "setup card fits width at 390",
+          "ok": true,
+          "detail": {
+            "l": 12,
+            "r": 378,
+            "t": 73.5,
+            "b": 822.5,
+            "w": 366
+          }
+        },
+        {
+          "name": "home tab order starts brand -> account chip -> source -> dest",
+          "ok": true,
+          "detail": [
+            "brand",
+            "account-chip",
+            "btn btn--secondary",
+            "source-summary",
+            "dest-path",
+            "btn btn--secondary btn--browse",
+            "start-btn"
+          ]
+        },
+        {
+          "name": "home tab order reaches account chip",
+          "ok": true,
+          "detail": [
+            "brand",
+            "account-chip",
+            "btn btn--secondary",
+            "source-summary",
+            "dest-path",
+            "btn btn--secondary btn--browse",
+            "start-btn"
+          ]
+        },
+        {
+          "name": "home tab order reaches source summary",
+          "ok": true,
+          "detail": [
+            "brand",
+            "account-chip",
+            "btn btn--secondary",
+            "source-summary",
+            "dest-path",
+            "btn btn--secondary btn--browse",
+            "start-btn"
+          ]
+        },
+        {
+          "name": "home tab order reaches dest input",
+          "ok": true,
+          "detail": [
+            "brand",
+            "account-chip",
+            "btn btn--secondary",
+            "source-summary",
+            "dest-path",
+            "btn btn--secondary btn--browse",
+            "start-btn"
+          ]
+        },
+        {
+          "name": "home tab order reaches browse and start",
+          "ok": true,
+          "detail": [
+            "brand",
+            "account-chip",
+            "btn btn--secondary",
+            "source-summary",
+            "dest-path",
+            "btn btn--secondary btn--browse",
+            "start-btn"
+          ]
+        },
+        {
+          "name": "Enter activates server browse",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "dialog traps keyboard focus",
+          "ok": true,
+          "detail": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ]
+        },
+        {
+          "name": "Escape closes dialog via cancel handler",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "Escape returns focus to browse opener",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "tabbing out closes account menu",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "live region announces probe result",
+          "ok": true,
+          "detail": {
+            "liveBefore": "Шаг 1 из 3: Подключение",
+            "liveAfter": "Шаг 1 из 3: Подключение"
+          }
+        },
+        {
+          "name": "no JS errors during layout/keyboard checks",
+          "ok": true,
+          "detail": []
+        }
+      ]
+    }
+  ],
+  "total": {
+    "checks": 244,
+    "passed": 244,
+    "failed": 0
+  },
+  "errors": {
+    "jsExceptions": 0,
+    "consoleErrorsHappyPath": 0,
+    "failedNetworkHappyPath": 0
+  }
+}

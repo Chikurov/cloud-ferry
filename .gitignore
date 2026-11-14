@@ -1,0 +1,16 @@
+.gocache/
+.gomodcache/
+bin/
+*.test
+.devdata/
+docs/after*/
+docs/baseline/
+docs/before*.png
+docs/final/
+docs/final2/
+docs/clouds.png
+docs/jobs.png
+docs/setup.png
+docs/mobile.png
+docs/dialog.png
+docs/screenshot.png

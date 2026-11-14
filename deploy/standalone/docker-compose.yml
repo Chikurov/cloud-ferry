@@ -1,0 +1,80 @@
+# Standalone run for checking Cloud Ferry on a real Umbrel before publishing
+# the app package. Build happens on the device; nothing is pulled from a
+# private registry.
+services:
+  # rclone's rc server does not remove a stale unix socket: after an unclean
+  # stop `net.Listen` fails with "address already in use" and rclone never comes
+  # up. This one-shot service clears the socket before rclone starts. In the
+  # Umbrel package the same job is done by hooks/pre-start.
+  prepare:
+    image: rclone/rclone:1.76.0@sha256:7cbeec24a44f206067597c0368be4de90ae19a64d5113c7d1938bd737a81e466
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["rm -f /run/rclone/*.sock"]
+    restart: "no"
+    volumes:
+      - ${CF_DATA:?CF_DATA must be set in .env}/run:/run/rclone
+
+  api:
+    build:
+      context: ../..
+    image: cloud-ferry:dev
+    pull_policy: build
+    restart: unless-stopped
+    user: "1000:1000"
+    environment:
+      LISTEN_ADDR: 0.0.0.0:3000
+      DATA_DIR: /data
+      RC_SOCKET: /run/rclone/rclone.sock
+      RC_USER: cloudferry
+      RC_PASS: ${RC_PASS:?RC_PASS must be set in .env}
+      DOWNLOADS_DIR: /downloads
+      DEST_ROOTS: /downloads
+      CF_BASIC_USER: ${CF_BASIC_USER:-}
+      CF_BASIC_PASS: ${CF_BASIC_PASS:-}
+    volumes:
+      - ${CF_DATA:?CF_DATA must be set in .env}/state:/data
+      - ${CF_DATA}/run:/run/rclone
+      - ${CF_DEST:?CF_DEST must be set in .env}:/downloads
+    ports:
+      - "8741:3000"
+    depends_on:
+      rclone:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/cloudferry", "-healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  rclone:
+    image: rclone/rclone:1.76.0@sha256:7cbeec24a44f206067597c0368be4de90ae19a64d5113c7d1938bd737a81e466
+    restart: unless-stopped
+    user: "1000:1000"
+    command: ["rcd"]
+    environment:
+      RCLONE_RC_ADDR: unix:///run/rclone/rclone.sock
+      RCLONE_RC_USER: cloudferry
+      RCLONE_RC_PASS: ${RC_PASS}
+      RCLONE_CONFIG: /config/rclone.conf
+      RCLONE_CACHE_DIR: /cache
+      RCLONE_RC_JOB_EXPIRE_DURATION: 24h
+      RCLONE_MAX_STATS_GROUPS: "100"
+      RCLONE_USE_JSON_LOG: "true"
+      RCLONE_LOG_LEVEL: INFO
+      RCLONE_TPSLIMIT: "20"
+      RCLONE_CHECKERS: "16"
+    volumes:
+      - ${CF_DATA}/rclone:/config
+      - ${CF_DATA}/cache:/cache
+      - ${CF_DATA}/run:/run/rclone
+      - ${CF_DEST:?CF_DEST must be set in .env}:/downloads
+    depends_on:
+      prepare:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "rclone rc --unix-socket /run/rclone/rclone.sock --user \"$$RCLONE_RC_USER\" --pass \"$$RCLONE_RC_PASS\" --no-output core/version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

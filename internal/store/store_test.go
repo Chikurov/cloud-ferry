@@ -1,0 +1,247 @@
+package store
+
+import (
+	"fmt"
+	"os"
+	"reflect"
+	"strings"
+	"testing"
+	"time"
+)
+
+func TestAccountsAndJobsPersist(t *testing.T) {
+	dir := t.TempDir()
+	st, err := Open(dir)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+
+	account := Account{ID: "abc", Name: "Яндекс", Provider: "webdav", Remote: "cf_abc", CreatedAt: time.Now().UTC()}
+	if err := st.AddAccount(account); err != nil {
+		t.Fatalf("add account: %v", err)
+	}
+	job := Job{
+		ID: "job1", AccountID: "abc", Source: "cf_abc:/", Dest: "/downloads/yandex",
+		Mode: "copy", Status: StatusRunning, CreatedAt: time.Now().UTC(),
+	}
+	if err := st.AddJob(job); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	if err := st.UpdateJob("job1", func(j *Job) bool { j.Status = StatusDone; return true }); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	reopened, err := Open(dir)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	got, ok := reopened.Job("job1")
+	if !ok {
+		t.Fatal("job not found after reopen")
+	}
+	if got.Status != StatusDone {
+		t.Fatalf("status = %q", got.Status)
+	}
+	if _, ok := reopened.Account("abc"); !ok {
+		t.Fatal("account not found after reopen")
+	}
+}
+
+func TestUpdateUnknownJob(t *testing.T) {
+	st, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if err := st.UpdateJob("nope", func(*Job) bool { return true }); err == nil {
+		t.Fatal("expected error for unknown job")
+	}
+}
+
+func TestDeleteAccount(t *testing.T) {
+	st, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if err := st.AddAccount(Account{ID: "a", CreatedAt: time.Now()}); err != nil {
+		t.Fatalf("add: %v", err)
+	}
+	removed, err := st.DeleteAccount("a")
+	if err != nil || !removed {
+		t.Fatalf("delete: %v %v", removed, err)
+	}
+	if _, ok := st.Account("a"); ok {
+		t.Fatal("account still present")
+	}
+}
+
+func TestOpenRecoversFromBackup(t *testing.T) {
+	dir := t.TempDir()
+	st, err := Open(dir)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if err := st.AddAccount(Account{ID: "a1", Name: "Яндекс", CreatedAt: time.Now()}); err != nil {
+		t.Fatalf("add: %v", err)
+	}
+	if err := st.AddAccount(Account{ID: "a2", Name: "Google", CreatedAt: time.Now()}); err != nil {
+		t.Fatalf("add: %v", err)
+	}
+
+	// Corrupt the primary file, keep the backup intact.
+	path := dir + "/state.json"
+	if err := os.WriteFile(path, []byte("{not json"), 0o600); err != nil {
+		t.Fatalf("corrupt: %v", err)
+	}
+
+	reopened, err := Open(dir)
+	if err != nil {
+		t.Fatalf("open corrupt: %v", err)
+	}
+	accounts := reopened.Accounts()
+	if len(accounts) != 1 || accounts[0].ID != "a1" {
+		t.Fatalf("accounts = %+v", accounts)
+	}
+}
+
+func TestSaveKeepsBackup(t *testing.T) {
+	dir := t.TempDir()
+	st, err := Open(dir)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if err := st.AddAccount(Account{ID: "a1", CreatedAt: time.Now()}); err != nil {
+		t.Fatalf("add: %v", err)
+	}
+	if err := st.AddAccount(Account{ID: "a2", CreatedAt: time.Now()}); err != nil {
+		t.Fatalf("add: %v", err)
+	}
+	if _, err := os.Stat(dir + "/state.json.bak"); err != nil {
+		t.Fatalf("backup missing: %v", err)
+	}
+}
+
+func TestStateCapsJobHistory(t *testing.T) {
+	st, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	for i := 0; i < 150; i++ {
+		job := Job{ID: fmt.Sprintf("j%03d", i), Status: StatusDone, CreatedAt: time.Now().Add(time.Duration(i) * time.Second)}
+		if err := st.AddJob(job); err != nil {
+			t.Fatalf("add: %v", err)
+		}
+	}
+	if got := len(st.Jobs()); got > maxJobs {
+		t.Fatalf("jobs = %d, want <= %d", got, maxJobs)
+	}
+}
+
+func TestJobSourcePathsRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	st, err := Open(dir)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	job := Job{
+		ID: "job-multi", AccountID: "abc", Source: "cf_abc:",
+		SourcePaths: []string{"Документы", "Фотографии/2024"},
+		Dest:        "/downloads/yandex", Mode: "copy", Status: StatusDone, CreatedAt: time.Now().UTC(),
+	}
+	if err := st.AddJob(job); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	raw, err := os.ReadFile(dir + "/state.json")
+	if err != nil {
+		t.Fatalf("read state: %v", err)
+	}
+	if !strings.Contains(string(raw), `"sourcePaths"`) {
+		t.Fatalf("state does not keep sourcePaths: %s", raw)
+	}
+
+	reopened, err := Open(dir)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	got, ok := reopened.Job("job-multi")
+	if !ok {
+		t.Fatal("job not found after reopen")
+	}
+	if !reflect.DeepEqual(got.SourcePaths, []string{"Документы", "Фотографии/2024"}) {
+		t.Fatalf("sourcePaths = %#v", got.SourcePaths)
+	}
+	if got.Source != "cf_abc:" {
+		t.Fatalf("source = %q", got.Source)
+	}
+}
+
+func TestJobWithoutSourcePathsOmitsField(t *testing.T) {
+	dir := t.TempDir()
+	st, err := Open(dir)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if err := st.AddJob(Job{
+		ID: "legacy", Source: "cf_abc:/фото", Dest: "/downloads/yandex",
+		Status: StatusDone, CreatedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	raw, err := os.ReadFile(dir + "/state.json")
+	if err != nil {
+		t.Fatalf("read state: %v", err)
+	}
+	if strings.Contains(string(raw), `"sourcePaths"`) {
+		t.Fatalf("empty sourcePaths must be omitted: %s", raw)
+	}
+}
+
+// TestLegacyStateWithoutSourcePaths makes sure a state.json written by an older
+// build still loads: the missing field reads as nil and nothing else changes.
+func TestLegacyStateWithoutSourcePaths(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	legacy := `{
+  "accounts": [{"id": "abc", "name": "Яндекс", "provider": "webdav", "remote": "cf_abc", "createdAt": "2026-11-13T20:00:00Z"}],
+  "jobs": [{
+    "id": "old-job",
+    "accountId": "abc",
+    "source": "cf_abc:/фото",
+    "dest": "/downloads/yandex",
+    "mode": "copy",
+    "status": "done",
+    "group": "migrate/old-job/1",
+    "rcloneJobId": 5,
+    "stats": {"bytes": 10, "totalBytes": 10},
+    "createdAt": "2026-11-13T20:01:00Z"
+  }]
+}`
+	if err := os.WriteFile(dir+"/state.json", []byte(legacy), 0o600); err != nil {
+		t.Fatalf("write legacy state: %v", err)
+	}
+
+	st, err := Open(dir)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	job, ok := st.Job("old-job")
+	if !ok {
+		t.Fatal("legacy job not loaded")
+	}
+	if job.SourcePaths != nil {
+		t.Fatalf("sourcePaths = %#v, want nil", job.SourcePaths)
+	}
+	if job.Source != "cf_abc:/фото" || job.Dest != "/downloads/yandex" || job.Status != StatusDone {
+		t.Fatalf("job = %+v", job)
+	}
+	if job.Stats.Bytes != 10 || job.RcloneJobID != 5 {
+		t.Fatalf("legacy fields lost: %+v", job)
+	}
+	if accounts := st.Accounts(); len(accounts) != 1 || accounts[0].Remote != "cf_abc" {
+		t.Fatalf("accounts = %+v", accounts)
+	}
+}

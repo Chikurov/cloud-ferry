@@ -1,0 +1,106 @@
+manifestVersion: "2.0"
+id: cloudferry-migrator
+storage:
+  dataRoot: data
+folderAccess:
+  - id: umbrel-downloads
+    name: Downloads
+    note: >-
+      Куда сохранять файлы по умолчанию. Для больших объёмов выберите папку
+      на USB-диске во втором слоте: папки в Home попадают в резервные копии,
+      внешний диск — нет.
+    mounts:
+      - service: api
+        targetPath: /downloads
+      - service: rclone
+        targetPath: /downloads
+  - id: destination
+    name: Папка для скачивания (необязательно)
+    note: >-
+      Если выбрали эту папку, укажите /destination в поле «На сервере».
+    mounts:
+      - service: api
+        targetPath: /destination
+        readOnly: false
+      - service: rclone
+        targetPath: /destination
+        readOnly: false
+environment:
+  - name: CLOUDFERRY_TRANSFERS
+    services:
+      - api
+    default: "8"
+    options: ["2", "4", "8", "16"]
+    note: >-
+      Сколько файлов скачивать одновременно. 8 подходит большинству. Большее
+      значение ускоряет скачивание, но облако может ограничить частоту запросов.
+category: files
+name: Cloud Ferry
+version: "0.1.0"
+tagline: Скачивание файлов из облака на ваш Umbrel
+description: >-
+  Скачивает файлы из облака на ваш Umbrel и показывает прогресс.
+
+
+  Сейчас поддерживается Яндекс Диск. Подключить его можно паролем приложения
+  (нужна подписка Яндекс 360) или через своё приложение в Яндекс ID — этот
+  способ работает без подписки и позволяет сверять файлы. Скоро появятся
+  Google Drive, Dropbox и другие облака.
+
+
+  Начните с подключения облака, затем запустите скачивание. Файлы сохраняются в
+  папку, которую вы разрешили приложению в настройках umbrelOS. Из облака
+  файлы только читаются: приложение ничего там не меняет и не удаляет.
+
+
+  Пароли и токены хранятся только на вашем Umbrel, не попадают в резервные
+  копии и не пишутся в логи. Приложение не связано с Яндексом.
+releaseNotes: >-
+  Первый выпуск: подключение Яндекс Диска (пароль приложения, своё
+  OAuth-приложение или вход по коду), скачивание всего Диска или выбранных
+  папок, прогресс, пауза и продолжение, проверка целостности и виджет на
+  домашнем экране Umbrel.
+# Ориентировочный размер установки в байтах (несжатые слои образа). Уточните
+# после первой публикации: docker image inspect --format '{{.Size}}' <image>.
+installSize: 131072000
+developer: Cloud Ferry contributors
+website: https://github.com/Chikurov/cloud-ferry
+dependencies: []
+repo: https://github.com/Chikurov/cloud-ferry
+support: https://github.com/Chikurov/cloud-ferry/issues
+
+port: 8741
+gallery: []
+path: ""
+icon: https://raw.githubusercontent.com/Chikurov/cloud-ferry/main/icon.png
+
+defaultUsername: ""
+defaultPassword: ""
+
+permissions:
+  - STORAGE_DOWNLOADS
+
+backupIgnore:
+  - data/cache/*
+  - data/run/*
+  - data/rclone/rclone.conf
+
+widgets:
+  - id: progress
+    type: text-with-progress
+    refresh: "5s"
+    endpoint: api:3000/api/widget
+    link: ""
+    example:
+      type: text-with-progress
+      link: ""
+      title: Cloud Ferry
+      text: "12,3 ГБ из 29 ГБ · 8,4 МБ/с"
+      progressLabel: Скачивание
+      progress: 0.42
+
+submitter: Cloud Ferry contributors
+# Ссылка на PR, которым пакет подаётся в официальный getumbrel/umbrel-apps.
+# Community store это поле не использует; при подаче в официальный магазин
+# замените значение на реальный URL pull request.
+submission: "https://github.com/Chikurov/cloud-ferry/pulls"

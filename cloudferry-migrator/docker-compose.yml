@@ -1,0 +1,71 @@
+services:
+  app_proxy:
+    environment:
+      APP_HOST: cloudferry-migrator_api_1
+      APP_PORT: 3000
+
+  api:
+    # ${OWNER} is exported by cloudferry-migrator/exports.sh and substituted by
+    # compose at app start. Set it once with `make set-owner OWNER=<login>`.
+    # The digest is the linux/amd64+linux/arm64 manifest-list digest printed by
+    # `make digest` (or the publish CI job); pin it with `make pin-digest`.
+    image: ghcr.io/${OWNER}/cloud-ferry:0.1.0@sha256:0000000000000000000000000000000000000000000000000000000000000000
+    restart: on-failure
+    init: true
+    user: "1000:1000"
+    environment:
+      LISTEN_ADDR: 0.0.0.0:3000
+      DATA_DIR: /data
+      RC_SOCKET: /run/rclone/rclone.sock
+      RC_USER: ${APP_CLOUDFERRY_RC_USER}
+      RC_PASS: ${APP_CLOUDFERRY_RC_PASS}
+      DOWNLOADS_DIR: /downloads
+      DEST_ROOTS: /downloads,/destination
+      CLOUDFERRY_TRANSFERS: ${CLOUDFERRY_TRANSFERS:-8}
+    volumes:
+      - ${APP_DATA_DIR}/data/state:/data
+      - ${APP_DATA_DIR}/data/run:/run/rclone
+      - ${UMBREL_ROOT}/data/storage/downloads:/downloads
+    depends_on:
+      rclone:
+        condition: service_healthy
+    # The probe is built into the image, so no curl/wget is needed and it also
+    # works when the API is protected by basic auth (CF_BASIC_*).
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/cloudferry", "-healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  rclone:
+    image: rclone/rclone:1.76.0@sha256:7cbeec24a44f206067597c0368be4de90ae19a64d5113c7d1938bd737a81e466
+    restart: on-failure
+    user: "1000:1000"
+    command: ["rcd"]
+    environment:
+      RCLONE_RC_ADDR: unix:///run/rclone/rclone.sock
+      RCLONE_RC_USER: ${APP_CLOUDFERRY_RC_USER}
+      RCLONE_RC_PASS: ${APP_CLOUDFERRY_RC_PASS}
+      RCLONE_CONFIG: /config/rclone.conf
+      RCLONE_CACHE_DIR: /cache
+      RCLONE_RC_JOB_EXPIRE_DURATION: 24h
+      RCLONE_MAX_STATS_GROUPS: "100"
+      RCLONE_USE_JSON_LOG: "true"
+      RCLONE_LOG_LEVEL: INFO
+      RCLONE_TPSLIMIT: "20"
+      RCLONE_CHECKERS: "16"
+    volumes:
+      - ${APP_DATA_DIR}/data/rclone:/config
+      - ${APP_DATA_DIR}/data/cache:/cache
+      - ${APP_DATA_DIR}/data/run:/run/rclone
+      - ${UMBREL_ROOT}/data/storage/downloads:/downloads
+    # An authenticated rc call proves the socket is served by a live rclone; a
+    # stale socket file left by a crash would pass a bare `test -S` check.
+    # hooks/pre-start removes such files before this container starts.
+    healthcheck:
+      test: ["CMD-SHELL", "rclone rc --unix-socket /run/rclone/rclone.sock --user \"$$RCLONE_RC_USER\" --pass \"$$RCLONE_RC_PASS\" --no-output core/version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

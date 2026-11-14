@@ -1,0 +1,129 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+# No workflow-level write permissions: the image job asks for packages: write
+# only when it actually publishes, and everything else runs read-only.
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: cloud-ferry
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+      - run: go build ./...
+      - run: go vet ./...
+      - run: go test ./...
+
+  image:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # One tag format everywhere: git tag v0.1.0 -> image tag 0.1.0 ->
+      # umbrel-app.yml version "0.1.0". The leading "v" never reaches the
+      # image, because cloudferry-migrator/docker-compose.yml references 0.1.0.
+      - name: Resolve image version
+        id: version
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Tag ${GITHUB_REF_NAME} must look like v1.2.3" >&2
+            exit 1
+          fi
+          # GHCR image names are lowercase; GitHub logins are not.
+          owner="$(printf '%s' "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          image="ghcr.io/${owner}/${IMAGE_NAME}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "owner=${owner}" >> "$GITHUB_OUTPUT"
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+
+      # Guard the contract the package actually installs: the manifest version
+      # and the compose image tag must match the git tag, otherwise Umbrel never
+      # offers the update or pulls a tag that was never built. The digest itself
+      # is pinned after this job publishes the image (see INSTALL.md), so the
+      # placeholder only warns here.
+      - name: Check manifest and compose match the tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          grep -Eq "^version: \"?${VERSION}\"?$" cloudferry-migrator/umbrel-app.yml \
+            || { echo "cloudferry-migrator/umbrel-app.yml version must be ${VERSION}" >&2; exit 1; }
+          grep -Eq "cloud-ferry:${VERSION}@sha256:[0-9a-f]{64}" cloudferry-migrator/docker-compose.yml \
+            || { echo "cloudferry-migrator/docker-compose.yml must reference cloud-ferry:${VERSION}@sha256:<digest>" >&2; exit 1; }
+          if grep -Eq "cloud-ferry:${VERSION}@sha256:0{64}" cloudferry-migrator/docker-compose.yml; then
+            echo "::warning::compose still has the zero digest placeholder; run make pin-digest with the digest printed below before publishing this commit to the community store"
+          fi
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Verify pinned rclone image
+        run: docker buildx imagetools inspect rclone/rclone:1.76.0@sha256:7cbeec24a44f206067597c0368be4de90ae19a64d5113c7d1938bd737a81e466
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push linux/amd64 + linux/arm64
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          # Keep the index to the two real platforms: the digest printed below
+          # is the value cloudferry-migrator/docker-compose.yml must be pinned to.
+          provenance: false
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+          tags: ${{ steps.version.outputs.image }}:${{ steps.version.outputs.version }}
+
+      # build-push-action exposes the manifest-list digest directly; the
+      # imagetools output is printed as a second, human-readable confirmation
+      # and proves both architectures are present.
+      - name: Report manifest-list digest
+        env:
+          IMAGE: ${{ steps.version.outputs.image }}
+          VERSION: ${{ steps.version.outputs.version }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          docker buildx imagetools inspect "${IMAGE}:${VERSION}" | tee /tmp/imagetools.txt
+          if ! grep -q 'linux/amd64' /tmp/imagetools.txt || ! grep -q 'linux/arm64' /tmp/imagetools.txt; then
+            echo "published image is missing linux/amd64 or linux/arm64" >&2
+            exit 1
+          fi
+          {
+            echo "## Cloud Ferry ${VERSION}"
+            echo
+            echo "Manifest-list digest: \`${DIGEST}\`"
+            echo
+            echo "Pin it into cloudferry-migrator/docker-compose.yml on the release"
+            echo "branch, then bump the App Store manifest version when the package changes:"
+            echo
+            echo '```sh'
+            echo "make pin-digest TAG=${VERSION} DIGEST=${DIGEST}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "DIGEST=${DIGEST}"

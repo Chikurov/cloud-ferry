@@ -1,0 +1,12 @@
+.gocache
+.gomodcache
+.devdata
+.git
+.github
+bin
+docs
+deploy
+cloudferry-migrator
+.release-prep-tmp
+.DS_Store
+*.md

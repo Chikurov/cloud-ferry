@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#f3f5f9">
+  <title>Cloud Ferry</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='7' fill='%230066d6'/%3E%3Cpath d='M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="page-glow" aria-hidden="true"></div>
+
+  <div id="boot-view" class="boot" aria-busy="true">
+    <span class="boot-spinner" aria-hidden="true"></span>
+    <p class="boot-text">Загрузка…</p>
+  </div>
+
+  <div id="offline-view" class="boot" hidden>
+    <div class="offline-card">
+      <h1 class="offline-title" id="offline-title">Нет связи с сервером</h1>
+      <p class="offline-note">Проверьте, что приложение запущено, и повторите попытку.</p>
+      <button class="btn btn--primary" type="button" id="offline-retry">Повторить</button>
+    </div>
+  </div>
+
+  <section id="setup-view" class="setup" hidden>
+    <div class="setup-brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z"/></svg>
+      </span>
+      <span>Cloud Ferry</span>
+    </div>
+
+    <div class="setup-card">
+      <p class="sr-only" id="setup-step-text"></p>
+      <div class="setup-steps" id="setup-steps" aria-hidden="true"></div>
+      <div id="setup-body"></div>
+      <p class="setup-hint" id="setup-error" role="alert"></p>
+      <div class="setup-actions">
+        <button class="btn btn--ghost" id="setup-back" type="button" hidden>Назад</button>
+        <button class="btn btn--primary" id="setup-next" type="button">Подключиться</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="app-view" class="shell" hidden>
+    <header class="shell-head">
+      <a class="brand" href="#/">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z"/></svg>
+        </span>
+        <h1 class="brand-name">Cloud Ferry</h1>
+      </a>
+      <div class="shell-actions">
+        <span id="offline-dot" class="offline-dot" title="Нет связи с сервером" hidden><span class="sr-only">Нет связи с сервером</span></span>
+        <div class="account" id="account-wrap" hidden>
+          <button class="account-chip" id="account-chip" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="account-menu">
+            <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z"/></svg>
+            <span class="account-chip-name" id="account-chip-name">Яндекс Диск</span>
+            <svg class="icon account-chip-chev" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="menu" id="account-menu" role="menu" aria-labelledby="account-chip" hidden>
+            <button class="menu-item" type="button" role="menuitem" tabindex="0" data-menu="probe"><span class="menu-item-label">Проверить подключение</span></button>
+            <button class="menu-item" type="button" role="menuitem" tabindex="-1" data-menu="reconnect">Войти заново</button>
+            <div class="menu-sep" role="separator" aria-hidden="true"></div>
+            <button class="menu-item menu-item--danger" type="button" role="menuitem" tabindex="-1" data-menu="disconnect">Выйти</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="home-view" class="dashboard"></main>
+  </div>
+
+  <dialog id="folder-dialog" class="modal" aria-labelledby="folder-title" aria-describedby="folder-note">
+    <div class="modal-head">
+      <div class="modal-heading">
+        <h2 class="modal-title" id="folder-title" tabindex="-1">Папка в облаке</h2>
+        <p class="modal-note" id="folder-note">Отметьте папки, которые нужно скачать.</p>
+      </div>
+      <button class="btn btn--ghost btn--icon" type="button" data-dialog-close aria-label="Закрыть">
+        <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11m0-11-11 11"/></svg>
+      </button>
+    </div>
+    <div class="folder-crumbs" id="folder-crumbs" aria-label="Текущая папка"></div>
+    <div class="folder-body" id="folder-body"></div>
+    <div class="folder-chips" id="folder-chips" role="list" aria-label="Выбранные папки" hidden></div>
+    <div class="modal-foot">
+      <span class="folder-free" id="folder-free"></span>
+      <span class="folder-count" id="folder-count" aria-live="polite"></span>
+      <p class="folder-limit" id="folder-limit" role="alert" hidden></p>
+      <div class="modal-actions">
+        <button class="btn btn--secondary" type="button" data-dialog-close>Отмена</button>
+        <button class="btn btn--primary" type="button" id="folder-choose">Выбрать папку</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="exit-dialog" class="modal modal--confirm" aria-labelledby="exit-title" aria-describedby="exit-text">
+    <div class="modal-head">
+      <h2 class="modal-title" id="exit-title" tabindex="-1">Выйти из Яндекс Диска?</h2>
+    </div>
+    <p class="modal-text" id="exit-text">Активное скачивание остановится. Уже скачанные файлы останутся на сервере.</p>
+    <p class="form-error modal-error" id="exit-error" role="alert" hidden></p>
+    <div class="modal-actions modal-actions--end">
+      <button class="btn btn--secondary" type="button" data-dialog-close>Остаться</button>
+      <button class="btn btn--danger" type="button" id="exit-confirm">Выйти</button>
+    </div>
+  </dialog>
+
+  <div id="toasts" class="toasts"></div>
+  <p id="live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+  <script src="/app.js"></script>
+</body>
+</html>

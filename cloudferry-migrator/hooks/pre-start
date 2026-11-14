@@ -1,0 +1,21 @@
+#!/bin/sh
+# Runs on every app start, before containers are created.
+#
+# rclone's rc server binds a unix socket with net.Listen("unix", ...) and never
+# removes an existing socket file. After an unclean stop (power loss, SIGKILL,
+# host reboot) the leftover file makes the next start fail with
+# "bind: address already in use", the rclone container restarts forever and the
+# api container never becomes healthy. Delete stale sockets before compose runs.
+set -eu
+
+APP_DIR="${APP_DATA_DIR:-$(readlink -f "$(dirname "$0")")/..}"
+DATA_DIR="${APP_DATA_ROOT:-${APP_DIR}/data}"
+RUN_DIR="${DATA_DIR}/run"
+
+mkdir -p "$RUN_DIR"
+
+for sock in "$RUN_DIR"/*.sock; do
+	[ -e "$sock" ] || continue
+	echo "[cloudferry] removing stale rclone socket: $sock"
+	rm -f "$sock"
+done
