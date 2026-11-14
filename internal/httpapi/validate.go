@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -218,11 +217,10 @@ func validateAccountInput(req *createAccountRequest) *validateFieldError {
 		if len(req.Token) > maxValidateTokenLen {
 			return &validateFieldError{"token", "Токен слишком длинный."}
 		}
-		var parsed struct {
-			AccessToken string `json:"access_token"`
-		}
-		if err := json.Unmarshal([]byte(req.Token), &parsed); err != nil || parsed.AccessToken == "" {
-			return &validateFieldError{"token", "Токен должен быть JSON-объектом с полем access_token."}
+		// A raw OAuth token is accepted as well: it is wrapped into the JSON shape
+		// rclone expects when the account is created, see normalizeTokenValue.
+		if _, err := normalizeTokenValue(req.Token); err != nil {
+			return &validateFieldError{"token", err.Error()}
 		}
 		if len(req.ClientID) > maxValidateUserLen {
 			return &validateFieldError{"clientId", "ID приложения слишком длинный."}

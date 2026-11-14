@@ -578,10 +578,10 @@ function tokenFields() {
   return `
     ${methodHeadline('code', SETUP_METHODS['yandex-token'], 'Для продвинутых — вместо пароля приложения.')}
     <div class="notice">Токен даёт полный доступ к вашему Диску. Вставляйте только свой токен и не передавайте его никому.</div>
-    <p class="note" id="token-format">Как получить: 1) создайте приложение на <a href="https://oauth.yandex.ru/" target="_blank" rel="noreferrer">oauth.yandex.ru</a> с правом «Чтение всего Диска» (<code>cloud_api:disk.read</code>); 2) получите токен по <a href="https://yandex.ru/dev/disk-api/doc/ru/concepts/quickstart" target="_blank" rel="noreferrer">инструкции Яндекс Диска</a>; 3) вставьте полный JSON: <code>access_token</code>, <code>refresh_token</code>, <code>expiry</code>.</p>
+    <p class="note" id="token-format">Как получить: 1) создайте приложение на <a href="https://oauth.yandex.ru/" target="_blank" rel="noreferrer">oauth.yandex.ru</a> с правом «Чтение всего Диска» (<code>cloud_api:disk.read</code>); 2) получите токен по <a href="https://yandex.ru/dev/disk-api/doc/ru/concepts/quickstart" target="_blank" rel="noreferrer">инструкции Яндекс Диска</a>; 3) вставьте токен — строкой или полным JSON из rclone.</p>
     <div class="control">
-      <label class="control-label" for="f-token">Токен (JSON)</label>
-      <textarea id="f-token" name="token" rows="4" spellcheck="false" autocapitalize="none" autocorrect="off" autocomplete="off" aria-describedby="token-format" placeholder='{"access_token":"…","refresh_token":"…","expiry":"2026-11-14T20:00:00Z"}'>${setupFieldValue('token')}</textarea>
+      <label class="control-label" for="f-token">Токен</label>
+      <textarea id="f-token" name="token" rows="4" spellcheck="false" autocapitalize="none" autocorrect="off" autocomplete="off" aria-describedby="token-format" placeholder="Вставьте токен или JSON из rclone">${setupFieldValue('token')}</textarea>
     </div>
     <button class="method-link" type="button" data-method="webdav">${icon('key')}Вернуться к логину и паролю</button>`;
 }
@@ -785,7 +785,7 @@ function validationFailure(error, method) {
   const tokenMode = method === 'yandex-token';
   if (code === 'invalid_request') {
     if (data.field === 'token' || tokenMode) {
-      return { field: 'token', message: 'Токен не подошёл или истёк. Вставьте полный JSON-ответ OAuth.' };
+      return { field: 'token', message: 'Токен не подошёл или истёк. Проверьте, что скопировали его целиком.' };
     }
     if (!data.field) {
       return { message: 'Не удалось проверить данные — обновите страницу и попробуйте ещё раз.' };
@@ -800,7 +800,7 @@ function validationFailure(error, method) {
     if (data.retryAfterHint === true) {
       return { field: 'password', message: 'Пароль приложения ещё не активировался — подождите 2–3 часа.' };
     }
-    if (tokenMode) return { field: 'token', message: 'Токен не подошёл или истёк. Вставьте полный JSON-ответ OAuth.' };
+    if (tokenMode) return { field: 'token', message: 'Токен не подошёл или истёк. Проверьте, что скопировали его целиком.' };
     return { field: 'password', message: 'Неверный логин или пароль приложения. Проверьте данные из Яндекс ID.' };
   }
   if (code === 'webdav_unavailable') {
@@ -810,7 +810,7 @@ function validationFailure(error, method) {
     return { message: 'Сервер не ответил — попробуйте ещё раз.' };
   }
   return tokenMode
-    ? { field: 'token', message: 'Токен не подошёл или истёк. Вставьте полный JSON-ответ OAuth.' }
+    ? { field: 'token', message: 'Токен не подошёл или истёк. Проверьте, что скопировали его целиком.' }
     : { message: 'Не удалось проверить доступ к Яндекс Диску. Попробуйте ещё раз.' };
 }
 
@@ -851,20 +851,22 @@ async function connectCloud() {
   } else {
     const token = (wizard.fields.token || '').trim();
     if (!token) {
-      setFieldError($('#f-token'), 'Вставьте JSON-токен.');
+      setFieldError($('#f-token'), 'Вставьте токен.');
       return;
     }
-    let parsedToken;
-    try { parsedToken = JSON.parse(token); } catch {
-      setFieldError($('#f-token'), 'Токен должен быть JSON-объектом, а не строкой.');
-      return;
-    }
-    if (!parsedToken || typeof parsedToken !== 'object' || Array.isArray(parsedToken) || !parsedToken.access_token) {
-      setFieldError($('#f-token'), 'В JSON нет поля access_token.');
-      return;
-    }
-    if (!parsedToken.refresh_token || parsedToken.expiry == null || parsedToken.expiry === '') {
-      setFieldError($('#f-token'), 'В JSON нужны access_token, refresh_token и expiry — вставьте полный ответ OAuth.');
+    // Сервер принимает и обычный токен, и полный JSON из rclone.
+    if (token.startsWith('{')) {
+      let parsedToken;
+      try { parsedToken = JSON.parse(token); } catch {
+        setFieldError($('#f-token'), 'Не удалось разобрать JSON. Вставьте токен строкой или целиком JSON.');
+        return;
+      }
+      if (!parsedToken || typeof parsedToken !== 'object' || Array.isArray(parsedToken) || !parsedToken.access_token) {
+        setFieldError($('#f-token'), 'В JSON нет поля access_token.');
+        return;
+      }
+    } else if (token.length < 20 || /\s/.test(token)) {
+      setFieldError($('#f-token'), 'Токен выглядит неполным — скопируйте его целиком, без пробелов.');
       return;
     }
     body = { name: 'Яндекс Диск', provider: 'yandex-token', token };

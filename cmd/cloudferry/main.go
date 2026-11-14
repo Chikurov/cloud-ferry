@@ -24,7 +24,7 @@ import (
 	"cloudferry/internal/store"
 )
 
-const version = "0.2.0"
+const version = "0.2.1"
 
 func main() {
 	listen := flag.String("listen", envOr("LISTEN_ADDR", "0.0.0.0:3000"), "HTTP listen address")

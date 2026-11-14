@@ -327,13 +327,11 @@ func accountRemoteParams(req createAccountRequest) (params, opt map[string]any, 
 		if token == "" {
 			return nil, nil, "", errors.New("Вставьте токен доступа.")
 		}
-		var parsed struct {
-			AccessToken string `json:"access_token"`
+		normalized, err := normalizeTokenValue(token)
+		if err != nil {
+			return nil, nil, "", err
 		}
-		if err := json.Unmarshal([]byte(token), &parsed); err != nil || parsed.AccessToken == "" {
-			return nil, nil, "", errors.New("Токен должен быть JSON-объектом с полем access_token.")
-		}
-		params = map[string]any{"token": token}
+		params = map[string]any{"token": normalized}
 		if clientID := strings.TrimSpace(req.ClientID); clientID != "" {
 			params["client_id"] = clientID
 		}
