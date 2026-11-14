@@ -177,6 +177,29 @@ ul, dl, dd { margin: 0; padding: 0; }
   letter-spacing: -.02em;
 }
 .offline-note { color: var(--muted); font-size: var(--text-sm); line-height: 20px; }
+/* Без JavaScript приложение не стартует — вместо вечного «Загрузка…»
+   показываем понятное объяснение поверх boot-экрана. */
+.noscript {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--page);
+}
+.noscript > p {
+  width: min(440px, 100%);
+  margin: 0;
+  padding: 16px 20px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-cell);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+  line-height: 20px;
+}
 
 /* ── 5. Shell, header, account menu ─────────────────────────────────────── */
 
@@ -1001,6 +1024,11 @@ input:focus, select:focus, textarea:focus {
 .btn--browse { min-width: 64px; height: var(--control-h); padding: 0 16px; font-size: var(--text-sm); }
 .btn:disabled { cursor: default; opacity: .64; }
 .btn--primary:disabled { opacity: .72; }
+/* busy/заблокированная кнопка без disabled: фокус остаётся на месте. */
+.btn[aria-disabled="true"],
+.field-action[aria-disabled="true"] { cursor: default; opacity: .64; pointer-events: none; }
+.btn--primary[aria-disabled="true"] { opacity: .72; }
+.btn[aria-busy="true"][aria-disabled="true"] { opacity: 1; }
 
 /* ── 15. Modal and folder picker ────────────────────────────────────────── */
 
@@ -1201,14 +1229,23 @@ input:focus, select:focus, textarea:focus {
 }
 .control.has-error .source-summary:focus-visible { box-shadow: 0 0 0 3px var(--amber-tint); }
 
-/* Cloud folder tree inside the picker dialog. */
-.folder-tree { display: grid; gap: 2px; }
+/* Cloud folder tree inside the picker dialog. Настоящие вложенные списки:
+   иерархия доступна скринридеру без ARIA-дерева. */
+.folder-tree,
+.folder-children {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.folder-children { grid-column: 1 / -1; padding-left: 20px; }
 .folder-node {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 4px;
-  padding-left: calc(var(--depth, 0) * 20px);
+  list-style: none;
 }
 .folder-node-main {
   position: relative;
@@ -1299,10 +1336,11 @@ input:focus, select:focus, textarea:focus {
   align-items: center;
   gap: 4px 8px;
   margin: 0;
-  padding: 4px 8px 4px calc(32px + var(--depth, 0) * 20px);
+  padding: 4px 8px;
   color: var(--muted);
   font-size: var(--text-xs);
   line-height: 18px;
+  list-style: none;
 }
 .folder-truncated {
   padding: 8px 8px 0;
@@ -1440,8 +1478,16 @@ input:focus, select:focus, textarea:focus {
 .setup-title:focus-visible,
 .plus-tile:focus-visible,
 .folder-row:focus-visible,
+.cell-title:focus-visible,
 .crumb:focus-visible,
 .crumb-up:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* Заголовок «Сейчас» — якорь фокуса после смены режима: без рамки у него
+   не было бы видимого фокуса (фокус ставится программно). */
+.cell-title:focus {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+  border-radius: var(--r-xs);
+}
 .btn--danger:focus-visible, .menu-item--danger:focus-visible { outline-color: var(--err); }
 .btn[aria-busy="true"],
 .btn[aria-busy="true"]:disabled {

@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"cloudferry/internal/disk"
 	"cloudferry/internal/jobs"
 	"cloudferry/internal/rc"
 	"cloudferry/internal/store"
@@ -526,12 +527,6 @@ func TestSystemReportsFreeSpace(t *testing.T) {
 }
 
 func TestDestinationPathValidation(t *testing.T) {
-	server, _, _ := newTestServer(t)
-	_, created := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/accounts", map[string]any{
-		"name": "Яндекс", "provider": "yandex-token", "token": `{"access_token":"x"}`,
-	})
-	accountID, _ := created["id"].(string)
-
 	cases := []struct {
 		name     string
 		dest     string
@@ -548,6 +543,10 @@ func TestDestinationPathValidation(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			// Each case gets its own server: a job started into /downloads/photo
+			// would legitimately conflict with a later one into /downloads.
+			server, _, _ := newTestServer(t)
+			accountID := createTestAccount(t, server)
 			resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs", map[string]any{
 				"accountId": accountID, "destPath": tc.dest, "sourcePath": tc.source,
 			})
@@ -1310,5 +1309,86 @@ func TestStateExposesSourcePaths(t *testing.T) {
 	paths, _ := job["sourcePaths"].([]any)
 	if len(paths) != 1 || paths[0] != "Фото" {
 		t.Fatalf("sourcePaths = %v", job["sourcePaths"])
+	}
+}
+
+func TestWidgetFormatsKilobytes(t *testing.T) {
+	server, st, _ := newTestServer(t)
+	if err := st.AddJob(store.Job{
+		ID: "running", Status: store.StatusRunning, CreatedAt: time.Now().UTC(),
+		Stats: store.Stats{Bytes: 1024, TotalBytes: 2048, Speed: 1024},
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	resp, body := doJSON(t, server.Client(), http.MethodGet, server.URL+"/api/widget", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	text, _ := body["text"].(string)
+	if !strings.Contains(text, "1,0 КБ из 2,0 КБ") || !strings.Contains(text, "1,0 КБ/с") {
+		t.Fatalf("text = %q", text)
+	}
+	if strings.ContainsRune(text, 'Ð') || strings.ContainsRune(text, '‘') {
+		t.Fatalf("text contains byte-sliced units: %q", text)
+	}
+}
+
+func TestPreflightUsesMaxTransferThreshold(t *testing.T) {
+	root := t.TempDir()
+	_, server, engine := newRootedServer(t, []string{root}, root)
+	accountID := createTestAccount(t, server)
+
+	free, err := disk.Free(root)
+	if err != nil || free == 0 {
+		t.Fatalf("free space: %d, %v", free, err)
+	}
+	preflight := func(bytes int64) bool {
+		t.Helper()
+		engine.setResponse("operations/size", map[string]any{"count": 1, "bytes": bytes})
+		resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/preflight", map[string]any{
+			"accountId": accountID, "sourcePath": "Фото", "destPath": root,
+		})
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+		}
+		fits, _ := body["fits"].(bool)
+		return fits
+	}
+
+	// 80% of the free space fits even with the 10% safety margin.
+	if !preflight(int64(disk.TransferLimit(free) * 8 / 10)) {
+		t.Fatal("a transfer well inside the limit must fit")
+	}
+	// 95% of the raw free space is more than rclone's 90% limit: the old code
+	// said "fits" because it compared against 100%.
+	if preflight(int64(free - free/20)) {
+		t.Fatal("a transfer above the 90% max-transfer limit must not fit")
+	}
+}
+
+func TestResumeRejectsInvalidStoredDest(t *testing.T) {
+	server, st, engine := newTestServer(t)
+	accountID := createTestAccount(t, server)
+	if err := st.AddJob(store.Job{
+		ID: "paused", AccountID: accountID, Source: "cf_x:",
+		Dest: "/etc/outside", Status: store.StatusInterrupted, CreatedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs/paused/resume", nil)
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	if message, _ := body["error"].(string); message == "" {
+		t.Fatalf("empty error: %v", body)
+	}
+	if got := engine.count("sync/copy"); got != 0 {
+		t.Fatalf("sync/copy calls = %d, want 0", got)
+	}
+	stored, _ := st.Job("paused")
+	if stored.Status != store.StatusInterrupted {
+		t.Fatalf("status = %q, want interrupted", stored.Status)
 	}
 }

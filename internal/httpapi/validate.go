@@ -267,6 +267,19 @@ func classifyValidateFailure(provider, stage string, err error) *validateFailure
 		}
 	}
 
+	// rclone refuses a token that has no refresh token: such a token cannot be
+	// renewed, so it reports "unable to get RefreshToken" instead of a 401.
+	if containsAny(message, "unable to get refreshtoken", "no refresh token", "refresh token is empty") {
+		return &validateFailure{
+			status:  http.StatusBadRequest,
+			code:    "auth_failed",
+			message: "Токен без возможности обновления. Вставьте полный JSON: access_token, refresh_token и expiry.",
+			field:   "token",
+			stage:   stage,
+			cause:   err,
+		}
+	}
+
 	if health.IsAuthError(message) || (provider == "yandex-token" && isTokenRejected(message)) {
 		failure := &validateFailure{
 			status:  http.StatusBadRequest,

@@ -59,6 +59,16 @@ func newCloudInformer(st *store.Store, engine Engine, now func() time.Time) *clo
 	return &cloudInformer{store: st, rc: engine, now: now, ttl: cloudInfoTTL}
 }
 
+// newestAccount returns the account the UI treats as the current one: the last
+// one created. Account order is creation order everywhere else, and the UI
+// picks the newest, so /api/system must report the same account.
+func newestAccount(accounts []store.Account) (store.Account, bool) {
+	if len(accounts) == 0 {
+		return store.Account{}, false
+	}
+	return accounts[len(accounts)-1], true
+}
+
 // snapshot returns the cached state immediately. A missing or outdated entry
 // keeps the last known status and is marked stale.
 func (c *cloudInformer) snapshot() cloudInfo {
@@ -66,10 +76,10 @@ func (c *cloudInformer) snapshot() cloudInfo {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if len(accounts) == 0 {
+	account, ok := newestAccount(accounts)
+	if !ok {
 		return cloudInfo{Status: cloudStatusEmpty, Stale: true}
 	}
-	account := accounts[0]
 	if !c.have || c.info.AccountID != account.ID {
 		return cloudInfo{
 			AccountID: account.ID,
@@ -88,10 +98,10 @@ func (c *cloudInformer) snapshot() cloudInfo {
 // never touches the network itself.
 func (c *cloudInformer) ensureRefresh() {
 	accounts := c.store.Accounts()
-	if len(accounts) == 0 {
+	account, ok := newestAccount(accounts)
+	if !ok {
 		return
 	}
-	account := accounts[0]
 
 	c.mu.Lock()
 	fresh := c.have && c.info.AccountID == account.ID && c.now().Sub(c.at) <= c.ttl
@@ -122,14 +132,14 @@ func (c *cloudInformer) refresh(ctx context.Context) {
 	accounts := c.store.Accounts()
 	now := c.now()
 	info := cloudInfo{Status: cloudStatusEmpty}
-	if len(accounts) == 0 {
+	account, ok := newestAccount(accounts)
+	if !ok {
 		c.mu.Lock()
 		c.info, c.have, c.at = info, false, now
 		c.mu.Unlock()
 		return
 	}
 
-	account := accounts[0]
 	info = cloudInfo{AccountID: account.ID, Name: account.Name, Provider: account.Provider}
 	var about struct {
 		Total int64 `json:"total"`

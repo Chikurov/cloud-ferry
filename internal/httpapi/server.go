@@ -606,11 +606,21 @@ func (s *Server) handlePreflight(w http.ResponseWriter, r *http.Request) {
 		free = value
 	}
 
+	// rclone stops at 90% of the free space (see transferLimit), so the
+	// preflight must use the same threshold: a transfer that fits into 100% of
+	// the free space but not into 90% would stop halfway. free == 0 means the
+	// filesystem could not be measured: the fit is unknown, so do not block
+	// the user.
+	fits := true
+	if free > 0 && size.Bytes > 0 {
+		fits = uint64(size.Bytes) <= disk.TransferLimit(free)
+	}
+
 	writeJSON(w, http.StatusOK, map[string]any{
 		"files": size.Count,
 		"bytes": size.Bytes,
 		"free":  free,
-		"fits":  free == 0 || uint64(size.Bytes) <= free,
+		"fits":  fits,
 	})
 }
 
@@ -700,6 +710,13 @@ func (s *Server) handleResumeJob(w http.ResponseWriter, r *http.Request) {
 	stored, ok := s.cfg.Store.Job(r.PathValue("id"))
 	if !ok {
 		writeError(w, http.StatusNotFound, "Скачивание не найдено. Обновите страницу.")
+		return
+	}
+	// The saved destination may have become unavailable or outside the allowed
+	// roots since the job was created (roots can change between restarts).
+	// Validate it before the job is claimed or rclone is launched.
+	if _, err := s.cleanDestPath(stored.Dest); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	ctx, cancel := contextWithTimeout(r, 90*time.Second)
@@ -900,11 +917,13 @@ func humanBytes(n int64) string {
 	if n < unit {
 		return fmt.Sprintf("%d Б", n)
 	}
-	units := "КМГТПЭ"
+	// A string of Cyrillic letters cannot be indexed by rune: units[exp] on a
+	// plain string reads one byte and prints garbage like "Ð". Keep a slice.
+	units := []string{"К", "М", "Г", "Т", "П", "Э"}
 	div, exp := int64(unit), 0
 	for v := n / unit; v >= unit && exp < len(units)-1; v /= unit {
 		div *= unit
 		exp++
 	}
-	return strings.Replace(fmt.Sprintf("%.1f %cБ", float64(n)/float64(div), units[exp]), ".", ",", 1)
+	return strings.Replace(fmt.Sprintf("%.1f %sБ", float64(n)/float64(div), units[exp]), ".", ",", 1)
 }

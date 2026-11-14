@@ -107,7 +107,12 @@ func TestCallRejectsMethodsOutsideAllowlist(t *testing.T) {
 	})
 
 	client := NewClient(socket, "", "")
-	for _, method := range []string{"core/command", "config/dump", "config/setpath", "operations/getfile", "mount/mount"} {
+	// The allowlist is deliberately small: methods the app does not use are
+	// removed from it, starting with the ones that never had a caller.
+	for _, method := range []string{
+		"core/command", "config/dump", "config/setpath", "operations/getfile", "mount/mount",
+		"job/list", "operations/fsinfo", "config/update", "config/listremotes", "config/providers",
+	} {
 		err := client.Call(context.Background(), method, nil, nil)
 		if !errors.Is(err, ErrMethodNotAllowed) {
 			t.Fatalf("%s: expected ErrMethodNotAllowed, got %v", method, err)

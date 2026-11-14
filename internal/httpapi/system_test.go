@@ -339,3 +339,37 @@ func TestSystemDoesNotBlockOnUpstream(t *testing.T) {
 		t.Fatalf("cloud after release = %v", cloud)
 	}
 }
+
+func TestCloudInformerUsesNewestAccount(t *testing.T) {
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	older := store.Account{
+		ID: "older", Name: "Старое", Provider: "yandex-token", Remote: "cf_older",
+		CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+	newer := store.Account{
+		ID: "newer", Name: "Новое", Provider: "webdav", Remote: "cf_newer",
+		CreatedAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+	for _, account := range []store.Account{older, newer} {
+		if err := st.AddAccount(account); err != nil {
+			t.Fatalf("add account: %v", err)
+		}
+	}
+	engine := &fakeEngine{responses: map[string]any{
+		"operations/about": map[string]any{"total": 1000, "used": 400, "free": 600},
+	}}
+	informer := newCloudInformer(st, engine, time.Now)
+	informer.refresh(context.Background())
+
+	snapshot := informer.snapshot()
+	if snapshot.AccountID != newer.ID || snapshot.Name != newer.Name || snapshot.Provider != newer.Provider {
+		t.Fatalf("snapshot identity = %+v, want the newest account", snapshot)
+	}
+	call, ok := engine.find("operations/about")
+	if !ok || call.input["fs"] != newer.Remote+":" {
+		t.Fatalf("operations/about call = %+v, want %s:", call, newer.Remote)
+	}
+}

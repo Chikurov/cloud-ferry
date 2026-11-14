@@ -45,6 +45,11 @@ func Explain(raw string) Explanation {
 			Title:  "Облако ограничило скорость",
 			Advice: "Подождите несколько минут и нажмите «Продолжить». Если повторится — уменьшите число одновременных файлов в настройках.",
 		}
+	case strings.Contains(lower, "max transfer") || strings.Contains(lower, "max-transfer"):
+		return Explanation{
+			Title:  "Скачивание остановилось из-за лимита места",
+			Advice: "Приложение останавливается, чтобы не занять весь диск. Освободите место и нажмите «Продолжить».",
+		}
 	case strings.Contains(lower, "enospc") || strings.Contains(lower, "no space left") || strings.Contains(lower, "insufficient storage"):
 		return Explanation{
 			Title:  "На сервере закончилось место",

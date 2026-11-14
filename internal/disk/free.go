@@ -30,6 +30,14 @@ func Free(path string) (uint64, error) {
 	return free, err
 }
 
+// TransferLimit returns the number of bytes a transfer may write into a
+// filesystem with free bytes available, leaving a tenth of them as a safety
+// margin. rclone uses the same value for --max-transfer, so a preflight check
+// and the actual start agree on whether the transfer fits.
+func TransferLimit(free uint64) uint64 {
+	return free - free/10
+}
+
 // existingDir walks up from path to the nearest directory that exists.
 func existingDir(path string) (string, error) {
 	dir := filepath.Clean(path)

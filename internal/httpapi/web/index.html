@@ -12,6 +12,12 @@
 <body>
   <div class="page-glow" aria-hidden="true"></div>
 
+  <noscript>
+    <div class="noscript" role="alert">
+      <p>Для работы Cloud Ferry нужен JavaScript. Включите его в настройках браузера и обновите страницу.</p>
+    </div>
+  </noscript>
+
   <div id="boot-view" class="boot" aria-busy="true">
     <span class="boot-spinner" aria-hidden="true"></span>
     <p class="boot-text">Загрузка…</p>
@@ -90,7 +96,7 @@
     <div class="folder-create" id="folder-create-panel" hidden>
       <div class="control folder-create-field">
         <label class="sr-only" for="folder-new-name">Новая папка</label>
-        <input id="folder-new-name" name="folderName" type="text" placeholder="Имя папки" autocomplete="off" spellcheck="false" autocapitalize="none" maxlength="255" aria-describedby="folder-create-error">
+        <input id="folder-new-name" name="folderName" type="text" placeholder="Имя папки" autocomplete="off" spellcheck="false" autocapitalize="none" maxlength="255">
         <p class="control-error" id="folder-create-error" role="alert" hidden></p>
       </div>
       <button class="btn btn--primary" type="button" id="folder-create-submit">Создать</button>

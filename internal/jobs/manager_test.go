@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"reflect"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"cloudferry/internal/rc"
 	"cloudferry/internal/store"
@@ -191,6 +193,170 @@ func TestRecoverMarksRunningAsInterrupted(t *testing.T) {
 	}
 }
 
+func TestResumeRejectsDestConflictWithActiveJob(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	account := store.Account{ID: "a1", Remote: "cf_a1"}
+	if _, err := manager.Start(context.Background(), account, Source{}, "/downloads/x", "copy"); err != nil {
+		t.Fatalf("first start: %v", err)
+	}
+	// A paused job into the same tree: Start would refuse this one, so it is
+	// seeded directly to model a job that was interrupted before the active one
+	// appeared.
+	if err := st.AddJob(store.Job{
+		ID: "paused", AccountID: "a1", Status: store.StatusInterrupted,
+		Source: "cf_a1:", Dest: "/downloads/x", Group: "migrate/paused", CreatedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("add paused job: %v", err)
+	}
+
+	before := fake.count("sync/copy")
+	_, err := manager.Resume(context.Background(), "paused")
+	if !errors.Is(err, ErrConflict) {
+		t.Fatalf("err = %v, want ErrConflict", err)
+	}
+	if got := fake.count("sync/copy"); got != before {
+		t.Fatalf("sync/copy calls = %d, want %d: a conflicting resume must not launch", got, before)
+	}
+	stored, _ := st.Job("paused")
+	if stored.Status != store.StatusInterrupted {
+		t.Fatalf("status = %q, want interrupted (job must not be claimed)", stored.Status)
+	}
+}
+
+func TestResumeRejectsNestedDestConflictWithActiveJob(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	if _, err := manager.Start(context.Background(), store.Account{ID: "a1", Remote: "cf_a1"}, Source{}, "/downloads/tree/sub", "copy"); err != nil {
+		t.Fatalf("first start: %v", err)
+	}
+	// The paused job would write into the parent of the active tree.
+	if err := st.AddJob(store.Job{
+		ID: "paused", AccountID: "a1", Status: store.StatusInterrupted,
+		Source: "cf_a1:", Dest: "/downloads/tree", Group: "migrate/paused", CreatedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("add paused job: %v", err)
+	}
+
+	before := fake.count("sync/copy")
+	if _, err := manager.Resume(context.Background(), "paused"); !errors.Is(err, ErrConflict) {
+		t.Fatalf("err = %v, want ErrConflict", err)
+	}
+	if got := fake.count("sync/copy"); got != before {
+		t.Fatalf("sync/copy calls = %d, want %d", got, before)
+	}
+}
+
+func TestRecoverFinalisesJobFinishedWhileDown(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	fake.responses["job/status"] = map[string]any{
+		"finished": true, "success": true, "executeId": "exec-1",
+		"output": map[string]any{"error": []string{}},
+	}
+	if err := st.AddJob(store.Job{
+		ID: "j1", Status: store.StatusRunning, RcloneJobID: 7, ExecuteID: "exec-1",
+		Source: "cf_a1:", Dest: "/downloads/yandex", Group: "migrate/j1",
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	if err := manager.Recover(); err != nil {
+		t.Fatalf("recover: %v", err)
+	}
+
+	stored, _ := st.Job("j1")
+	if stored.Status != store.StatusDone {
+		t.Fatalf("status = %q, error = %q", stored.Status, stored.Error)
+	}
+	if stored.FinishedAt.IsZero() {
+		t.Fatal("finishedAt is not set")
+	}
+}
+
+func TestRecoverFinishesFailedJobWithHint(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	fake.responses["job/status"] = map[string]any{
+		"finished": true, "success": false, "error": "error listing: [410 - GoneError] Gone",
+		"executeId": "exec-1",
+		"output":    map[string]any{"error": []string{"фото/a.jpg"}},
+	}
+	if err := st.AddJob(store.Job{
+		ID: "j1", Status: store.StatusRunning, RcloneJobID: 7, ExecuteID: "exec-1",
+		Source: "cf_a1:", Dest: "/downloads/yandex", Group: "migrate/j1",
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+	if err := manager.Recover(); err != nil {
+		t.Fatalf("recover: %v", err)
+	}
+
+	stored, _ := st.Job("j1")
+	if stored.Status != store.StatusFailed || stored.ErrorTitle == "" {
+		t.Fatalf("stored = %+v", stored)
+	}
+	if stored.FailureCount != 1 || len(stored.Failures) != 1 || stored.Failures[0] != "фото/a.jpg" {
+		t.Fatalf("failures = %+v", stored.Failures)
+	}
+}
+
+func TestRecoverLeavesRunningJobWhenRcloneUnavailable(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	fake.errors = map[string]error{"job/status": errors.New("connect: connection refused")}
+	if err := st.AddJob(store.Job{
+		ID: "j1", Status: store.StatusRunning, RcloneJobID: 7,
+		Source: "cf_a1:", Dest: "/downloads/yandex", Group: "migrate/j1",
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	if err := manager.Recover(); err != nil {
+		t.Fatalf("recover: %v", err)
+	}
+	stored, _ := st.Job("j1")
+	if stored.Status != store.StatusRunning {
+		t.Fatalf("status = %q, want running while rclone is unreachable", stored.Status)
+	}
+}
+
+func TestResumeRefusesWhenOldRcloneJobStillRuns(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	fake.responses["job/status"] = map[string]any{"finished": false, "executeId": "exec-1"}
+	if err := st.AddJob(store.Job{
+		ID: "j1", Status: store.StatusInterrupted, RcloneJobID: 7, ExecuteID: "exec-1",
+		Source: "cf_a1:", Dest: "/downloads/yandex", Group: "g",
+	}); err != nil {
+		t.Fatalf("add: %v", err)
+	}
+
+	_, err := manager.Resume(context.Background(), "j1")
+	if !errors.Is(err, ErrConflict) {
+		t.Fatalf("err = %v, want ErrConflict", err)
+	}
+	if got := fake.count("sync/copy"); got != 0 {
+		t.Fatalf("sync/copy calls = %d, want 0", got)
+	}
+}
+
+func TestResumeAllowsFinishedOldRcloneJob(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	fake.responses["job/status"] = map[string]any{"finished": true, "success": false, "executeId": "exec-1"}
+	if err := st.AddJob(store.Job{
+		ID: "j1", Status: store.StatusInterrupted, RcloneJobID: 7, ExecuteID: "exec-1",
+		Source: "cf_a1:", Dest: "/downloads/yandex", Group: "g",
+	}); err != nil {
+		t.Fatalf("add: %v", err)
+	}
+
+	resumed, err := manager.Resume(context.Background(), "j1")
+	if err != nil {
+		t.Fatalf("resume: %v", err)
+	}
+	if resumed.Status != store.StatusRunning {
+		t.Fatalf("status = %q", resumed.Status)
+	}
+	if got := fake.count("sync/copy"); got != 1 {
+		t.Fatalf("sync/copy calls = %d, want 1", got)
+	}
+}
+
 func TestCheckSummarisesResult(t *testing.T) {
 	manager, _, st := newTestManager(t)
 	job := store.Job{ID: "j1", Status: store.StatusDone, Source: "cf_a1:", Dest: "/downloads/yandex"}
@@ -311,7 +477,9 @@ func TestStopUnknownJob(t *testing.T) {
 
 func TestPollMarksJobInterruptedWhenRcloneLostIt(t *testing.T) {
 	manager, fake, st := newTestManager(t)
-	fake.errors = map[string]error{"job/status": errors.New("couldn't find job")}
+	// An rc API error means rclone answered and does not know this job: the
+	// transfer is really gone and the record must become interruptible.
+	fake.errors = map[string]error{"job/status": &rc.APIError{Method: "job/status", Status: http.StatusInternalServerError, Body: "couldn't find job"}}
 	if err := st.AddJob(store.Job{
 		ID: "j1", Status: store.StatusRunning, RcloneJobID: 7, Group: "migrate/j1",
 		Source: "cf_a1:", Dest: "/downloads/yandex",
@@ -329,6 +497,45 @@ func TestPollMarksJobInterruptedWhenRcloneLostIt(t *testing.T) {
 	}
 	if stored.ErrorAdvice == "" {
 		t.Fatal("expected advice on how to continue")
+	}
+	// The engine job is stopped before the record is declared interrupted, so
+	// a resume cannot start a second transfer into the same tree.
+	if got := fake.count("job/stop"); got != 1 {
+		t.Fatalf("job/stop calls = %d, want 1", got)
+	}
+}
+
+func TestPollKeepsJobRunningWhenRcloneIsUnavailable(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	fake.errors = map[string]error{"job/status": errors.New("dial unix /run/rclone/rclone.sock: connect: connection refused")}
+	if err := st.AddJob(store.Job{
+		ID: "j1", Status: store.StatusRunning, RcloneJobID: 7, Group: "migrate/j1",
+		Source: "cf_a1:", Dest: "/downloads/yandex",
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	for i := 0; i < maxStatusFailures*3; i++ {
+		manager.Poll(context.Background())
+	}
+
+	stored, _ := st.Job("j1")
+	if stored.Status != store.StatusRunning {
+		t.Fatalf("status = %q, want running after transport failures", stored.Status)
+	}
+	if got := fake.count("job/stop"); got != 0 {
+		t.Fatalf("job/stop calls = %d, want 0", got)
+	}
+
+	// When rclone answers again and has lost the job, the usual threshold
+	// still applies.
+	fake.errors["job/status"] = &rc.APIError{Method: "job/status", Status: http.StatusInternalServerError, Body: "couldn't find job"}
+	for i := 0; i < maxStatusFailures; i++ {
+		manager.Poll(context.Background())
+	}
+	stored, _ = st.Job("j1")
+	if stored.Status != store.StatusInterrupted {
+		t.Fatalf("status = %q, want interrupted after a real lost-job answer", stored.Status)
 	}
 }
 
@@ -768,9 +975,11 @@ func TestDestConflictCoversNesting(t *testing.T) {
 	}{
 		{"same", "/downloads/a", "/downloads/a", true},
 		{"child", "/downloads/a", "/downloads/a/b", true},
-		{"new dest is a parent of active", "/downloads/a/b", "/downloads/a", false},
+		{"new dest is a parent of active", "/downloads/a/b", "/downloads/a", true},
+		{"new dest is a grandparent of active", "/downloads/a/b/c", "/downloads/a", true},
 		{"sibling prefix", "/downloads/a", "/downloads/ab", false},
 		{"different", "/downloads/a", "/downloads/other", false},
+		{"sibling deep", "/downloads/a/b", "/downloads/a/c", false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -846,5 +1055,54 @@ func TestCheckWholeDiskJobHasNoFilter(t *testing.T) {
 	}
 	if _, exists := call["_filter"]; exists {
 		t.Fatalf("whole-disk check must not carry a filter: %#v", call)
+	}
+}
+
+func TestResumeRefusesMissingLegacySource(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	if err := st.AddJob(store.Job{
+		ID: "legacy", Status: store.StatusInterrupted, Source: "cf_a1:/Фото",
+		Dest: "/downloads/yandex", Group: "g", CreatedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+	fake.responses["operations/stat"] = map[string]any{"item": nil}
+
+	_, err := manager.Resume(context.Background(), "legacy")
+	if !errors.Is(err, ErrSourceNotFound) {
+		t.Fatalf("err = %v, want ErrSourceNotFound", err)
+	}
+	var notFound *SourceNotFoundError
+	if !errors.As(err, &notFound) || notFound.Path != "Фото" {
+		t.Fatalf("error does not name the folder: %v", err)
+	}
+	if stored, _ := st.Job("legacy"); stored.Status != store.StatusInterrupted {
+		t.Fatalf("status = %q, want interrupted", stored.Status)
+	}
+	if got := fake.count("sync/copy"); got != 0 {
+		t.Fatalf("sync/copy calls = %d, want 0", got)
+	}
+}
+
+func TestResumeResetsStartedAt(t *testing.T) {
+	manager, _, st := newTestManager(t)
+	oldStarted := time.Now().Add(-time.Hour).UTC()
+	if err := st.AddJob(store.Job{
+		ID: "j1", Status: store.StatusInterrupted, Source: "cf_a1:",
+		Dest: "/downloads/yandex", Group: "g", CreatedAt: oldStarted, StartedAt: oldStarted,
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	before := time.Now().UTC()
+	resumed, err := manager.Resume(context.Background(), "j1")
+	if err != nil {
+		t.Fatalf("resume: %v", err)
+	}
+	if !resumed.StartedAt.After(oldStarted) || resumed.StartedAt.Before(before.Add(-time.Second)) {
+		t.Fatalf("startedAt = %v, want the resume time (old %v)", resumed.StartedAt, oldStarted)
+	}
+	if !resumed.FinishedAt.IsZero() {
+		t.Fatalf("finishedAt = %v, want zero", resumed.FinishedAt)
 	}
 }

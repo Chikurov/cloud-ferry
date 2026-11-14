@@ -14,7 +14,7 @@ DOCKERFILE := Dockerfile
 OWNER ?= $(shell sed -n 's/^export OWNER="\(.*\)"$$/\1/p' $(EXPORTS))
 IMAGE ?= ghcr.io/$(OWNER)/cloud-ferry
 # One tag format everywhere: git tag v0.1.0, image tag 0.1.0, manifest 0.1.0.
-TAG ?= 0.2.1
+TAG ?= 0.2.2
 PLATFORMS ?= linux/amd64,linux/arm64
 RCLONE_DIGEST := sha256:7cbeec24a44f206067597c0368be4de90ae19a64d5113c7d1938bd737a81e466
 TAG_RE := $(subst .,\.,$(TAG))
@@ -22,7 +22,7 @@ TAG_RE := $(subst .,\.,$(TAG))
 .PHONY: help fmt vet test build run docker docker-push digest pin-digest set-owner check-version lint lint-images
 
 help:
-	@echo "make test         unit tests, no network and no rclone"
+	@echo "make test         unit tests with the race detector, no network and no rclone"
 	@echo "make build        binary in bin/cloudferry"
 	@echo "make run          run locally, rclone is spawned (SPAWN_RCLONE=true)"
 	@echo "make docker       build the image for the host platform"
@@ -40,7 +40,7 @@ vet:
 	GOCACHE=$(GOCACHE) GOMODCACHE=$(GOMODCACHE) go vet ./...
 
 test:
-	GOCACHE=$(GOCACHE) GOMODCACHE=$(GOMODCACHE) go test ./...
+	GOCACHE=$(GOCACHE) GOMODCACHE=$(GOMODCACHE) go test -race -count=1 ./...
 
 build:
 	GOCACHE=$(GOCACHE) GOMODCACHE=$(GOMODCACHE) go build -o bin/cloudferry ./cmd/cloudferry

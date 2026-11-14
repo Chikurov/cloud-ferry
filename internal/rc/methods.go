@@ -20,7 +20,6 @@ var allowedMethods = map[string]struct{}{
 	// jobs
 	"sync/copy":  {},
 	"sync/sync":  {},
-	"job/list":   {},
 	"job/status": {},
 	"job/stop":   {},
 
@@ -29,22 +28,18 @@ var allowedMethods = map[string]struct{}{
 	"core/version": {},
 
 	// browsing and sizing
-	"operations/list":   {},
-	"operations/stat":   {},
-	"operations/size":   {},
-	"operations/about":  {},
-	"operations/fsinfo": {},
+	"operations/list":  {},
+	"operations/stat":  {},
+	"operations/size":  {},
+	"operations/about": {},
 
 	// integrity
 	"operations/check": {},
 
 	// remotes
-	"config/create":      {},
-	"config/update":      {},
-	"config/delete":      {},
-	"config/get":         {},
-	"config/listremotes": {},
-	"config/providers":   {},
+	"config/create": {},
+	"config/delete": {},
+	"config/get":    {},
 }
 
 // Allowed reports whether method may be called.

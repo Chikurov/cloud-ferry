@@ -179,12 +179,16 @@ func remoteOf(source string) string {
 	return source
 }
 
-// destOverlapsActive reports whether a new destination is the same as, or
-// nested inside, an active one. Two transfers writing into one tree can delete
-// or overwrite each other, so the second one is refused.
+// destOverlapsActive reports whether a new destination and an active one are
+// the same folder or one contains the other. The nesting is checked in both
+// directions: a transfer into a parent tree also writes over the active one,
+// so a sync that deletes extra files can destroy it.
 func destOverlapsActive(dst, active string) bool {
 	dst, active = path.Clean(dst), path.Clean(active)
-	return dst == active || strings.HasPrefix(dst, active+"/")
+	if dst == active {
+		return true
+	}
+	return strings.HasPrefix(dst, active+"/") || strings.HasPrefix(active, dst+"/")
 }
 
 // Caller is the subset of the rclone client the manager needs.
@@ -233,7 +237,8 @@ func NewManager(st *store.Store, client Caller, opts Options) *Manager {
 }
 
 // Recover reconciles jobs that were running when the process died. A job whose
-// rclone counterpart still runs is reattached; everything else is marked
+// rclone counterpart still runs is reattached; a job that finished while the
+// app was down is finalised with its real result; everything else is marked
 // interrupted so the user can continue it.
 func (m *Manager) Recover() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -255,49 +260,81 @@ func (m *Manager) Recover() error {
 				return err
 			}
 		case store.StatusRunning:
-			if m.reattach(ctx, job) {
-				continue
-			}
-			if err := m.store.UpdateJob(job.ID, func(j *store.Job) bool {
-				if j.Status != store.StatusRunning {
-					return false
-				}
-				j.Status = store.StatusInterrupted
-				j.Error = "Приложение перезапустилось во время скачивания."
-				j.ErrorTitle = "Скачивание прервано"
-				j.ErrorAdvice = "Нажмите «Продолжить» — скачанные файлы не будут скачаны снова."
-				return true
-			}); err != nil {
-				return err
+			status, err := m.statusOf(ctx, job)
+			switch {
+			case errors.Is(err, errNoRcloneJob):
+				m.markInterrupted(job.ID, "Приложение перезапустилось во время скачивания.")
+			case rc.IsUnavailable(err):
+				// rclone is not reachable yet, so the transfer may still be
+				// running. Keep the record and let Poll reconcile it: the
+				// engine socket may simply not be ready at startup.
+				log.Printf("jobs: recover %s: rclone is unavailable (%v), leaving it running", job.ID, err)
+			case err != nil:
+				m.markInterrupted(job.ID, "Приложение перезапустилось во время скачивания.")
+			case status.Finished:
+				// rclone finished while the app was down: write the real
+				// result instead of pretending the transfer was interrupted.
+				m.finalize(job, status)
+			case !sameTransfer(job, status):
+				m.markInterrupted(job.ID, "Приложение перезапустилось во время скачивания.")
 			}
 		}
 	}
 	return nil
 }
 
-// reattach reports whether the rclone job behind job is still alive and
-// belongs to this record (same executeId).
-func (m *Manager) reattach(ctx context.Context, job store.Job) bool {
+// rcloneStatus is the subset of rclone's job/status the manager needs.
+type rcloneStatus struct {
+	Finished  bool            `json:"finished"`
+	Success   bool            `json:"success"`
+	Error     string          `json:"error"`
+	ExecuteID string          `json:"executeId"`
+	Output    json.RawMessage `json:"output"`
+}
+
+// errNoRcloneJob marks a stored job that has no engine job behind it.
+var errNoRcloneJob = errors.New("job has no rclone job id")
+
+// statusOf asks rclone about the engine job recorded on job.
+func (m *Manager) statusOf(ctx context.Context, job store.Job) (rcloneStatus, error) {
 	if job.RcloneJobID == 0 {
-		return false
+		return rcloneStatus{}, errNoRcloneJob
 	}
 	callCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	var status struct {
-		Finished  bool   `json:"finished"`
-		ExecuteID string `json:"executeId"`
+	var status rcloneStatus
+	err := m.rc.Call(callCtx, "job/status", map[string]any{"jobid": job.RcloneJobID}, &status)
+	return status, err
+}
+
+// sameTransfer reports whether an engine status answer belongs to job's own
+// transfer rather than to a reused job id from a restarted rclone.
+func sameTransfer(job store.Job, status rcloneStatus) bool {
+	return job.ExecuteID == "" || status.ExecuteID == "" || status.ExecuteID == job.ExecuteID
+}
+
+// reattach reports whether the rclone job behind job is still alive and
+// belongs to this record (same executeId).
+func (m *Manager) reattach(ctx context.Context, job store.Job) bool {
+	status, err := m.statusOf(ctx, job)
+	return err == nil && !status.Finished && sameTransfer(job, status)
+}
+
+// claimDest reserves a destination for one transfer. It reports ErrConflict
+// when another queued or running job already writes into an overlapping tree.
+// Reserve runs while createMu is held, so a concurrent Start or Resume cannot
+// pass the same check: the winner is persisted before the loser looks.
+func (m *Manager) claimDest(dst string, reserve func() error) error {
+	m.createMu.Lock()
+	defer m.createMu.Unlock()
+
+	for _, existing := range m.store.Jobs() {
+		if (existing.Status == store.StatusRunning || existing.Status == store.StatusQueued) && destOverlapsActive(dst, existing.Dest) {
+			return ErrConflict
+		}
 	}
-	if err := m.rc.Call(callCtx, "job/status", map[string]any{"jobid": job.RcloneJobID}, &status); err != nil {
-		return false
-	}
-	if status.Finished {
-		return false
-	}
-	if job.ExecuteID != "" && status.ExecuteID != "" && status.ExecuteID != job.ExecuteID {
-		return false
-	}
-	return true
+	return reserve()
 }
 
 // Start records the job before launching rclone: if the process dies between
@@ -332,18 +369,9 @@ func (m *Manager) Start(ctx context.Context, account store.Account, src Source, 
 		job.SourcePaths = append([]string(nil), src.Paths...)
 	}
 
-	m.createMu.Lock()
-	for _, existing := range m.store.Jobs() {
-		if (existing.Status == store.StatusRunning || existing.Status == store.StatusQueued) && destOverlapsActive(dstPath, existing.Dest) {
-			m.createMu.Unlock()
-			return store.Job{}, ErrConflict
-		}
-	}
-	if err := m.store.AddJob(job); err != nil {
-		m.createMu.Unlock()
+	if err := m.claimDest(dstPath, func() error { return m.store.AddJob(job) }); err != nil {
 		return store.Job{}, err
 	}
-	m.createMu.Unlock()
 
 	rcloneJobID, executeID, err := m.launch(ctx, job)
 	if err != nil {
@@ -383,34 +411,45 @@ func (m *Manager) Resume(ctx context.Context, id string) (store.Job, error) {
 			return store.Job{}, err
 		}
 	}
+	// The previous record may point at an rclone job that is still running:
+	// starting a second transfer into the same folder would corrupt it.
+	if m.reattach(ctx, job) {
+		return store.Job{}, ErrConflict
+	}
 
 	group := newGroup(id)
+	startedAt := time.Now().UTC()
 	claimed := false
-	err := m.store.UpdateJob(id, func(j *store.Job) bool {
-		if j.Status != store.StatusFailed && j.Status != store.StatusInterrupted && j.Status != store.StatusCanceled {
-			return false
+	err := m.claimDest(job.Dest, func() error {
+		if err := m.store.UpdateJob(id, func(j *store.Job) bool {
+			if j.Status != store.StatusFailed && j.Status != store.StatusInterrupted && j.Status != store.StatusCanceled {
+				return false
+			}
+			claimed = true
+			j.Status = store.StatusQueued
+			j.Group = group
+			j.RcloneJobID = 0
+			j.ExecuteID = ""
+			j.Error = ""
+			j.ErrorTitle = ""
+			j.ErrorAdvice = ""
+			j.Failures = nil
+			j.FailureCount = 0
+			j.Check = nil
+			j.StartedAt = startedAt
+			j.FinishedAt = time.Time{}
+			j.Stats = store.Stats{}
+			return true
+		}); err != nil {
+			return err
 		}
-		claimed = true
-		j.Status = store.StatusQueued
-		j.Group = group
-		j.RcloneJobID = 0
-		j.ExecuteID = ""
-		j.Error = ""
-		j.ErrorTitle = ""
-		j.ErrorAdvice = ""
-		j.Failures = nil
-		j.FailureCount = 0
-		j.Check = nil
-		j.StartedAt = time.Now().UTC()
-		j.FinishedAt = time.Time{}
-		j.Stats = store.Stats{}
-		return true
+		if !claimed {
+			return ErrConflict
+		}
+		return nil
 	})
 	if err != nil {
 		return store.Job{}, err
-	}
-	if !claimed {
-		return store.Job{}, ErrConflict
 	}
 
 	job.Group = group
@@ -595,18 +634,28 @@ func (m *Manager) pollOne(ctx context.Context, job store.Job) {
 		}
 	}
 
-	var status struct {
-		Finished  bool            `json:"finished"`
-		Success   bool            `json:"success"`
-		Error     string          `json:"error"`
-		ExecuteID string          `json:"executeId"`
-		Output    json.RawMessage `json:"output"`
+	// A stored job without an engine job cannot be followed: it is already
+	// gone, so there is nothing to stop and nothing to wait for.
+	if job.RcloneJobID == 0 {
+		m.markInterrupted(job.ID, "Скачивание прервалось: приложение перезапустилось.")
+		return
 	}
-	statusCtx, statusCancel := context.WithTimeout(ctx, 10*time.Second)
-	defer statusCancel()
-	if err := m.rc.Call(statusCtx, "job/status", map[string]any{"jobid": job.RcloneJobID}, &status); err != nil {
+
+	status, err := m.statusOf(ctx, job)
+	if err != nil {
+		if rc.IsUnavailable(err) {
+			// rclone itself is unreachable, but the transfer may still be
+			// writing files. A transport failure is not a lost transfer: keep
+			// the job running and retry on the next poll.
+			log.Printf("jobs: poll %s: rclone is unavailable: %v", job.ID, err)
+			return
+		}
 		if failures := m.bumpStatusError(job.ID); failures >= maxStatusFailures {
 			m.resetStatusError(job.ID)
+			// Stop the engine job before marking the record interrupted: if it
+			// is still transferring, a later resume would start a second copy
+			// into the same tree.
+			m.stopRclone(ctx, job.RcloneJobID)
 			m.markInterrupted(job.ID, "Скачивание прервалось: приложение перезапустилось.")
 		}
 		return
@@ -614,14 +663,20 @@ func (m *Manager) pollOne(ctx context.Context, job store.Job) {
 	m.resetStatusError(job.ID)
 
 	// A re-used job id from a restarted rclone belongs to a different transfer.
-	if job.ExecuteID != "" && status.ExecuteID != "" && status.ExecuteID != job.ExecuteID {
+	if !sameTransfer(job, status) {
 		m.markInterrupted(job.ID, "Скачивание прервалось: приложение перезапустилось.")
 		return
 	}
 	if !status.Finished {
 		return
 	}
+	m.finalize(job, status)
+}
 
+// finalize writes the terminal state of a job from the engine status answer.
+// Poll and Recover share it, so a transfer that finished while the app was down
+// lands in the same state as one that finished while it was running.
+func (m *Manager) finalize(job store.Job, status rcloneStatus) {
 	var report struct {
 		Error []string `json:"error"`
 	}
@@ -768,7 +823,7 @@ func transferLimit(dest string) (string, bool) {
 	if err != nil || free < 1<<30 {
 		return "", false
 	}
-	limit := free - free/10
+	limit := disk.TransferLimit(free)
 	if limit >= 1<<30 {
 		return fmt.Sprintf("%dG", limit/(1<<30)), true
 	}

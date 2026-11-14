@@ -56,3 +56,20 @@ func TestUsageWalksUpForMissingPath(t *testing.T) {
 		t.Fatal("free space exceeds total")
 	}
 }
+
+func TestTransferLimitKeepsTenPercent(t *testing.T) {
+	cases := []struct {
+		free uint64
+		want uint64
+	}{
+		{0, 0},
+		{10, 9},
+		{1 << 30, 1<<30 - (1<<30)/10},
+		{100 << 30, 90 << 30},
+	}
+	for _, tc := range cases {
+		if got := TransferLimit(tc.free); got != tc.want {
+			t.Fatalf("TransferLimit(%d) = %d, want %d", tc.free, got, tc.want)
+		}
+	}
+}

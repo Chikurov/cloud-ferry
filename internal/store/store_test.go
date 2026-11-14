@@ -1,6 +1,7 @@
 package store
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
@@ -314,5 +315,162 @@ func TestLegacyStateWithoutAccountLogin(t *testing.T) {
 	}
 	if strings.Contains(string(raw), `"login"`) {
 		t.Fatalf("empty login must stay omitted: %s", raw)
+	}
+}
+
+// TestFailedSaveLeavesMemoryUnchanged makes the data directory read-only and
+// checks that a failed save does not leave a half-applied change in memory.
+func TestFailedSaveLeavesMemoryUnchanged(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("permission checks are not enforced for root")
+	}
+	dir := t.TempDir()
+	st, err := Open(dir)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if err := st.AddAccount(Account{ID: "a1", CreatedAt: time.Now()}); err != nil {
+		t.Fatalf("add a1: %v", err)
+	}
+	if err := st.AddAccount(Account{ID: "a2", CreatedAt: time.Now()}); err != nil {
+		t.Fatalf("add a2: %v", err)
+	}
+	if err := st.AddJob(Job{ID: "j1", Status: StatusDone, CreatedAt: time.Now()}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	if err := os.Chmod(dir, 0o500); err != nil {
+		t.Fatalf("chmod: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+
+	if err := st.AddAccount(Account{ID: "a3", CreatedAt: time.Now()}); err == nil {
+		t.Fatal("AddAccount must fail without write permission")
+	}
+	if accounts := st.Accounts(); len(accounts) != 2 {
+		t.Fatalf("accounts after failed add = %+v", accounts)
+	}
+	if err := st.UpdateJob("j1", func(j *Job) bool { j.Status = StatusRunning; return true }); err == nil {
+		t.Fatal("UpdateJob must fail without write permission")
+	}
+	if job, _ := st.Job("j1"); job.Status != StatusDone {
+		t.Fatalf("job after failed update = %+v", job)
+	}
+	removed, err := st.DeleteAccount("a1")
+	if err == nil {
+		t.Fatal("DeleteAccount must fail without write permission")
+	}
+	if !removed {
+		t.Fatal("DeleteAccount should still report that the account exists")
+	}
+	if _, ok := st.Account("a1"); !ok {
+		t.Fatal("account disappeared after a failed delete")
+	}
+}
+
+func TestSnapshotDoesNotAliasStoredState(t *testing.T) {
+	st, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if err := st.AddJob(Job{
+		ID: "j1", Status: StatusDone, CreatedAt: time.Now(),
+		SourcePaths: []string{"A"}, Failures: []string{"a.jpg"},
+		Check: &CheckResult{Differ: 1},
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	_, jobs := st.Snapshot()
+	jobs[0].SourcePaths[0] = "hacked"
+	jobs[0].Failures[0] = "hacked"
+	jobs[0].Check.Differ = 99
+	jobs[0].Status = StatusRunning
+
+	stored, _ := st.Job("j1")
+	if stored.SourcePaths[0] != "A" || stored.Failures[0] != "a.jpg" {
+		t.Fatalf("snapshot aliases stored slices: %+v", stored)
+	}
+	if stored.Check.Differ != 1 || stored.Check == jobs[0].Check {
+		t.Fatalf("snapshot aliases stored check: %+v", stored.Check)
+	}
+	if stored.Status != StatusDone {
+		t.Fatalf("status = %q", stored.Status)
+	}
+
+	// UpdateJob hands the callback a copy as well: a rejected change must not
+	// leak into the live state.
+	if err := st.UpdateJob("j1", func(j *Job) bool {
+		j.SourcePaths[0] = "changed"
+		return false
+	}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	if stored, _ := st.Job("j1"); stored.SourcePaths[0] != "A" {
+		t.Fatalf("rejected update leaked: %+v", stored.SourcePaths)
+	}
+}
+
+func TestRecoveryFromBackupResavesAndKeepsBackup(t *testing.T) {
+	dir := t.TempDir()
+	st, err := Open(dir)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if err := st.AddAccount(Account{ID: "a1", CreatedAt: time.Now()}); err != nil {
+		t.Fatalf("add a1: %v", err)
+	}
+	if err := st.AddAccount(Account{ID: "a2", CreatedAt: time.Now()}); err != nil {
+		t.Fatalf("add a2: %v", err)
+	}
+	// state.json now has a1+a2, .bak has a1.
+	if err := os.WriteFile(dir+"/state.json", []byte("{not json"), 0o600); err != nil {
+		t.Fatalf("corrupt: %v", err)
+	}
+
+	reopened, err := Open(dir)
+	if err != nil {
+		t.Fatalf("open corrupt: %v", err)
+	}
+	if accounts := reopened.Accounts(); len(accounts) != 1 || accounts[0].ID != "a1" {
+		t.Fatalf("recovered accounts = %+v", accounts)
+	}
+
+	// The recovered state is written back at once.
+	raw, err := os.ReadFile(dir + "/state.json")
+	if err != nil {
+		t.Fatalf("read state: %v", err)
+	}
+	if !json.Valid(raw) {
+		t.Fatalf("state.json was not repaired: %s", raw)
+	}
+
+	// The unreadable state.json must never overwrite the good backup.
+	backup, err := os.ReadFile(dir + "/state.json.bak")
+	if err != nil {
+		t.Fatalf("read backup: %v", err)
+	}
+	if !json.Valid(backup) || strings.Contains(string(backup), "not json") {
+		t.Fatalf("backup was overwritten with the corrupt state: %s", backup)
+	}
+
+	// A later save refreshes the backup with the repaired state.
+	if err := reopened.AddAccount(Account{ID: "a3", CreatedAt: time.Now()}); err != nil {
+		t.Fatalf("add a3: %v", err)
+	}
+	raw, _ = os.ReadFile(dir + "/state.json")
+	backup, _ = os.ReadFile(dir + "/state.json.bak")
+	if !json.Valid(raw) || !json.Valid(backup) {
+		t.Fatalf("state or backup is invalid after the next save")
+	}
+	if !strings.Contains(string(backup), `"id": "a1"`) || strings.Contains(string(backup), `"id": "a3"`) {
+		t.Fatalf("backup does not hold the previous state: %s", backup)
+	}
+	again, err := Open(dir)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	if accounts := again.Accounts(); len(accounts) != 2 {
+		t.Fatalf("accounts after reopen = %+v", accounts)
 	}
 }

@@ -39,6 +39,11 @@ func TestExplainKnownPatterns(t *testing.T) {
 			title: "На сервере закончилось место",
 		},
 		{
+			name:  "max transfer limit",
+			raw:   "Max transfer limit reached as set by --max-transfer",
+			title: "Скачивание остановилось из-за лимита места",
+		},
+		{
 			name:  "long name",
 			raw:   "open /downloads/очень-длинное-имя: file name too long",
 			title: "Слишком длинное имя файла",

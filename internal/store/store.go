@@ -129,6 +129,13 @@ func Open(dir string) (*Store, error) {
 		// good copy, then to an empty state.
 		log.Printf("store: state is unreadable (%v), trying backup", err)
 		if backupErr := s.load(s.path + ".bak"); backupErr == nil {
+			// Persist the recovered state right away, so the next start does
+			// not read the corrupt file again. saveLocked refuses to copy the
+			// unreadable primary file into the backup, so the good .bak stays
+			// intact.
+			if saveErr := s.saveLocked(s.st); saveErr != nil {
+				log.Printf("store: save recovered state: %v", saveErr)
+			}
 			return s, nil
 		}
 		log.Printf("store: backup is unreadable too, starting empty")
@@ -149,7 +156,8 @@ func (s *Store) load(path string) error {
 	return json.Unmarshal(raw, &s.st)
 }
 
-// Snapshot returns a copy of the whole state.
+// Snapshot returns a copy of the whole state. Slices and pointers are copied
+// too, so a caller cannot mutate the live store through the returned value.
 func (s *Store) Snapshot() ([]Account, []Job) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -157,8 +165,26 @@ func (s *Store) Snapshot() ([]Account, []Job) {
 	accounts := make([]Account, len(s.st.Accounts))
 	copy(accounts, s.st.Accounts)
 	jobs := make([]Job, len(s.st.Jobs))
-	copy(jobs, s.st.Jobs)
+	for i := range s.st.Jobs {
+		jobs[i] = cloneJob(s.st.Jobs[i])
+	}
 	return accounts, jobs
+}
+
+// cloneJob copies the reference fields of a job so the result shares no
+// mutable memory with the stored record.
+func cloneJob(j Job) Job {
+	if j.SourcePaths != nil {
+		j.SourcePaths = append([]string(nil), j.SourcePaths...)
+	}
+	if j.Failures != nil {
+		j.Failures = append([]string(nil), j.Failures...)
+	}
+	if j.Check != nil {
+		check := *j.Check
+		j.Check = &check
+	}
+	return j
 }
 
 // Accounts returns all accounts sorted by creation time.
@@ -179,16 +205,25 @@ func (s *Store) Account(id string) (Account, bool) {
 	return Account{}, false
 }
 
-// AddAccount stores a new account.
+// AddAccount stores a new account. The change is built as a new state, saved,
+// and only then committed to memory: a failed write leaves the store unchanged.
 func (s *Store) AddAccount(a Account) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.st.Accounts = append(s.st.Accounts, a)
-	return s.saveLocked()
+	accounts := make([]Account, len(s.st.Accounts)+1)
+	copy(accounts, s.st.Accounts)
+	accounts[len(s.st.Accounts)] = a
+	next := state{Accounts: accounts, Jobs: s.st.Jobs}
+	if err := s.saveLocked(next); err != nil {
+		return err
+	}
+	s.st = next
+	return nil
 }
 
-// UpdateAccount mutates one account and persists the change.
+// UpdateAccount mutates one account and persists the change. fn works on a
+// copy: when the save fails, the in-memory account keeps its old value.
 func (s *Store) UpdateAccount(id string, fn func(*Account) bool) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -197,10 +232,19 @@ func (s *Store) UpdateAccount(id string, fn func(*Account) bool) error {
 		if s.st.Accounts[i].ID != id {
 			continue
 		}
-		if !fn(&s.st.Accounts[i]) {
+		updated := s.st.Accounts[i]
+		if !fn(&updated) {
 			return nil
 		}
-		return s.saveLocked()
+		accounts := make([]Account, len(s.st.Accounts))
+		copy(accounts, s.st.Accounts)
+		accounts[i] = updated
+		next := state{Accounts: accounts, Jobs: s.st.Jobs}
+		if err := s.saveLocked(next); err != nil {
+			return err
+		}
+		s.st = next
+		return nil
 	}
 	return os.ErrNotExist
 }
@@ -211,10 +255,18 @@ func (s *Store) DeleteAccount(id string) (bool, error) {
 	defer s.mu.Unlock()
 
 	for i, a := range s.st.Accounts {
-		if a.ID == id {
-			s.st.Accounts = append(s.st.Accounts[:i], s.st.Accounts[i+1:]...)
-			return true, s.saveLocked()
+		if a.ID != id {
+			continue
 		}
+		accounts := make([]Account, 0, len(s.st.Accounts)-1)
+		accounts = append(accounts, s.st.Accounts[:i]...)
+		accounts = append(accounts, s.st.Accounts[i+1:]...)
+		next := state{Accounts: accounts, Jobs: s.st.Jobs}
+		if err := s.saveLocked(next); err != nil {
+			return true, err
+		}
+		s.st = next
+		return true, nil
 	}
 	return false, nil
 }
@@ -224,22 +276,30 @@ func (s *Store) AddJob(j Job) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.st.Jobs = append(s.st.Jobs, j)
-	s.pruneLocked()
-	return s.saveLocked()
+	jobs := make([]Job, 0, len(s.st.Jobs)+1)
+	jobs = append(jobs, s.st.Jobs...)
+	jobs = append(jobs, j)
+	jobs = pruneJobs(jobs)
+	next := state{Accounts: s.st.Accounts, Jobs: jobs}
+	if err := s.saveLocked(next); err != nil {
+		return err
+	}
+	s.st = next
+	return nil
 }
 
 // maxJobs bounds the stored history so the state file and the API response do
 // not grow forever. Active jobs are always kept.
 const maxJobs = 100
 
-func (s *Store) pruneLocked() {
-	if len(s.st.Jobs) <= maxJobs {
-		return
+// pruneJobs bounds the job history without touching the input slice.
+func pruneJobs(jobs []Job) []Job {
+	if len(jobs) <= maxJobs {
+		return jobs
 	}
-	finished := make([]Job, 0, len(s.st.Jobs))
-	active := make([]Job, 0, len(s.st.Jobs))
-	for _, job := range s.st.Jobs {
+	finished := make([]Job, 0, len(jobs))
+	active := make([]Job, 0, len(jobs))
+	for _, job := range jobs {
 		switch job.Status {
 		case StatusRunning, StatusQueued, StatusVerifying:
 			active = append(active, job)
@@ -255,7 +315,7 @@ func (s *Store) pruneLocked() {
 	if len(finished) > keep {
 		finished = finished[:keep]
 	}
-	s.st.Jobs = append(active, finished...)
+	return append(active, finished...)
 }
 
 // Job returns one job by id.
@@ -277,7 +337,8 @@ func (s *Store) Jobs() []Job {
 }
 
 // UpdateJob applies fn to the job with id and persists the result when fn
-// reports a change.
+// reports a change. fn works on a deep copy: a failed save leaves the stored
+// job untouched.
 func (s *Store) UpdateJob(id string, fn func(*Job) bool) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -286,16 +347,27 @@ func (s *Store) UpdateJob(id string, fn func(*Job) bool) error {
 		if s.st.Jobs[i].ID != id {
 			continue
 		}
-		if !fn(&s.st.Jobs[i]) {
+		updated := cloneJob(s.st.Jobs[i])
+		if !fn(&updated) {
 			return nil
 		}
-		return s.saveLocked()
+		jobs := make([]Job, len(s.st.Jobs))
+		copy(jobs, s.st.Jobs)
+		jobs[i] = updated
+		next := state{Accounts: s.st.Accounts, Jobs: jobs}
+		if err := s.saveLocked(next); err != nil {
+			return err
+		}
+		s.st = next
+		return nil
 	}
 	return os.ErrNotExist
 }
 
-func (s *Store) saveLocked() error {
-	payload, err := json.MarshalIndent(s.st, "", "  ")
+// saveLocked persists st atomically. The caller commits st to memory only when
+// this returns nil.
+func (s *Store) saveLocked(st state) error {
+	payload, err := json.MarshalIndent(st, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal state: %w", err)
 	}
@@ -306,21 +378,25 @@ func (s *Store) saveLocked() error {
 	}
 	if _, err := file.Write(payload); err != nil {
 		file.Close()
+		os.Remove(tmp)
 		return fmt.Errorf("write state: %w", err)
 	}
 	if err := file.Sync(); err != nil {
 		file.Close()
+		os.Remove(tmp)
 		return fmt.Errorf("sync state: %w", err)
 	}
 	if err := file.Close(); err != nil {
+		os.Remove(tmp)
 		return fmt.Errorf("close state: %w", err)
 	}
 	if _, err := os.Stat(s.path); err == nil {
-		if err := copyFile(s.path, s.path+".bak"); err != nil {
+		if err := backupFile(s.path, s.path+".bak"); err != nil {
 			log.Printf("store: backup: %v", err)
 		}
 	}
 	if err := os.Rename(tmp, s.path); err != nil {
+		os.Remove(tmp)
 		return fmt.Errorf("replace state: %w", err)
 	}
 	if dir, err := os.Open(filepath.Dir(s.path)); err == nil {
@@ -330,10 +406,16 @@ func (s *Store) saveLocked() error {
 	return nil
 }
 
-func copyFile(from, to string) error {
+// backupFile keeps a copy of the current state, but only when it is readable
+// JSON. After recovery the primary file is corrupt; copying it would destroy
+// the last good backup.
+func backupFile(from, to string) error {
 	data, err := os.ReadFile(from)
 	if err != nil {
 		return err
+	}
+	if len(data) > 0 && !json.Valid(data) {
+		return errors.New("current state is unreadable, keeping the previous backup")
 	}
 	return os.WriteFile(to, data, 0o600)
 }
