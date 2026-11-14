@@ -35,9 +35,13 @@ const (
 
 // Account is a configured cloud remote.
 type Account struct {
-	ID         string    `json:"id"`
-	Name       string    `json:"name"`
-	Provider   string    `json:"provider"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Provider string `json:"provider"`
+	// Login is the provider login shown to the user, e.g. the WebDAV user
+	// name. It is empty for providers that expose no login and is simply
+	// absent in state files written by older versions.
+	Login      string    `json:"login,omitempty"`
 	Remote     string    `json:"remote"`
 	CreatedAt  time.Time `json:"createdAt"`
 	Status     string    `json:"status,omitempty"`

@@ -89,6 +89,46 @@ func (s *Server) defaultDestRoot() string {
 	return path.Clean(s.cfg.DestRoots[0])
 }
 
+type createDirRequest struct {
+	Path string `json:"path"`
+}
+
+// handleFSCreateDir creates one folder on the server inside the allowed roots.
+// The parent must already exist: this is a single mkdir, not a recursive one.
+func (s *Server) handleFSCreateDir(w http.ResponseWriter, r *http.Request) {
+	var req createDirRequest
+	if err := decodeJSON(r, &req); err != nil {
+		s.badRequest(w, err)
+		return
+	}
+	created, err := fsbrowse.Mkdir(s.cfg.DestRoots, req.Path)
+	if err != nil {
+		s.fsMkdirError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]string{"path": created})
+}
+
+func (s *Server) fsMkdirError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, fsbrowse.ErrInvalidPath):
+		writeError(w, http.StatusBadRequest, "Укажите полный путь на сервере, например /downloads.")
+	case errors.Is(err, fsbrowse.ErrOutsideRoots):
+		writeError(w, http.StatusForbidden,
+			fmt.Sprintf("В эту папку создавать нельзя. Доступные папки: %s.", strings.Join(s.cfg.DestRoots, ", ")))
+	case errors.Is(err, fsbrowse.ErrSymlink):
+		writeError(w, http.StatusForbidden, "Эта папка ведёт за пределы доступной. Выберите другую.")
+	case errors.Is(err, fsbrowse.ErrNotFound):
+		writeError(w, http.StatusNotFound, "Папка не найдена. Выберите существующую папку и создайте новую внутри неё.")
+	case errors.Is(err, fsbrowse.ErrNotDir):
+		writeError(w, http.StatusBadRequest, "Это файл, а не папка.")
+	case errors.Is(err, fsbrowse.ErrExists):
+		writeError(w, http.StatusConflict, "Папка уже существует.")
+	default:
+		s.fail(w, http.StatusInternalServerError, "Не удалось создать папку на сервере. Проверьте, что диск подключён.", err)
+	}
+}
+
 func (s *Server) fsBrowseError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, fsbrowse.ErrInvalidPath):

@@ -1,5 +1,5 @@
-// Package fsbrowse lists destination directories without leaving the
-// configured roots. Every filesystem access after validation goes through
+// Package fsbrowse lists and creates destination directories without leaving
+// the configured roots. Every filesystem access after validation goes through
 // os.Root, so neither ".." nor a symlink can point outside a root.
 package fsbrowse
 
@@ -35,6 +35,7 @@ var (
 	ErrNotFound        = errors.New("path not found")
 	ErrNotDir          = errors.New("path is not a directory")
 	ErrSymlink         = errors.New("path uses a symlink")
+	ErrExists          = errors.New("path already exists")
 )
 
 // Entry is one subdirectory of a listing. Path is absolute and includes the
@@ -111,6 +112,63 @@ func ValidateDest(roots []string, dest string) (string, error) {
 		return "", err
 	}
 	resolved.close()
+	return resolved.absolute, nil
+}
+
+// Mkdir creates exactly one directory inside one of roots and returns its
+// cleaned absolute path. The parent must already exist: this is a single
+// mkdir, never a recursive one, so a typo in the middle of the path fails with
+// ErrNotFound instead of silently creating a tree. An existing directory
+// returns ErrExists; an existing file returns ErrNotDir.
+func Mkdir(roots []string, requested string) (string, error) {
+	resolved, err := resolve(roots, requested, true)
+	if err != nil {
+		return "", err
+	}
+	defer resolved.close()
+	if resolved.root == nil {
+		return "", fmt.Errorf("%w: %s", ErrRootUnavailable, resolved.rootPath)
+	}
+
+	rel := resolved.rel
+	if rel == "" {
+		return "", ErrExists
+	}
+	root := resolved.root
+
+	// resolve accepted the missing tail; make sure everything before it is an
+	// existing directory so only the last component is created.
+	if parent := path.Dir(rel); parent != "." {
+		info, statErr := root.Stat(parent)
+		if statErr != nil {
+			return "", pathError(statErr)
+		}
+		if !info.IsDir() {
+			return "", ErrNotDir
+		}
+	}
+
+	info, err := root.Lstat(rel)
+	switch {
+	case err == nil:
+		switch {
+		case info.Mode()&fs.ModeSymlink != 0:
+			return "", ErrSymlink
+		case info.IsDir():
+			return "", ErrExists
+		default:
+			return "", ErrNotDir
+		}
+	case !errors.Is(err, fs.ErrNotExist):
+		return "", fmt.Errorf("inspect %s: %w", resolved.absolute, err)
+	}
+
+	if err := root.Mkdir(rel, 0o755); err != nil {
+		if errors.Is(err, fs.ErrExist) {
+			return "", ErrExists
+		}
+		return "", fmt.Errorf("create %s: %w", resolved.absolute, err)
+	}
 	return resolved.absolute, nil
 }
 

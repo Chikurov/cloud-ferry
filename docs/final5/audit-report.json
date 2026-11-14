@@ -1,0 +1,534 @@
+{
+  "generatedAt": "2026-11-14T17:11:20.924Z",
+  "environment": {
+    "browser": "Chrome 157.0.8103.79 headless via CDP",
+    "server": "deterministic Node mock of the Go API (POST /api/fs/dirs contract)",
+    "viewports": [
+      "1000x780",
+      "390x844"
+    ]
+  },
+  "total": {
+    "checks": 102,
+    "passed": 102,
+    "failed": 0
+  },
+  "errors": {
+    "jsExceptions": 0,
+    "consoleErrorsHappyPath": 0,
+    "failedNetworkHappyPath": 0,
+    "runErrors": []
+  },
+  "checks": [
+    {
+      "name": "setup: одно поле логина name=username autocomplete=username",
+      "ok": true,
+      "detail": "{\"form\":true,\"userName\":\"username\",\"userAutocomplete\":\"username\",\"userSpellcheck\":\"false\",\"userInputmode\":\"text\",\"passName\":\"password\",\"passType\":\"password\",\"passAutocomplete\":\"current-password\",\"pass"
+    },
+    {
+      "name": "setup: поле пароля name=password autocomplete=current-password",
+      "ok": true,
+      "detail": "current-password"
+    },
+    {
+      "name": "setup: поля без spellcheck/autocorrect, inputmode=text",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup: форма и кнопка показа пароля",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup: токен по умолчанию скрыт",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup: ссылка «Вставить готовый токен»",
+      "ok": true,
+      "detail": "Вставить готовый токен"
+    },
+    {
+      "name": "setup: «Отмена» — secondary",
+      "ok": true,
+      "detail": "btn btn--secondary"
+    },
+    {
+      "name": "setup: нет OAuth-текстов и полей client id/secret",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "«Отмена»: явный бордер и фон",
+      "ok": true,
+      "detail": "{\"border\":\"1px solid\",\"bg\":\"rgb(255, 255, 255)\",\"opacity\":\"1\",\"backLeft\":265,\"nextRight\":735,\"backCy\":639.5,\"nextCy\":639.5,\"vw\":1000}"
+    },
+    {
+      "name": "футер мастера: Отмена слева, Подключиться справа, на одной линии",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-1 1000x780: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "setup-1 1000x780: console clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-1 1000x780: network clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "токен: ссылка «где взять токен» ведёт на oauth.yandex.ru/инструкцию",
+      "ok": true,
+      "detail": "https://yandex.ru/dev/id/doc/ru/tokens,https://oauth.yandex.ru/"
+    },
+    {
+      "name": "токен: требование JSON access_token/refresh_token/expiry с примером",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "токен: предупреждение «для продвинутых»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "токен: textarea вместо кнопки «Вставить»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-1-token 1000x780: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "после подключения открыт шаг 2 «Папка на сервере»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "POST /api/accounts получил provider=webdav и логин",
+      "ok": true,
+      "detail": "{\"name\":\"Яндекс Диск\",\"provider\":\"webdav\",\"url\":\"https://webdav.yandex.ru\",\"user\":\"artem\",\"password\":\"app-password\"}"
+    },
+    {
+      "name": "пикер сервера: кнопка «Создать папку» видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "пикер сервера: кнопка «Отмена» secondary с бордером и фоном",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "создание: кнопка-триггер скрыта, пока открыто поле",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "создание: пустое имя — понятная ошибка",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "создание: «..» отклоняется клиентом",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "создание: «/» отклоняется клиентом",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "создание: невалидные имена не дошли до API",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-2 1000x780: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "setup-2: поле и кнопки создания в диалоге видны",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "футер диалога: «Отмена» и «Выбрать папку» на одной линии и в экране",
+      "ok": true,
+      "detail": "{\"sameLine\":true,\"gap\":8,\"inside\":true}"
+    },
+    {
+      "name": "создание: POST /api/fs/dirs с абсолютным путём",
+      "ok": true,
+      "detail": "{\"path\":\"/downloads/фото\"}"
+    },
+    {
+      "name": "создание: папка создана и открыта",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "после создания папка подставлена в поле шага 2",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-2 1000x780: console clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-2 1000x780: network clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "успех: крупно «Готово»",
+      "ok": true,
+      "detail": "Готово 24px"
+    },
+    {
+      "name": "успех: «Подключено как artem»",
+      "ok": true,
+      "detail": "Подключено как artem\n\nФайлы будут скачиваться в выбранную папку на сервере."
+    },
+    {
+      "name": "успех: следующий шаг «Перейти к скачиванию»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "шаг 3: «Изменить папку» — secondary",
+      "ok": true,
+      "detail": "Изменить папку"
+    },
+    {
+      "name": "шаг 3: «Изменить папку» слева, «Перейти к скачиванию» справа",
+      "ok": true,
+      "detail": "{\"cardL\":264,\"cardR\":736,\"backL\":265,\"nextR\":735,\"sameRow\":true}"
+    },
+    {
+      "name": "setup-3 1000x780: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "setup-3 1000x780: console clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-3 1000x780: network clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "шапка: чип показывает логин, а не «Яндекс Диск»",
+      "ok": true,
+      "detail": "{\"text\":\"artem\",\"title\":\"Аккаунт: artem\"}"
+    },
+    {
+      "name": "home 1000x780: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "home 1000x780: console clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1000x780: network clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1000x780: после перезагрузки чип логина из /api/state",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup: одно поле логина name=username autocomplete=username",
+      "ok": true,
+      "detail": "{\"form\":true,\"userName\":\"username\",\"userAutocomplete\":\"username\",\"userSpellcheck\":\"false\",\"userInputmode\":\"text\",\"passName\":\"password\",\"passType\":\"password\",\"passAutocomplete\":\"current-password\",\"pass"
+    },
+    {
+      "name": "setup: поле пароля name=password autocomplete=current-password",
+      "ok": true,
+      "detail": "current-password"
+    },
+    {
+      "name": "setup: поля без spellcheck/autocorrect, inputmode=text",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup: форма и кнопка показа пароля",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup: токен по умолчанию скрыт",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup: ссылка «Вставить готовый токен»",
+      "ok": true,
+      "detail": "Вставить готовый токен"
+    },
+    {
+      "name": "setup: «Отмена» — secondary",
+      "ok": true,
+      "detail": "btn btn--secondary"
+    },
+    {
+      "name": "setup: нет OAuth-текстов и полей client id/secret",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "«Отмена»: явный бордер и фон",
+      "ok": true,
+      "detail": "{\"border\":\"1px solid\",\"bg\":\"rgb(255, 255, 255)\",\"opacity\":\"1\",\"backLeft\":33,\"nextRight\":357,\"backCy\":698.5,\"nextCy\":698.5,\"vw\":390}"
+    },
+    {
+      "name": "футер мастера: Отмена слева, Подключиться справа, на одной линии",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-1 390x844: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "setup-1 390x844: console clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-1 390x844: network clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "токен: ссылка «где взять токен» ведёт на oauth.yandex.ru/инструкцию",
+      "ok": true,
+      "detail": "https://yandex.ru/dev/id/doc/ru/tokens,https://oauth.yandex.ru/"
+    },
+    {
+      "name": "токен: требование JSON access_token/refresh_token/expiry с примером",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "токен: предупреждение «для продвинутых»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "токен: textarea вместо кнопки «Вставить»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-1-token 390x844: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "после подключения открыт шаг 2 «Папка на сервере»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "POST /api/accounts получил provider=webdav и логин",
+      "ok": true,
+      "detail": "{\"name\":\"Яндекс Диск\",\"provider\":\"webdav\",\"url\":\"https://webdav.yandex.ru\",\"user\":\"artem\",\"password\":\"app-password\"}"
+    },
+    {
+      "name": "пикер сервера: кнопка «Создать папку» видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "пикер сервера: кнопка «Отмена» secondary с бордером и фоном",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "создание: кнопка-триггер скрыта, пока открыто поле",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "создание: пустое имя — понятная ошибка",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "создание: «..» отклоняется клиентом",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "создание: «/» отклоняется клиентом",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "создание: невалидные имена не дошли до API",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-2 390x844: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "setup-2: поле и кнопки создания в диалоге видны",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "футер диалога: «Отмена» и «Выбрать папку» на одной линии и в экране",
+      "ok": true,
+      "detail": "{\"sameLine\":true,\"gap\":8,\"inside\":true}"
+    },
+    {
+      "name": "создание: POST /api/fs/dirs с абсолютным путём",
+      "ok": true,
+      "detail": "{\"path\":\"/downloads/фото\"}"
+    },
+    {
+      "name": "создание: папка создана и открыта",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "после создания папка подставлена в поле шага 2",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-2 390x844: console clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-2 390x844: network clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "успех: крупно «Готово»",
+      "ok": true,
+      "detail": "Готово 24px"
+    },
+    {
+      "name": "успех: «Подключено как artem»",
+      "ok": true,
+      "detail": "Подключено как artem\n\nФайлы будут скачиваться в выбранную папку на сервере."
+    },
+    {
+      "name": "успех: следующий шаг «Перейти к скачиванию»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "шаг 3: «Изменить папку» — secondary",
+      "ok": true,
+      "detail": "Изменить папку"
+    },
+    {
+      "name": "шаг 3: «Изменить папку» слева, «Перейти к скачиванию» справа",
+      "ok": true,
+      "detail": "{\"cardL\":32,\"cardR\":358,\"backL\":33,\"nextR\":357,\"sameRow\":false}"
+    },
+    {
+      "name": "setup-3 390x844: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "setup-3 390x844: console clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-3 390x844: network clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "шапка: чип показывает логин, а не «Яндекс Диск»",
+      "ok": true,
+      "detail": "{\"text\":\"artem\",\"title\":\"Аккаунт: artem\"}"
+    },
+    {
+      "name": "home 390x844: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "home 390x844: console clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390x844: network clean",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390x844: после перезагрузки чип логина из /api/state",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "home (no-create): чип логина из /api/state",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no-create: кнопка «Создать папку» видна до запроса",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no-create: при 404/405 кнопка скрыта",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no-create: пояснение в футере диалога",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no-create: JS-исключений нет (ожидаемый HTTP 405 не в счёт)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no-create: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    }
+  ]
+}

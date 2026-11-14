@@ -30,7 +30,8 @@ const ICON_PATHS = {
   close: '<path d="m6.5 6.5 11 11m0-11-11 11"/>',
   clock: '<circle cx="12" cy="12" r="8.2"/><path d="M12 7.6V12l2.8 1.7"/>',
   key: '<circle cx="8" cy="12" r="3.4"/><path d="M11.4 12H20m-3 0v3m-3-3v2"/>',
-  phone: '<rect x="7" y="3" width="10" height="18" rx="3"/><path d="M11 18h2"/>',
+  eye: '<path d="M2.8 12S6.3 6.4 12 6.4 21.2 12 21.2 12 17.7 17.6 12 17.6 2.8 12 2.8 12Z"/><circle cx="12" cy="12" r="2.6"/>',
+  eyeOff: '<path d="m4 4 16 16"/><path d="M9.9 6.7A10.7 10.7 0 0 1 12 6.4c5.7 0 9.2 5.6 9.2 5.6a15.6 15.6 0 0 1-3.2 3.4M6.5 8.5A15 15 0 0 0 2.8 12s3.5 5.6 9.2 5.6c1.2 0 2.3-.3 3.3-.7"/>',
   code: '<path d="m9 8-4 4 4 4m6-8 4 4-4 4"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   folder: '<path d="M4 7a2 2 0 0 1 2-2h3.6l2 2H18a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z"/>',
@@ -47,16 +48,19 @@ function icon(name, extraClass = '') {
 /* --- state ---------------------------------------------------------------- */
 
 let state = { accounts: [], jobs: [], downloads: '/downloads', roots: [] };
+/* Логин аккаунта, который знает UI: backend может не отдавать login у старых
+   подключений, поэтому запоминаем его после подключения или probe. */
+const accountLogins = new Map();
 let system = { roots: [] };
 let wizard = {
   step: 0,
   method: 'webdav',
   dest: '/downloads',
   accountID: '',
+  login: '',
   fields: {},
   openedFromMenu: false,
 };
-let device = { id: null, timer: null, userCode: '', verificationUrl: '', expiresIn: 0 };
 let preferredDest = '';
 let homeMode = '';
 let lastStatuses = null;
@@ -85,7 +89,13 @@ let folder = {
   loading: false,
   error: null,
   opener: null,
+  createOpen: false,
+  createBusy: false,
+  createUnavailable: false,
 };
+/* Создание папок появляется вместе с POST /api/fs/dirs. Если сервер этой
+   ручки не знает (404/405), кнопку убираем до перезагрузки страницы. */
+let folderCreateUnavailable = false;
 let folderToken = 0;
 
 /* Selected cloud folders (paths relative to the cloud root, sorted). An empty
@@ -180,6 +190,20 @@ const shortPath = (path) => {
 const currentAccount = () => (state.accounts.length ? state.accounts[state.accounts.length - 1] : null);
 const statusOf = (job) => JOB_STATUS[job.status] || [job.status, ''];
 
+/* Логин — из ответа API, иначе из того, что UI запомнил при подключении/probe.
+   Пустая строка значит «неизвестно»: чип остаётся нейтральным. */
+function accountLogin(account) {
+  if (!account) return '';
+  const known = accountLogins.get(account.id) || '';
+  const raw = account.login || account.user || account.username || known || '';
+  return String(raw).trim();
+}
+
+function accountLabel(account) {
+  if (!account) return '';
+  return accountLogin(account) || account.name || 'Яндекс Диск';
+}
+
 function friendlyError(error) {
   const message = displayPath(String((error && error.message) || error || ''));
   return !message || /^HTTP \d+$/.test(message) ? 'Сервер не ответил. Попробуйте ещё раз.' : message;
@@ -257,8 +281,7 @@ function serverFieldTarget(scope, error) {
   if (byID && scope.contains(byID)) return byID;
   const map = {
     user: 'f-user', login: 'f-user', password: 'f-pass', pass: 'f-pass',
-    token: 'f-token', client: 'f-client', clientId: 'f-client',
-    secret: 'f-secret', clientSecret: 'f-secret',
+    token: 'f-token',
     destPath: 'dest-path', dest: 'dest-path', path: 'dest-path',
     sourcePath: 'source-summary', sourcePaths: 'source-summary', source: 'source-summary',
   };
@@ -446,6 +469,10 @@ async function bootAgain() {
 async function loadData() {
   const [snapshot, sys] = await Promise.all([api('/api/state'), api('/api/system').catch(() => null)]);
   state = snapshot || { accounts: [], jobs: [], downloads: '/downloads' };
+  for (const account of state.accounts || []) {
+    const login = accountLogin(account);
+    if (login) accountLogins.set(account.id, login);
+  }
   if (sys) system = sys;
   syncJobNotifications();
   setOffline(false);
@@ -473,7 +500,6 @@ function route() {
   const offline = $('#offline-view');
   if (offline) offline.hidden = true;
   if (hash === '#/setup') { showSetup(); return; }
-  stopDevice(true);
   showApp();
   render();
 }
@@ -494,71 +520,74 @@ function showSetup() {
     method: 'webdav',
     dest: preferredDest || state.downloads || '/downloads',
     accountID: '',
+    login: '',
     fields: {},
     openedFromMenu: !!account,
     announcedStep: -1,
   };
-  device = { id: null, timer: null, userCode: '', verificationUrl: '', expiresIn: 0 };
   homeMode = '';
   renderSetup();
 }
 
 /* --- setup wizard --------------------------------------------------------- */
 
-const METHODS = [
-  { id: 'webdav', icon: icon('key'), title: 'Пароль приложения' },
-  { id: 'yandex-oauth', icon: icon('phone'), title: 'Войти через Яндекс' },
-  { id: 'yandex-token', icon: icon('code'), title: 'Токен' },
-];
+/* Два способа входа: пароль приложения — основной, токен — вторичный и
+   раскрывается ссылкой. Входа через Яндекс (OAuth/код устройства) в UI нет. */
+const SETUP_METHODS = {
+  webdav: 'Логин и пароль приложения',
+  'yandex-token': 'Токен',
+};
 
 function setupFieldValue(name) {
   return escapeHtml(wizard.fields[name] || '');
 }
 
-function methodFields() {
-  if (wizard.method === 'webdav') {
-    return `
+function methodHeadline(iconName, title, note) {
+  return `
+    <div class="method-head">
+      <span class="method-icon" aria-hidden="true">${icon(iconName)}</span>
+      <div class="method-text">
+        <p class="method-title">${escapeHtml(title)}</p>
+        <p class="method-note">${escapeHtml(note)}</p>
+      </div>
+    </div>`;
+}
+
+function loginFields() {
+  return `
+    <form class="setup-form" id="setup-form" novalidate autocomplete="on">
+      ${methodHeadline('key', SETUP_METHODS.webdav, 'Пароль создаётся в Яндекс ID и хранится на сервере.')}
       <div class="control">
         <label class="control-label" for="f-user">Логин</label>
-        <input id="f-user" autocomplete="username" placeholder="Логин на Яндексе" value="${setupFieldValue('user')}">
+        <input id="f-user" name="username" autocomplete="username" inputmode="text" spellcheck="false" autocapitalize="none" autocorrect="off" placeholder="Логин на Яндексе" value="${setupFieldValue('user')}">
       </div>
       <div class="control">
         <label class="control-label" for="f-pass">Пароль приложения</label>
-        <input id="f-pass" type="password" placeholder="Из Яндекс ID" value="${setupFieldValue('pass')}">
-      </div>
-      <p class="note">Способ работает только на тарифе <strong>Яндекс 360</strong>. Создайте пароль в <a href="https://id.yandex.ru/security/app-passwords" target="_blank" rel="noreferrer">Яндекс ID → Безопасность → Пароли приложений</a>, тип «Файлы WebDAV». Пароль начнёт действовать через 2–3 часа — если вход не удался сразу, повторите позже.</p>`;
-  }
-  if (wizard.method === 'yandex-oauth') {
-    const waiting = !!device.id;
-    const expires = Number(device.expiresIn) > 0 ? Math.max(1, Math.round(Number(device.expiresIn) / 60)) : 10;
-    const panel = waiting ? `
-      <div class="device-panel" aria-live="polite">
-        <span class="note">Код для входа</span>
-        <div class="device-code" id="device-code">${escapeHtml(device.userCode)}</div>
-        <p class="note">Откройте <a id="device-link" href="${escapeHtml(device.verificationUrl || 'https://oauth.yandex.ru/device')}" target="_blank" rel="noreferrer">oauth.yandex.ru/device</a> и введите код. Он действует ${expires}\u00A0мин.</p>
-        <div class="device-wait">
-          <span class="note" role="status">Ждём подтверждение…</span>
-          <button class="btn btn--ghost btn--sm" type="button" id="device-cancel">Отменить</button>
+        <div class="field-with-action">
+          <input id="f-pass" name="password" type="password" autocomplete="current-password" inputmode="text" spellcheck="false" autocapitalize="none" autocorrect="off" placeholder="Из Яндекс ID" value="${setupFieldValue('pass')}">
+          <button class="field-action" type="button" id="f-pass-toggle" aria-label="Показать пароль" aria-pressed="false" title="Показать пароль">${icon('eye')}</button>
         </div>
-      </div>` : '';
-    return `
-      <p class="note">Нужно своё OAuth-приложение: создайте его на <a href="https://oauth.yandex.ru/" target="_blank" rel="noreferrer">oauth.yandex.ru</a> (тип «для авторизации пользователей»). В правах включите <code>cloud_api:disk.read</code> и <code>cloud_api:disk.info</code>, Redirect URI — <code>https://oauth.yandex.ru/verification_code</code>. ID и секрет приложения — в его карточке.</p>
-      <div class="control">
-        <label class="control-label" for="f-client">ID приложения</label>
-        <input id="f-client" placeholder="ac39b43b…" value="${setupFieldValue('client')}"${waiting ? ' disabled' : ''}>
       </div>
-      <div class="control">
-        <label class="control-label" for="f-secret">Секрет приложения</label>
-        <input id="f-secret" type="password" value="${setupFieldValue('secret')}"${waiting ? ' disabled' : ''}>
-      </div>
-      ${panel}`;
-  }
+      <p class="note">Способ работает только на тарифе <strong>Яндекс 360</strong>. Создайте пароль в <a href="https://id.yandex.ru/security/app-passwords" target="_blank" rel="noreferrer">Яндекс ID → Безопасность → Пароли приложений</a>, тип «Файлы WebDAV». Пароль начнёт действовать через 2–3 часа — если вход не удался сразу, повторите позже.</p>
+    </form>
+    <button class="method-link" type="button" data-method="yandex-token">${icon('code')}Вставить готовый токен</button>`;
+}
+
+function tokenFields() {
   return `
+    ${methodHeadline('code', SETUP_METHODS['yandex-token'], 'Для продвинутых — вместо пароля приложения.')}
+    <div class="notice">Токен даёт полный доступ к вашему Диску. Вставляйте только свой токен и не передавайте его никому.</div>
+    <p class="note">Где взять: <a href="https://yandex.ru/dev/id/doc/ru/tokens" target="_blank" rel="noreferrer">инструкция Яндекс ID по токенам</a> или <a href="https://oauth.yandex.ru/" target="_blank" rel="noreferrer">oauth.yandex.ru</a>. Нужен полный JSON-ответ, а не одна строка доступа.</p>
     <div class="control">
       <label class="control-label" for="f-token">Токен (JSON)</label>
-      <textarea id="f-token" rows="4" spellcheck="false" placeholder='{"access_token":"…","refresh_token":"…","expiry":"…"}'>${setupFieldValue('token')}</textarea>
+      <textarea id="f-token" name="token" rows="4" spellcheck="false" autocapitalize="none" autocorrect="off" autocomplete="off" aria-describedby="token-format" placeholder='{"access_token":"…","refresh_token":"…","expiry":"2026-11-14T20:00:00Z"}'>${setupFieldValue('token')}</textarea>
     </div>
-    <p class="note">Вставьте полный JSON из OAuth-ответа Яндекса, а не только <code>access_token</code>: в нём должны быть <code>access_token</code>, <code>refresh_token</code> и <code>expiry</code>. Без refresh_token доступ перестанет обновляться.</p>`;
+    <p class="note" id="token-format">В JSON должны быть <code>access_token</code>, <code>refresh_token</code> и <code>expiry</code>. Без refresh_token доступ перестанет обновляться.</p>
+    <button class="method-link" type="button" data-method="webdav">${icon('key')}Вернуться к логину и паролю</button>`;
+}
+
+function methodFields() {
+  return wizard.method === 'yandex-token' ? tokenFields() : loginFields();
 }
 
 const STEP_TITLES = ['Подключение', 'Папка на сервере', 'Готово'];
@@ -567,19 +596,11 @@ function setupStepBody() {
   if (wizard.step === 0) {
     const account = currentAccount();
     const notice = wizard.openedFromMenu && account
-      ? `<p class="notice">Сейчас подключён «${escapeHtml(account.name)}». Новое подключение заменит его — останется один аккаунт.</p>`
+      ? `<p class="notice">Сейчас подключён «${escapeHtml(accountLabel(account))}». Новое подключение заменит его — останется один аккаунт.</p>`
       : '';
     return `
       <h1 class="setup-title" id="setup-title" tabindex="-1">${STEP_TITLES[0]}</h1>
       ${notice}
-      <div class="choices" role="group" aria-label="Способ подключения">
-        ${METHODS.map((method) => `
-          <button type="button" class="choice ${wizard.method === method.id ? 'is-active' : ''}" data-method="${method.id}" aria-pressed="${wizard.method === method.id}">
-            <span class="choice-icon" aria-hidden="true">${method.icon}</span>
-            <span class="choice-title">${method.title}</span>
-            <span class="choice-mark" aria-hidden="true"></span>
-          </button>`).join('')}
-      </div>
       <div class="setup-fields" id="setup-fields">${methodFields()}</div>`;
   }
   if (wizard.step === 1) {
@@ -592,10 +613,19 @@ function setupStepBody() {
         </div>
       </div>`;
   }
+  const login = String(wizard.login || '').trim();
+  const accountText = login ? `Подключено как ${escapeHtml(login)}` : 'Яндекс Диск подключён';
   return `
-    <h1 class="setup-title" id="setup-title" tabindex="-1">${STEP_TITLES[2]}</h1>
+    <h1 class="setup-title setup-title--done" id="setup-title" tabindex="-1">${STEP_TITLES[2]}</h1>
+    <div class="done-hero">
+      <span class="done-icon" aria-hidden="true">${icon('check')}</span>
+      <div class="done-text">
+        <p class="done-line">${accountText}</p>
+        <p class="done-note">Файлы будут скачиваться в выбранную папку на сервере.</p>
+      </div>
+    </div>
     <div class="summary">
-      <div class="summary-row"><span>Аккаунт</span><strong>Яндекс Диск</strong></div>
+      <div class="summary-row"><span>Аккаунт</span><strong>${login ? escapeHtml(login) : 'Яндекс Диск'}</strong></div>
       <div class="summary-row"><span>Папка</span><strong title="${escapeHtml(displayPath(wizard.dest))}">${escapeHtml(displayPath(wizard.dest))}</strong></div>
     </div>`;
 }
@@ -626,7 +656,6 @@ function renderSetup(options = {}) {
     back.textContent = 'Изменить папку';
     next.textContent = 'Перейти к скачиванию';
   }
-  if (device.id) setBusy(next, true);
   if (wizard.announcedStep !== wizard.step) {
     wizard.announcedStep = wizard.step;
     announce(`Шаг ${wizard.step + 1} из 3: ${STEP_TITLES[wizard.step]}`);
@@ -644,7 +673,7 @@ function focusSetupTitle() {
 function setupError(message) { $('#setup-error').textContent = message || ''; }
 
 function saveSetupFields() {
-  const map = { 'f-user': 'user', 'f-pass': 'pass', 'f-client': 'client', 'f-secret': 'secret', 'f-token': 'token' };
+  const map = { 'f-user': 'user', 'f-pass': 'pass', 'f-token': 'token' };
   for (const [id, key] of Object.entries(map)) {
     const element = document.getElementById(id);
     if (element) wizard.fields[key] = element.value;
@@ -656,11 +685,14 @@ function saveSetupFields() {
 function chooseMethod(method) {
   if (!method || method === wizard.method) return;
   saveSetupFields();
-  if (device.id) stopDevice(true);
+  const tokenMode = method === 'yandex-token';
   wizard.method = method;
   renderSetup({ focusTitle: false });
-  const active = $(`#setup-body .choice[data-method="${method}"]`);
-  if (active) active.focus({ preventScroll: true });
+  const target = tokenMode
+    ? document.getElementById('f-token')
+    : document.getElementById('f-user');
+  if (target) target.focus({ preventScroll: true });
+  announce(tokenMode ? 'Вход по токену' : 'Вход по логину и паролю приложения');
 }
 
 async function enforceSingleAccount(keepID) {
@@ -682,14 +714,18 @@ async function enforceSingleAccount(keepID) {
 }
 
 async function finishConnect(account) {
-  stopDevice(false);
   wizard.accountID = account.id;
+  const enteredLogin = wizard.method === 'webdav' ? String(wizard.fields.user || '').trim() : '';
+  const login = accountLogin(account) || enteredLogin;
+  wizard.login = login;
+  if (login) accountLogins.set(account.id, login);
   try { await loadData(); } catch { /* the wizard stays usable */ }
   await enforceSingleAccount(account.id);
   wizard.step = 1;
   renderSetup();
-  showToast({ type: 'ok', title: 'Яндекс Диск подключён' });
-  announce('Яндекс Диск подключён');
+  const title = login ? `Подключено как ${login}` : 'Яндекс Диск подключён';
+  showToast({ type: 'ok', title, message: login ? '' : 'Можно выбирать папку для скачивания.' });
+  announce(title);
   lastCloudAttempt = 0;
   ensureCloudUsage(true);
 }
@@ -730,79 +766,25 @@ async function connectCloud() {
   await finishConnect(account);
 }
 
-async function startDevice() {
-  if (device.id) return;
-  clearFieldErrors($('#setup-body'));
-  const clientId = (wizard.fields.client || '').trim();
-  const clientSecret = (wizard.fields.secret || '').trim();
-  if (!clientId) { setFieldError($('#f-client'), 'Укажите ID приложения.'); return; }
-  if (!clientSecret) { setFieldError($('#f-secret'), 'Укажите секрет приложения.'); return; }
+/* Один путь подключения: форма шага 1 (submit или кнопка) вызывает runConnect. */
+async function runConnect() {
   const next = $('#setup-next');
+  if (next && next.disabled) return;
+  setupError('');
+  saveSetupFields();
+  const scope = $('#setup-body');
   setBusy(next, true);
+  setupBusy = true;
   try {
-    const data = await api('/api/oauth/yandex/device/start', { method: 'POST', body: JSON.stringify({
-      name: 'Яндекс Диск', clientId, clientSecret }) });
-    device = {
-      id: data.flowId,
-      timer: null,
-      userCode: data.userCode || '',
-      verificationUrl: data.verificationUrl || 'https://oauth.yandex.ru/device',
-      expiresIn: Number(data.expiresIn) || 0,
-    };
-    renderSetup({ focusTitle: false });
-    setBusy($('#setup-next'), true);
-    announce(`Код для входа: ${device.userCode || ''}. Откройте oauth.yandex.ru/device и введите код.`);
-    pollDevice(data.interval || 5);
+    await connectCloud();
   } catch (error) {
-    setBusy(next, false);
-    const target = serverFieldTarget($('#setup-body'), error);
+    const target = serverFieldTarget(scope, error);
     if (target) setFieldError(target, friendlyError(error));
     else setupError(friendlyError(error));
+  } finally {
+    setupBusy = false;
+    if (wizard.step === 0) setBusy($('#setup-next'), false);
   }
-}
-
-function stopDevice(notifyServer) {
-  clearTimeout(device.timer);
-  const flow = device.id;
-  device = { id: null, timer: null, userCode: '', verificationUrl: '', expiresIn: 0 };
-  if (notifyServer && flow) api(`/api/oauth/yandex/device/${encodeURIComponent(flow)}`, { method: 'DELETE' }).catch(() => {});
-}
-
-function cancelDevice() {
-  stopDevice(true);
-  renderSetup({ focusTitle: false });
-  announce('Вход по коду отменён');
-  const next = $('#setup-next');
-  if (next) next.focus({ preventScroll: true });
-}
-
-function pollDevice(seconds) {
-  clearTimeout(device.timer);
-  device.timer = setTimeout(async () => {
-    if (!device.id) return;
-    const flow = device.id;
-    try {
-      const data = await api(`/api/oauth/yandex/device/${encodeURIComponent(flow)}`);
-      if (!device.id || flow !== device.id) return;
-      if (data.status === 'pending') { pollDevice(5); return; }
-      if (data.status === 'error') {
-        stopDevice(false);
-        renderSetup({ focusTitle: false });
-        setupError(data.message || 'Вход не удался. Попробуйте ещё раз.');
-        const next = $('#setup-next');
-        if (next) next.focus({ preventScroll: true });
-        return;
-      }
-      if (data.status === 'done') { await finishConnect(data.account); return; }
-      if (data.status === 'canceled') { stopDevice(false); renderSetup({ focusTitle: false }); }
-    } catch (error) {
-      stopDevice(false);
-      renderSetup({ focusTitle: false });
-      setupError(friendlyError(error));
-      const next = $('#setup-next');
-      if (next) next.focus({ preventScroll: true });
-    }
-  }, seconds * 1000);
 }
 
 async function onSetupNext() {
@@ -810,22 +792,14 @@ async function onSetupNext() {
   if (next && next.disabled) return;
   setupError('');
   saveSetupFields();
-  const scope = $('#setup-body');
   if (wizard.step === 0) {
-    if (wizard.method === 'yandex-oauth') { await startDevice(); return; }
-    const next = $('#setup-next');
-    setBusy(next, true);
-    setupBusy = true;
-    try {
-      await connectCloud();
-    } catch (error) {
-      const target = serverFieldTarget(scope, error);
-      if (target) setFieldError(target, friendlyError(error));
-      else setupError(friendlyError(error));
-    } finally {
-      setupBusy = false;
-      if (wizard.step === 0) setBusy($('#setup-next'), false);
+    /* Пароль отправляем через настоящую форму: так менеджер паролей видит
+       отправку и предлагает сохранить вход. Для токена формы нет. */
+    if (wizard.method === 'webdav') {
+      const form = document.getElementById('setup-form');
+      if (form && typeof form.requestSubmit === 'function') { form.requestSubmit(); return; }
     }
+    await runConnect();
     return;
   }
   if (wizard.step === 1) {
@@ -851,7 +825,6 @@ function onSetupBack() {
   if (setupBusy) return;
   setupError('');
   if (wizard.step === 0) {
-    stopDevice(true);
     location.hash = '#/';
     return;
   }
@@ -859,6 +832,20 @@ function onSetupBack() {
   if (wizard.step === 1) { wizard.step = 0; renderSetup(); return; }
   wizard.step = 1;
   renderSetup();
+}
+
+/* Показ/скрытие пароля: type переключается на месте, autocomplete сохраняется. */
+function togglePassword() {
+  const input = document.getElementById('f-pass');
+  const button = document.getElementById('f-pass-toggle');
+  if (!input || !button) return;
+  const reveal = input.type === 'password';
+  input.type = reveal ? 'text' : 'password';
+  button.setAttribute('aria-pressed', reveal ? 'true' : 'false');
+  button.setAttribute('aria-label', reveal ? 'Скрыть пароль' : 'Показать пароль');
+  button.title = reveal ? 'Скрыть пароль' : 'Показать пароль';
+  button.innerHTML = icon(reveal ? 'eyeOff' : 'eye');
+  input.focus({ preventScroll: true });
 }
 
 /* --- header: account chip and menu ---------------------------------------- */
@@ -872,10 +859,11 @@ function renderHeader() {
     return;
   }
   if (wrap) wrap.hidden = false;
+  const label = accountLabel(account);
   const name = $('#account-chip-name');
-  if (name) name.textContent = account.name || 'Яндекс Диск';
+  if (name) name.textContent = label;
   const chip = $('#account-chip');
-  if (chip) chip.title = account.name || 'Яндекс Диск';
+  if (chip) chip.title = accountLogin(account) ? `Аккаунт: ${label}` : label;
 }
 
 function openMenu(focus = 'first') {
@@ -929,6 +917,10 @@ async function probeFromMenu(item) {
   try {
     const data = await api(`/api/accounts/${encodeURIComponent(account.id)}/probe`, { method: 'POST' });
     const about = data.about || {};
+    if (data.knownUser && data.login) {
+      const probed = String(data.login).trim();
+      if (probed) accountLogins.set(account.id, probed);
+    }
     if (Number(about.total) > 0 || Number(about.used) > 0) {
       cloudUsage = { used: Number(about.used) || 0, total: Number(about.total) || 0, checkedAt: Date.now() };
     }
@@ -1879,6 +1871,9 @@ function openFolderDialog(target, opener) {
     nodes: new Map(),
     limitError: '',
     finished: false,
+    createOpen: false,
+    createBusy: false,
+    createUnavailable: folderCreateUnavailable,
   };
   folderToken += 1;
   updateFolderChrome();
@@ -2081,6 +2076,135 @@ function renderFolderFooter() {
       free.hidden = true;
       free.textContent = '';
     }
+  }
+  updateFolderCreateUI();
+}
+
+/* Создание папки: кнопка живёт в футере пикера, поле — инлайн-строкой.
+   POST /api/fs/dirs появился позже первого релиза, поэтому 404/405 считаем
+   «сервер не умеет» и прячем кнопку до перезагрузки страницы. */
+function folderCreateAvailable() {
+  return folder.target === 'server'
+    && !folder.createUnavailable
+    && !folder.error
+    && folder.writable !== false;
+}
+
+function updateFolderCreateUI() {
+  const trigger = $('#folder-create');
+  const panel = $('#folder-create-panel');
+  if (!trigger || !panel) return;
+  const available = folderCreateAvailable();
+  trigger.hidden = !available || folder.createOpen;
+  if (!available && folder.createOpen && !folder.createBusy) folder.createOpen = false;
+  panel.hidden = !(available && folder.createOpen);
+  if (!available) return;
+  trigger.disabled = folder.loading || folder.createBusy;
+  if (!folder.createOpen) return;
+  const input = document.getElementById('folder-new-name');
+  const submit = $('#folder-create-submit');
+  const cancel = $('#folder-create-cancel');
+  if (input) input.disabled = folder.createBusy;
+  if (submit) setBusy(submit, folder.createBusy);
+  if (cancel) cancel.disabled = folder.createBusy;
+}
+
+function clearFolderCreateError() {
+  const input = document.getElementById('folder-new-name');
+  const node = document.getElementById('folder-create-error');
+  if (input) {
+    input.removeAttribute('aria-invalid');
+    const control = input.closest('.control');
+    if (control) control.classList.remove('has-error');
+  }
+  if (node) { node.hidden = true; node.textContent = ''; }
+}
+
+function setFolderCreateError(message) {
+  const input = document.getElementById('folder-new-name');
+  const node = document.getElementById('folder-create-error');
+  if (input) {
+    input.setAttribute('aria-invalid', 'true');
+    const control = input.closest('.control');
+    if (control) control.classList.add('has-error');
+  }
+  if (node) { node.textContent = message || ''; node.hidden = !message; }
+}
+
+/* Имя — только одна папка: без разделителей пути, «.»/«..» и без пустоты. */
+function validateFolderName(value) {
+  const name = String(value || '').trim();
+  if (!name) return 'Введите имя папки.';
+  if (name === '.' || name === '..') return 'Имя не может быть «.» или «..».';
+  if (/[\\/]/.test(name)) return 'В имени не может быть «/» или «\\».';
+  if (/[\u0000-\u001f]/.test(name)) return 'В имени есть недопустимые символы.';
+  if (name.length > 255) return 'Имя длиннее 255 символов.';
+  return '';
+}
+
+function joinServerPath(base, name) {
+  const clean = String(base || '/').replace(/\/+$/, '');
+  return clean ? `${clean}/${name}` : `/${name}`;
+}
+
+function openFolderCreate() {
+  if (!folderCreateAvailable()) return;
+  folder.createOpen = true;
+  folder.limitError = '';
+  clearFolderCreateError();
+  const input = document.getElementById('folder-new-name');
+  if (input) input.value = '';
+  renderFolderDialog();
+  const field = document.getElementById('folder-new-name');
+  if (field) field.focus({ preventScroll: true });
+  announce('Введите имя новой папки');
+}
+
+function closeFolderCreate(restoreFocus = true) {
+  if (folder.createBusy) return;
+  folder.createOpen = false;
+  clearFolderCreateError();
+  renderFolderDialog();
+  if (!restoreFocus) return;
+  const trigger = $('#folder-create');
+  if (trigger && !trigger.hidden) trigger.focus({ preventScroll: true });
+  else focusFolderContent();
+}
+
+async function createFolder() {
+  if (!folderCreateAvailable() || folder.createBusy) return;
+  const input = document.getElementById('folder-new-name');
+  const raw = input ? input.value : '';
+  const invalid = validateFolderName(raw);
+  if (invalid) { setFolderCreateError(invalid); if (input) input.focus({ preventScroll: true }); return; }
+  const name = String(raw).trim();
+  const target = joinServerPath(folder.path || folderRootPath(), name);
+  clearFolderCreateError();
+  folder.createBusy = true;
+  renderFolderDialog();
+  try {
+    const data = await api('/api/fs/dirs', { method: 'POST', body: JSON.stringify({ path: target }) });
+    const created = data && data.path ? String(data.path) : target;
+    folder.createBusy = false;
+    folder.createOpen = false;
+    folder.limitError = '';
+    announce(`Папка «${name}» создана`);
+    /* Перечитываем список и открываем новую папку: она сразу выбрана. */
+    await loadFolder(created, true);
+  } catch (error) {
+    folder.createBusy = false;
+    if (error && (error.status === 404 || error.status === 405)) {
+      folderCreateUnavailable = true;
+      folder.createUnavailable = true;
+      folder.createOpen = false;
+      folder.limitError = 'Создание папок недоступно на этом сервере.';
+      renderFolderDialog();
+      return;
+    }
+    renderFolderDialog();
+    setFolderCreateError(friendlyError(error));
+    const field = document.getElementById('folder-new-name');
+    if (field) field.focus({ preventScroll: true });
   }
 }
 
@@ -2376,14 +2500,19 @@ $('#setup-body').addEventListener('input', (event) => {
   saveSetupFields();
   setupError('');
 });
+$('#setup-body').addEventListener('submit', (event) => {
+  if (!event.target.closest('#setup-form')) return;
+  event.preventDefault();
+  runConnect();
+});
 $('#setup-body').addEventListener('click', (event) => {
-  const choice = event.target.closest('.choice[data-method]');
-  if (choice) { chooseMethod(choice.dataset.method); return; }
+  const method = event.target.closest('[data-method]');
+  if (method) { chooseMethod(method.dataset.method); return; }
   if (event.target.closest('[data-setup-browse]')) {
     openFolderDialog('server', event.target.closest('[data-setup-browse]'));
     return;
   }
-  if (event.target.closest('#device-cancel')) { cancelDevice(); }
+  if (event.target.closest('#f-pass-toggle')) { togglePassword(); }
 });
 
 $('#setup-next').addEventListener('click', onSetupNext);
@@ -2424,6 +2553,9 @@ function finishFolderDialog() {
   folder.nodes = new Map();
   folder.expanded = new Set();
   folder.selected = [];
+  folder.createOpen = false;
+  folder.createBusy = false;
+  clearFolderCreateError();
   /* После «Сохранить» фокус — на сводке источника, иначе возвращается на «Обзор». */
   const field = chosen
     ? (target === 'cloud' ? $('#source-summary') : (document.getElementById('f-dest') || $('#dest-path')))
@@ -2472,6 +2604,25 @@ $('#folder-dialog')?.addEventListener('keydown', (event) => keepDialogFocus(even
 $('#folder-dialog')?.addEventListener('close', () => { finishFolderDialog(); });
 $('#folder-dialog')?.addEventListener('cancel', (event) => { event.preventDefault(); closeDialog(event.currentTarget); });
 $('#folder-choose')?.addEventListener('click', chooseFolder);
+
+/* Создание папки на сервере. */
+$('#folder-create')?.addEventListener('click', openFolderCreate);
+$('#folder-create-submit')?.addEventListener('click', createFolder);
+$('#folder-create-cancel')?.addEventListener('click', () => closeFolderCreate());
+$('#folder-new-name')?.addEventListener('input', () => clearFolderCreateError());
+$('#folder-new-name')?.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    event.stopPropagation();
+    createFolder();
+    return;
+  }
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    event.stopPropagation();
+    closeFolderCreate();
+  }
+});
 
 $('#folder-crumbs')?.addEventListener('click', (event) => {
   if (event.target.closest('[data-folder-up]')) {

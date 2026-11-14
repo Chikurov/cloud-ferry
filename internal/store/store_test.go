@@ -245,3 +245,74 @@ func TestLegacyStateWithoutSourcePaths(t *testing.T) {
 		t.Fatalf("accounts = %+v", accounts)
 	}
 }
+
+func TestAccountLoginPersists(t *testing.T) {
+	dir := t.TempDir()
+	st, err := Open(dir)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	account := Account{
+		ID: "abc", Name: "user@yandex.ru", Login: "user@yandex.ru",
+		Provider: "webdav", Remote: "cf_abc", CreatedAt: time.Now().UTC(),
+	}
+	if err := st.AddAccount(account); err != nil {
+		t.Fatalf("add account: %v", err)
+	}
+
+	reopened, err := Open(dir)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	got, ok := reopened.Account("abc")
+	if !ok || got.Login != "user@yandex.ru" {
+		t.Fatalf("login after reload = %q, ok = %v", got.Login, ok)
+	}
+	raw, err := os.ReadFile(dir + "/state.json")
+	if err != nil {
+		t.Fatalf("read state: %v", err)
+	}
+	if !strings.Contains(string(raw), `"login": "user@yandex.ru"`) {
+		t.Fatalf("login is not persisted: %s", raw)
+	}
+}
+
+// TestLegacyStateWithoutAccountLogin makes sure state.json written before the
+// login field existed still loads and is rewritten without inventing an empty
+// key for older accounts.
+func TestLegacyStateWithoutAccountLogin(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	legacy := `{
+  "accounts": [{"id": "abc", "name": "Яндекс Диск", "provider": "webdav", "remote": "cf_abc", "createdAt": "2026-11-13T20:00:00Z"}],
+  "jobs": []
+}`
+	if err := os.WriteFile(dir+"/state.json", []byte(legacy), 0o600); err != nil {
+		t.Fatalf("write legacy state: %v", err)
+	}
+
+	st, err := Open(dir)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	account, ok := st.Account("abc")
+	if !ok || account.Name != "Яндекс Диск" || account.Login != "" {
+		t.Fatalf("legacy account = %+v, ok = %v", account, ok)
+	}
+
+	if err := st.UpdateAccount("abc", func(a *Account) bool {
+		a.Status = AccountStatusOK
+		return true
+	}); err != nil {
+		t.Fatalf("update account: %v", err)
+	}
+	raw, err := os.ReadFile(dir + "/state.json")
+	if err != nil {
+		t.Fatalf("read state: %v", err)
+	}
+	if strings.Contains(string(raw), `"login"`) {
+		t.Fatalf("empty login must stay omitted: %s", raw)
+	}
+}

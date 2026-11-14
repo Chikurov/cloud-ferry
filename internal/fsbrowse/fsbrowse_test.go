@@ -276,3 +276,146 @@ func TestMatchRootSupportsFilesystemRoot(t *testing.T) {
 		t.Fatalf("root/rel = %q/%q", rootPath, rel)
 	}
 }
+
+func TestMkdirCreatesOneDirectory(t *testing.T) {
+	root := t.TempDir()
+	created := filepath.Join(root, "фото")
+
+	got, err := Mkdir([]string{root}, created)
+	if err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if got != created {
+		t.Fatalf("path = %q, want %q", got, created)
+	}
+	info, err := os.Stat(created)
+	if err != nil || !info.IsDir() {
+		t.Fatalf("created dir: info=%v err=%v", info, err)
+	}
+
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatalf("read root: %v", err)
+	}
+	if len(entries) != 1 || entries[0].Name() != "фото" {
+		t.Fatalf("root entries = %v", entries)
+	}
+}
+
+func TestMkdirNestedUnderExistingParent(t *testing.T) {
+	root := t.TempDir()
+	parent := filepath.Join(root, "one")
+	mkdir(t, parent)
+
+	created := filepath.Join(parent, "two")
+	if _, err := Mkdir([]string{root}, created); err != nil {
+		t.Fatalf("mkdir nested: %v", err)
+	}
+	if info, err := os.Stat(created); err != nil || !info.IsDir() {
+		t.Fatalf("created dir: info=%v err=%v", info, err)
+	}
+}
+
+func TestMkdirOnlyCreatesLastComponent(t *testing.T) {
+	root := t.TempDir()
+	missing := filepath.Join(root, "missing", "child")
+
+	if _, err := Mkdir([]string{root}, missing); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("expected ErrNotFound, got %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "missing")); !os.IsNotExist(err) {
+		t.Fatalf("parent was created: %v", err)
+	}
+}
+
+func TestMkdirExistingPath(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "there")
+	mkdir(t, dir)
+
+	if _, err := Mkdir([]string{root}, dir); !errors.Is(err, ErrExists) {
+		t.Fatalf("expected ErrExists, got %v", err)
+	}
+
+	if _, err := Mkdir([]string{root}, root); !errors.Is(err, ErrExists) {
+		t.Fatalf("root itself: expected ErrExists, got %v", err)
+	}
+
+	file := filepath.Join(root, "note.txt")
+	writeFile(t, file)
+	if _, err := Mkdir([]string{root}, file); !errors.Is(err, ErrNotDir) {
+		t.Fatalf("file: expected ErrNotDir, got %v", err)
+	}
+	if _, err := Mkdir([]string{root}, filepath.Join(file, "sub")); !errors.Is(err, ErrNotDir) {
+		t.Fatalf("file component: expected ErrNotDir, got %v", err)
+	}
+}
+
+func TestMkdirRejectsSymlinkParent(t *testing.T) {
+	root := t.TempDir()
+	outside := t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(root, "escape")); err != nil {
+		t.Fatalf("symlink: %v", err)
+	}
+
+	if _, err := Mkdir([]string{root}, filepath.Join(root, "escape", "child")); !errors.Is(err, ErrSymlink) {
+		t.Fatalf("expected ErrSymlink, got %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(outside, "child")); !os.IsNotExist(err) {
+		t.Fatalf("created outside the root: %v", err)
+	}
+
+	// A symlink as the target is not followed either.
+	if err := os.Symlink(outside, filepath.Join(root, "target")); err != nil {
+		t.Fatalf("symlink: %v", err)
+	}
+	if _, err := Mkdir([]string{root}, filepath.Join(root, "target")); !errors.Is(err, ErrSymlink) {
+		t.Fatalf("expected ErrSymlink for target, got %v", err)
+	}
+}
+
+func TestMkdirRejectsUnsafePaths(t *testing.T) {
+	root := t.TempDir()
+	outside := t.TempDir()
+
+	cases := []struct {
+		name      string
+		requested string
+		want      error
+	}{
+		{"empty", "", ErrInvalidPath},
+		{"relative", "downloads/photo", ErrInvalidPath},
+		{"nul byte", root + "/bad\x00name", ErrInvalidPath},
+		{"outside", filepath.Join(outside, "photo"), ErrOutsideRoots},
+		{"parent traversal", root + "/../outside", ErrOutsideRoots},
+		{"root traversal", "/etc/cloud-ferry", ErrOutsideRoots},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := Mkdir([]string{root}, tc.requested); !errors.Is(err, tc.want) {
+				t.Fatalf("got %v, want %v", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestMkdirUnmountedRoot(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "not-mounted")
+	if _, err := Mkdir([]string{missing}, filepath.Join(missing, "new")); !errors.Is(err, ErrRootUnavailable) {
+		t.Fatalf("expected ErrRootUnavailable, got %v", err)
+	}
+}
+
+func TestMkdirMatchesSecondRoot(t *testing.T) {
+	first := t.TempDir()
+	second := t.TempDir()
+	created := filepath.Join(second, "inner")
+
+	got, err := Mkdir([]string{first, second}, created)
+	if err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if got != created {
+		t.Fatalf("path = %q, want %q", got, created)
+	}
+}

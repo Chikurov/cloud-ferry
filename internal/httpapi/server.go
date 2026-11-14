@@ -155,6 +155,7 @@ func (s *Server) routes() error {
 	s.mux.HandleFunc("GET /api/system", s.handleSystem)
 	s.mux.HandleFunc("GET /api/fs/dirs", s.handleFSDirs)
 	s.mux.HandleFunc("GET /api/fs/folders", s.handleFSDirs)
+	s.mux.HandleFunc("POST /api/fs/dirs", s.handleFSCreateDir)
 	s.mux.HandleFunc("POST /api/accounts", s.handleCreateAccount)
 	s.mux.HandleFunc("POST /api/oauth/yandex/start", s.handleYandexAuthURL)
 	s.mux.HandleFunc("POST /api/oauth/yandex/finish", s.handleYandexFinish)
@@ -267,18 +268,21 @@ func (s *Server) handleCreateAccount(w http.ResponseWriter, r *http.Request) {
 
 	params := map[string]any{}
 	opt := map[string]any{"nonInteractive": true}
+	login := ""
 
 	switch req.Provider {
 	case "webdav":
-		if req.URL == "" || req.User == "" || req.Password == "" {
+		user := strings.TrimSpace(req.User)
+		if req.URL == "" || user == "" || req.Password == "" {
 			writeError(w, http.StatusBadRequest, "Заполните адрес, логин и пароль приложения.")
 			return
 		}
 		params["url"] = req.URL
 		params["vendor"] = "other"
-		params["user"] = req.User
+		params["user"] = user
 		params["pass"] = req.Password
 		opt["obscure"] = true
+		login = limitName(user)
 	case "yandex-token":
 		token := strings.TrimSpace(req.Token)
 		if token == "" {
@@ -318,6 +322,13 @@ func (s *Server) handleCreateAccount(w http.ResponseWriter, r *http.Request) {
 		Provider:  req.Provider,
 		Remote:    remote,
 		CreatedAt: time.Now().UTC(),
+	}
+	// For WebDAV the login is the only human identity the provider gives us,
+	// so it becomes the account name the UI shows. Token and OAuth flows keep
+	// the name the client passed.
+	if login != "" {
+		account.Login = login
+		account.Name = login
 	}
 	if err := s.cfg.Store.AddAccount(account); err != nil {
 		s.rollbackRemote(remote)
@@ -503,11 +514,38 @@ func (s *Server) handleProbe(w http.ResponseWriter, r *http.Request) {
 	for _, item := range listing.List {
 		names = append(names, item.Name)
 	}
+
+	loginCtx, loginCancel := contextWithTimeout(r, 10*time.Second)
+	defer loginCancel()
+	login := s.accountLogin(loginCtx, account)
+
 	writeJSON(w, http.StatusOK, map[string]any{
-		"about":   about,
-		"dirs":    names,
-		"warning": warning,
+		"about":     about,
+		"dirs":      names,
+		"warning":   warning,
+		"knownUser": login != "",
+		"login":     login,
 	})
+}
+
+// accountLogin reports the login shown in the UI: the WebDAV user name. New
+// accounts store it at creation; for accounts saved by older versions rclone's
+// own config is the only source. Providers without a login (Yandex OAuth and
+// tokens) return an empty string instead of a guessed value.
+func (s *Server) accountLogin(ctx context.Context, account store.Account) string {
+	if account.Login != "" {
+		return account.Login
+	}
+	if account.Provider != "webdav" {
+		return ""
+	}
+	var stored struct {
+		User string `json:"user"`
+	}
+	if err := s.cfg.Rclone.Call(ctx, "config/get", map[string]any{"name": account.Remote}, &stored); err != nil {
+		return ""
+	}
+	return strings.TrimSpace(stored.User)
 }
 
 type preflightRequest struct {

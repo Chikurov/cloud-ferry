@@ -750,24 +750,19 @@ ul, dl, dd { margin: 0; padding: 0; }
   outline: none;
 }
 .setup-fields { display: grid; gap: 12px; }
-.choices { display: grid; gap: 8px; }
-.choice {
+.setup-form { display: grid; gap: 12px; }
+/* Карточка способа входа: иконка, название и одна строка пояснения. */
+.method-head {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) auto;
+  grid-template-columns: 36px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-  min-height: 56px;
   padding: 12px;
   border: 1px solid var(--hairline);
   border-radius: var(--r-control);
   background: var(--surface-raised);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color var(--duration), background-color var(--duration);
 }
-.choice:hover { border-color: var(--border-hover); background: #fff; }
-.choice.is-active { border-color: var(--accent); background: var(--accent-soft); }
-.choice-icon {
+.method-icon {
   display: grid;
   place-items: center;
   width: 36px;
@@ -776,40 +771,80 @@ ul, dl, dd { margin: 0; padding: 0; }
   background: var(--accent-soft);
   color: var(--accent);
 }
-.choice-icon svg { width: var(--icon-lg); height: var(--icon-lg); }
-.choice-title { font-size: var(--text-md); font-weight: 500; }
-.choice-mark {
-  width: 16px;
-  height: 16px;
-  border: 1.5px solid rgba(16, 24, 40, .48);
-  border-radius: 50%;
-  transition: border-color var(--duration), border-width var(--duration);
+.method-icon .icon { width: var(--icon-lg); height: var(--icon-lg); }
+.method-text { display: grid; gap: 2px; min-width: 0; }
+.method-title { font-size: var(--text-md); font-weight: 600; line-height: 20px; }
+.method-note { color: var(--muted); font-size: var(--text-xs); line-height: 18px; }
+/* Ссылка «Вставить готовый токен» / «Вернуться к логину и паролю». */
+.method-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+  min-height: 36px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--accent);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
 }
-.choice.is-active .choice-mark { border-color: var(--accent); border-width: 4.5px; }
-.setup-actions { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+.method-link:hover { text-decoration: underline; }
+.method-link .icon { width: var(--icon); height: var(--icon); }
+/* Поле пароля с кнопкой показа/скрытия. */
+.field-with-action { position: relative; }
+.field-with-action input { padding-right: 48px; }
+.field-action {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.field-action:hover { background: var(--surface-sunken); color: var(--ink); }
+.field-action .icon { width: 18px; height: 18px; }
+/* Шаг «Готово»: явный успех подключения и логин. */
+.setup-title--done { font-size: var(--text-2xl); line-height: 30px; }
+.done-hero {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(6, 122, 87, .2);
+  border-radius: var(--r-lg);
+  background: var(--ok-tint);
+}
+.done-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--ok);
+  color: #fff;
+}
+.done-icon .icon { width: 20px; height: 20px; stroke-width: 2; }
+.done-text { display: grid; gap: 2px; min-width: 0; }
+.done-line { font-size: var(--text-lg); font-weight: 600; line-height: 22px; overflow-wrap: anywhere; }
+.done-note { color: var(--ink-soft); font-size: var(--text-xs); line-height: 18px; }
+/* Футер мастера: вторичное действие слева, главное — справа. На узком
+   экране главная кнопка переносится и остаётся выровненной вправо. */
+.setup-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 44px; }
 .setup-actions .btn--primary { margin-left: auto; }
 .setup-hint { min-height: 18px; color: var(--amber); font-size: var(--text-xs); line-height: 18px; }
-.device-panel {
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid rgba(0, 102, 214, .18);
-  border-radius: var(--r-lg);
-  background: var(--accent-soft);
-}
-.device-code {
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-control);
-  background: rgba(255, 255, 255, .94);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: var(--text-xl);
-  font-weight: 600;
-  line-height: 26px;
-  letter-spacing: .16em;
-  text-align: center;
-}
-.device-wait { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .note { color: var(--muted); font-size: var(--text-xs); line-height: 18px; }
 .note a { color: var(--accent); }
 .note strong { color: var(--ink-soft); font-weight: 600; }
@@ -937,9 +972,11 @@ input:focus, select:focus, textarea:focus {
 .btn--primary { --spin: #fff; border-color: var(--accent); background: var(--accent); color: #fff; }
 .btn--primary:hover { border-color: var(--accent-hover); background: var(--accent-hover); }
 .btn--primary:active { border-color: var(--accent-active); background: var(--accent-active); }
-.btn--secondary { border-color: var(--border-strong); background: rgba(255, 255, 255, .66); color: var(--ink); }
-.btn--secondary:hover { border-color: var(--border-hover); background: rgba(16, 24, 40, .045); }
-.btn--secondary:active { background: rgba(16, 24, 40, .07); }
+/* Вторичное действие всегда с явной рамкой и фоном: «Отмена» не сливается
+   с карточкой и с главной кнопкой. */
+.btn--secondary { border-color: var(--border-control); background: #fff; color: var(--ink); }
+.btn--secondary:hover { border-color: var(--border-control-hover); background: var(--surface-sunken); }
+.btn--secondary:active { background: rgba(16, 24, 40, .08); }
 .btn--ghost { border-color: transparent; background: transparent; color: var(--ink-soft); }
 .btn--ghost:hover { background: var(--surface-sunken); }
 .btn--ghost:active { background: rgba(16, 24, 40, .08); }
@@ -1003,6 +1040,16 @@ input:focus, select:focus, textarea:focus {
   border-top: 1px solid var(--line);
 }
 .modal-foot .modal-actions { margin-left: auto; }
+/* Инлайн-создание папки: поле и две кнопки в одну строку над футером. */
+.folder-create {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+.folder-create-field { flex: 1 1 180px; }
+.folder-create .btn { flex: none; }
 .folder-free {
   min-width: 0;
   color: var(--muted);
@@ -1373,7 +1420,8 @@ input:focus, select:focus, textarea:focus {
 .btn:focus-visible,
 .account-chip:focus-visible,
 .menu-item:focus-visible,
-.choice:focus-visible,
+.method-link:focus-visible,
+.field-action:focus-visible,
 .brand:focus-visible,
 .toast-close:focus-visible,
 .setup-title:focus-visible,
@@ -1464,6 +1512,8 @@ body:has(dialog[open]) { overflow: hidden; }
   .folder-node-main { min-height: 48px; }
   .folder-count { flex-basis: 100%; }
   .folder-chips { padding-bottom: 8px; }
+  .folder-create-field { flex-basis: 100%; }
+  .folder-create .btn { flex: 1 1 0; }
   .toasts { left: 12px; width: auto; }
   .setup { padding: 16px 12px; }
   .setup-card { padding: 20px; }
