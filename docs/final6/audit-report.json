@@ -1,0 +1,715 @@
+{
+  "generatedAt": "2026-11-14T17:51:24.771Z",
+  "environment": {
+    "browser": "Google Chrome headless via CDP",
+    "server": "deterministic Node mock of the Go API (POST /api/accounts/validate contract from backend-validate)",
+    "viewports": [
+      "1000x780",
+      "390x844"
+    ]
+  },
+  "total": {
+    "checks": 138,
+    "passed": 138,
+    "failed": 0
+  },
+  "errors": {
+    "jsExceptions": 0,
+    "consoleErrors": 0,
+    "unexpectedNetworkErrors": 0,
+    "expectedNetworkResponses": 9,
+    "runErrors": []
+  },
+  "checks": [
+    {
+      "name": "setup-1: статус проверки есть, пуст и polite",
+      "ok": true,
+      "detail": "{\"statusExists\":true,\"statusEmpty\":true,\"role\":\"status\",\"live\":\"polite\",\"nextBusy\":\"false\"}"
+    },
+    {
+      "name": "setup-1: кнопка не busy до проверки",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "setup-1: validate не вызывается до «Подключиться»",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "setup-1 1000x780: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "setup-1 1000x780: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-1 1000x780: ошибок в console нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-1 1000x780: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-1 1000x780: ошибок загрузки ресурсов вне ожидаемых нет",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup-1: статус проверки есть, пуст и polite",
+      "ok": true,
+      "detail": "{\"statusExists\":true,\"statusEmpty\":true,\"role\":\"status\",\"live\":\"polite\",\"nextBusy\":\"false\"}"
+    },
+    {
+      "name": "setup-1: кнопка не busy до проверки",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "setup-1: validate не вызывается до «Подключиться»",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "setup-1 390x844: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "setup-1 390x844: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-1 390x844: ошибок в console нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-1 390x844: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-1 390x844: ошибок загрузки ресурсов вне ожидаемых нет",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ошибка: понятный текст про логин/пароль у поля",
+      "ok": true,
+      "detail": "Неверный логин или пароль приложения. Проверьте данные из Яндекс ID."
+    },
+    {
+      "name": "ошибка: технические подробности не показаны",
+      "ok": true,
+      "detail": "Неверный логин или пароль приложения. Проверьте данные из Яндекс ID."
+    },
+    {
+      "name": "ошибка: остались на шаге 1",
+      "ok": true,
+      "detail": "Шаг 1 из 3"
+    },
+    {
+      "name": "ошибка: поля снова доступны, кнопка не busy",
+      "ok": true,
+      "detail": "{\"step\":\"Шаг 1 из 3\",\"message\":\"Неверный логин или пароль приложения. Проверьте данные из Яндекс ID.\",\"userInvalid\":null,\"fieldDisabled\":false,\"nextBusy\":\"false\",\"status\":\"\",\"focus\":\"f-pass\"}"
+    },
+    {
+      "name": "ошибка: статус проверки очищен",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ошибка: фокус на поле с ошибкой",
+      "ok": true,
+      "detail": "f-pass"
+    },
+    {
+      "name": "ошибка: аккаунт НЕ создан",
+      "ok": true,
+      "detail": "{\"createCalls\":0,\"accounts\":[]}"
+    },
+    {
+      "name": "ошибка: подсказка о проверке не появилась задним числом",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ошибка пароля 1000x780: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "ошибка пароля 1000x780: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ошибка пароля 1000x780: ошибок в console нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ошибка пароля 1000x780: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ошибка пароля 1000x780: ошибок загрузки ресурсов вне ожидаемых нет",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ошибка: понятный текст про логин/пароль у поля",
+      "ok": true,
+      "detail": "Неверный логин или пароль приложения. Проверьте данные из Яндекс ID."
+    },
+    {
+      "name": "ошибка: технические подробности не показаны",
+      "ok": true,
+      "detail": "Неверный логин или пароль приложения. Проверьте данные из Яндекс ID."
+    },
+    {
+      "name": "ошибка: остались на шаге 1",
+      "ok": true,
+      "detail": "Шаг 1 из 3"
+    },
+    {
+      "name": "ошибка: поля снова доступны, кнопка не busy",
+      "ok": true,
+      "detail": "{\"step\":\"Шаг 1 из 3\",\"message\":\"Неверный логин или пароль приложения. Проверьте данные из Яндекс ID.\",\"userInvalid\":null,\"fieldDisabled\":false,\"nextBusy\":\"false\",\"status\":\"\",\"focus\":\"f-pass\"}"
+    },
+    {
+      "name": "ошибка: статус проверки очищен",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ошибка: фокус на поле с ошибкой",
+      "ok": true,
+      "detail": "f-pass"
+    },
+    {
+      "name": "ошибка: аккаунт НЕ создан",
+      "ok": true,
+      "detail": "{\"createCalls\":0,\"accounts\":[]}"
+    },
+    {
+      "name": "ошибка: подсказка о проверке не появилась задним числом",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ошибка пароля 390x844: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "ошибка пароля 390x844: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ошибка пароля 390x844: ошибок в console нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ошибка пароля 390x844: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ошибка пароля 390x844: ошибок загрузки ресурсов вне ожидаемых нет",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "проверка: сразу после клика статус ещё пуст (не мигаем)",
+      "ok": true,
+      "detail": "{\"status\":\"\",\"busy\":\"true\",\"userDisabled\":true,\"passDisabled\":true,\"backDisabled\":true}"
+    },
+    {
+      "name": "проверка: кнопка busy, поля и «Отмена» disabled",
+      "ok": true,
+      "detail": "{\"status\":\"\",\"busy\":\"true\",\"userDisabled\":true,\"passDisabled\":true,\"backDisabled\":true}"
+    },
+    {
+      "name": "проверка >2–3 с: показан текст «Проверяем доступ к Яндекс Диску…»",
+      "ok": true,
+      "detail": "Проверяем доступ к Яндекс Диску…"
+    },
+    {
+      "name": "проверка: статус объявлен один раз (не спамерно)",
+      "ok": true,
+      "detail": "[\"Проверяем доступ к Яндекс Диску…\"]"
+    },
+    {
+      "name": "проверка: поля всё ещё disabled",
+      "ok": true,
+      "detail": "{\"status\":\"Проверяем доступ к Яндекс Диску…\",\"changes\":[\"Проверяем доступ к Яндекс Диску…\"],\"passDisabled\":true,\"busy\":\"true\"}"
+    },
+    {
+      "name": "проверяем доступ 1000x780: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "успех: validate, затем create, затем шаг 2",
+      "ok": true,
+      "detail": "validate,create"
+    },
+    {
+      "name": "успех: аккаунт создан один раз",
+      "ok": true,
+      "detail": "[{\"id\":\"acc1\",\"name\":\"artem\",\"login\":\"artem\",\"provider\":\"webdav\",\"remote\":\"cf_acc1\",\"createdAt\":\"2026-11-14T17:00:00Z\",\"status\":\"ok\"}]"
+    },
+    {
+      "name": "успех: статус проверки очищен",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "проверяем доступ 1000x780: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "проверяем доступ 1000x780: ошибок в console нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "проверяем доступ 1000x780: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "проверяем доступ 1000x780: ошибок загрузки ресурсов вне ожидаемых нет",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "проверка: сразу после клика статус ещё пуст (не мигаем)",
+      "ok": true,
+      "detail": "{\"status\":\"\",\"busy\":\"true\",\"userDisabled\":true,\"passDisabled\":true,\"backDisabled\":true}"
+    },
+    {
+      "name": "проверка: кнопка busy, поля и «Отмена» disabled",
+      "ok": true,
+      "detail": "{\"status\":\"\",\"busy\":\"true\",\"userDisabled\":true,\"passDisabled\":true,\"backDisabled\":true}"
+    },
+    {
+      "name": "проверка >2–3 с: показан текст «Проверяем доступ к Яндекс Диску…»",
+      "ok": true,
+      "detail": "Проверяем доступ к Яндекс Диску…"
+    },
+    {
+      "name": "проверка: статус объявлен один раз (не спамерно)",
+      "ok": true,
+      "detail": "[\"Проверяем доступ к Яндекс Диску…\"]"
+    },
+    {
+      "name": "проверка: поля всё ещё disabled",
+      "ok": true,
+      "detail": "{\"status\":\"Проверяем доступ к Яндекс Диску…\",\"changes\":[\"Проверяем доступ к Яндекс Диску…\"],\"passDisabled\":true,\"busy\":\"true\"}"
+    },
+    {
+      "name": "проверяем доступ 390x844: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "успех: validate, затем create, затем шаг 2",
+      "ok": true,
+      "detail": "validate,create"
+    },
+    {
+      "name": "успех: аккаунт создан один раз",
+      "ok": true,
+      "detail": "[{\"id\":\"acc1\",\"name\":\"artem\",\"login\":\"artem\",\"provider\":\"webdav\",\"remote\":\"cf_acc1\",\"createdAt\":\"2026-11-14T17:00:00Z\",\"status\":\"ok\"}]"
+    },
+    {
+      "name": "успех: статус проверки очищен",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "проверяем доступ 390x844: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "проверяем доступ 390x844: ошибок в console нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "проверяем доступ 390x844: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "проверяем доступ 390x844: ошибок загрузки ресурсов вне ожидаемых нет",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "retry: аккаунт НЕ создан",
+      "ok": true,
+      "detail": "{\"createCalls\":0}"
+    },
+    {
+      "name": "retry: ошибка без технических деталей",
+      "ok": true,
+      "detail": "Пароль приложения ещё не активировался — подождите 2–3 часа."
+    },
+    {
+      "name": "retryAfterHint: подсказка про активацию у поля пароля",
+      "ok": true,
+      "detail": "field"
+    },
+    {
+      "name": "webdav: аккаунт НЕ создан",
+      "ok": true,
+      "detail": "{\"createCalls\":0}"
+    },
+    {
+      "name": "webdav: ошибка без технических деталей",
+      "ok": true,
+      "detail": "WebDAV недоступен — нужен Яндекс 360."
+    },
+    {
+      "name": "webdav_unavailable: ошибка у полей, без кода ошибки",
+      "ok": true,
+      "detail": "form"
+    },
+    {
+      "name": "upstream: аккаунт НЕ создан",
+      "ok": true,
+      "detail": "{\"createCalls\":0}"
+    },
+    {
+      "name": "upstream: ошибка без технических деталей",
+      "ok": true,
+      "detail": "Сервер не ответил — попробуйте ещё раз."
+    },
+    {
+      "name": "timeout: аккаунт НЕ создан",
+      "ok": true,
+      "detail": "{\"createCalls\":0}"
+    },
+    {
+      "name": "timeout: ошибка без технических деталей",
+      "ok": true,
+      "detail": "Сервер не ответил — попробуйте ещё раз."
+    },
+    {
+      "name": "bad-token: аккаунт НЕ создан",
+      "ok": true,
+      "detail": "{\"createCalls\":0}"
+    },
+    {
+      "name": "bad-token: ошибка без технических деталей",
+      "ok": true,
+      "detail": "Токен не подошёл или истёк. Вставьте полный JSON-ответ OAuth."
+    },
+    {
+      "name": "токен: битый JSON — понятная ошибка и validate не вызывался",
+      "ok": true,
+      "detail": "Токен должен быть JSON-объектом, а не строкой. / 0"
+    },
+    {
+      "name": "токен: ссылки «инструкция Яндекс Диска» и oauth.yandex.ru",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "токен: нет мёртвой ссылки yandex.ru/dev/id/doc/ru/tokens",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "варианты ошибок: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "варианты ошибок: ошибок в console нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "варианты ошибок: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "варианты ошибок: ошибок загрузки ресурсов вне ожидаемых нет",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "токен: подсказка коротко и по шагам",
+      "ok": true,
+      "detail": "Как получить: 1) создайте приложение на oauth.yandex.ru с правом «Чтение всего Диска» (cloud_api:disk.read); 2) получите токен по инструкции Яндекс Диска; 3) вставьте полный JSON: access_token, refresh_token, expiry."
+    },
+    {
+      "name": "токен: подсказка не длиннее 4 строк",
+      "ok": true,
+      "detail": "4 строк"
+    },
+    {
+      "name": "токен: ссылки на инструкцию Яндекс Диска и oauth.yandex.ru",
+      "ok": true,
+      "detail": "https://oauth.yandex.ru/,https://yandex.ru/dev/disk-api/doc/ru/concepts/quickstart"
+    },
+    {
+      "name": "токен: мёртвой ссылки dev/id/doc/ru/tokens нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "токен 1000x780: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "токен 1000x780: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "токен 1000x780: ошибок в console нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "токен 1000x780: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "токен 1000x780: ошибок загрузки ресурсов вне ожидаемых нет",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "токен: подсказка коротко и по шагам",
+      "ok": true,
+      "detail": "Как получить: 1) создайте приложение на oauth.yandex.ru с правом «Чтение всего Диска» (cloud_api:disk.read); 2) получите токен по инструкции Яндекс Диска; 3) вставьте полный JSON: access_token, refresh_token, expiry."
+    },
+    {
+      "name": "токен: подсказка не длиннее 6 строк",
+      "ok": true,
+      "detail": "5 строк"
+    },
+    {
+      "name": "токен: ссылки на инструкцию Яндекс Диска и oauth.yandex.ru",
+      "ok": true,
+      "detail": "https://oauth.yandex.ru/,https://yandex.ru/dev/disk-api/doc/ru/concepts/quickstart"
+    },
+    {
+      "name": "токен: мёртвой ссылки dev/id/doc/ru/tokens нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "токен 390x844: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "токен 390x844: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "токен 390x844: ошибок в console нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "токен 390x844: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "токен 390x844: ошибок загрузки ресурсов вне ожидаемых нет",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "404: validate вызван, затем create, экран не сломан",
+      "ok": true,
+      "detail": "[\"validate\",\"create\"]"
+    },
+    {
+      "name": "404: ошибок на шаге 1 нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "404: аккаунт создан",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "фолбэк 404: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "фолбэк 404: ошибок в console нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "фолбэк 404: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "фолбэк 404: ошибок загрузки ресурсов вне ожидаемых нет",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "переподключение: предупреждение о замене аккаунта",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "переподключение: при ошибке старый аккаунт не удалён",
+      "ok": true,
+      "detail": "{\"accounts\":[{\"id\":\"acc1\",\"name\":\"artem\",\"login\":\"artem\",\"provider\":\"webdav\",\"remote\":\"cf_acc1\",\"createdAt\":\"2026-11-14T17:00:00Z\",\"status\":\"ok\"}],\"deleteCalls\":0}"
+    },
+    {
+      "name": "переподключение: новый аккаунт не создан",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "переподключение: остались на шаге 1",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "переподключение: порядок validate → create → delete старого",
+      "ok": true,
+      "detail": "validate,validate,create,delete:acc1"
+    },
+    {
+      "name": "переподключение: остался один аккаунт",
+      "ok": true,
+      "detail": "[{\"id\":\"acc2\",\"name\":\"artem\",\"login\":\"artem\",\"provider\":\"webdav\",\"remote\":\"cf_acc2\",\"createdAt\":\"2026-11-14T17:00:00Z\",\"status\":\"ok\"}]"
+    },
+    {
+      "name": "переподключение: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "переподключение: ошибок в console нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "переподключение: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "переподключение: ошибок загрузки ресурсов вне ожидаемых нет",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "шаг 2: папка подставлена",
+      "ok": true,
+      "detail": "/downloads"
+    },
+    {
+      "name": "шаг 3: «Готово» и «Подключено как artem»",
+      "ok": true,
+      "detail": "{\"title\":\"Готово\",\"body\":\"Готово\\n\\nПодключено как artem\\n\\nФайлы будут скачиваться в выбранную папку на сервере.\\n\\nАккаунт\\nartem\\nПапка\\n/downloads\",\"next\":\"Перейти к скачиванию\",\"back\":\"Изменить папку\",\"status\":\"\"}"
+    },
+    {
+      "name": "шаг 3: статус проверки не занимает места",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-3 1000x780: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "setup-3 1000x780: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-3 1000x780: ошибок в console нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-3 1000x780: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-3 1000x780: ошибок загрузки ресурсов вне ожидаемых нет",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "шаг 2: папка подставлена",
+      "ok": true,
+      "detail": "/downloads"
+    },
+    {
+      "name": "шаг 3: «Готово» и «Подключено как artem»",
+      "ok": true,
+      "detail": "{\"title\":\"Готово\",\"body\":\"Готово\\n\\nПодключено как artem\\n\\nФайлы будут скачиваться в выбранную папку на сервере.\\n\\nАккаунт\\nartem\\nПапка\\n/downloads\",\"next\":\"Перейти к скачиванию\",\"back\":\"Изменить папку\",\"status\":\"\"}"
+    },
+    {
+      "name": "шаг 3: статус проверки не занимает места",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-3 390x844: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "setup-3 390x844: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-3 390x844: ошибок в console нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-3 390x844: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup-3 390x844: ошибок загрузки ресурсов вне ожидаемых нет",
+      "ok": true,
+      "detail": "[]"
+    }
+  ]
+}

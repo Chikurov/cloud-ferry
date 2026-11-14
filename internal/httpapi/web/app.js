@@ -74,6 +74,7 @@ let lastCloudAttempt = 0;
 let exitBusy = false;
 let transferBusy = false;
 let setupBusy = false;
+let validateHintTimer = null;
 const jobActionBusy = new Set();
 let focusStartAfterRender = false;
 let pendingFocusKey = '';
@@ -577,12 +578,11 @@ function tokenFields() {
   return `
     ${methodHeadline('code', SETUP_METHODS['yandex-token'], 'Для продвинутых — вместо пароля приложения.')}
     <div class="notice">Токен даёт полный доступ к вашему Диску. Вставляйте только свой токен и не передавайте его никому.</div>
-    <p class="note">Где взять: <a href="https://yandex.ru/dev/id/doc/ru/tokens" target="_blank" rel="noreferrer">инструкция Яндекс ID по токенам</a> или <a href="https://oauth.yandex.ru/" target="_blank" rel="noreferrer">oauth.yandex.ru</a>. Нужен полный JSON-ответ, а не одна строка доступа.</p>
+    <p class="note" id="token-format">Как получить: 1) создайте приложение на <a href="https://oauth.yandex.ru/" target="_blank" rel="noreferrer">oauth.yandex.ru</a> с правом «Чтение всего Диска» (<code>cloud_api:disk.read</code>); 2) получите токен по <a href="https://yandex.ru/dev/disk-api/doc/ru/concepts/quickstart" target="_blank" rel="noreferrer">инструкции Яндекс Диска</a>; 3) вставьте полный JSON: <code>access_token</code>, <code>refresh_token</code>, <code>expiry</code>.</p>
     <div class="control">
       <label class="control-label" for="f-token">Токен (JSON)</label>
       <textarea id="f-token" name="token" rows="4" spellcheck="false" autocapitalize="none" autocorrect="off" autocomplete="off" aria-describedby="token-format" placeholder='{"access_token":"…","refresh_token":"…","expiry":"2026-11-14T20:00:00Z"}'>${setupFieldValue('token')}</textarea>
     </div>
-    <p class="note" id="token-format">В JSON должны быть <code>access_token</code>, <code>refresh_token</code> и <code>expiry</code>. Без refresh_token доступ перестанет обновляться.</p>
     <button class="method-link" type="button" data-method="webdav">${icon('key')}Вернуться к логину и паролю</button>`;
 }
 
@@ -640,6 +640,8 @@ function renderSetup(options = {}) {
   }).join('');
   $('#setup-body').innerHTML = setupStepBody();
   $('#setup-error').textContent = '';
+  stopValidateHint();
+  setSetupFieldsDisabled(false);
   const next = $('#setup-next');
   const back = $('#setup-back');
   setBusy(next, false);
@@ -730,39 +732,147 @@ async function finishConnect(account) {
   ensureCloudUsage(true);
 }
 
+/* --- проверка доступа до создания аккаунта -------------------------------- */
+
+/* POST /api/accounts/validate подтверждает доступ, и только после этого
+   создаётся аккаунт: при ошибке шаг 1 остаётся как был, а в сценарии «Войти
+   заново» старый рабочий аккаунт не удаляется до успеха. */
+const VALIDATE_HINT_DELAY = 2400;
+const VALIDATE_HINT_TEXT = 'Проверяем доступ к Яндекс Диску…';
+const VALIDATE_FIELD_TARGET = {
+  user: '#f-user', login: '#f-user', url: '#f-user',
+  password: '#f-pass', pass: '#f-pass', token: '#f-token',
+};
+
+function setupStatus(message) {
+  const node = $('#setup-status');
+  if (node) node.textContent = message || '';
+}
+
+/* Медленную проверку показываем один раз, чтобы интерфейс не мигал. */
+function startValidateHint() {
+  stopValidateHint();
+  validateHintTimer = setTimeout(() => {
+    validateHintTimer = null;
+    if (setupBusy) setupStatus(VALIDATE_HINT_TEXT);
+  }, VALIDATE_HINT_DELAY);
+}
+
+function stopValidateHint() {
+  if (validateHintTimer) {
+    clearTimeout(validateHintTimer);
+    validateHintTimer = null;
+  }
+  setupStatus('');
+}
+
+/* Пока идёт проверка и создание, поля и переход назад недоступны. */
+function setSetupFieldsDisabled(disabled) {
+  const scope = $('#setup-body');
+  if (scope) {
+    for (const element of scope.querySelectorAll('input, textarea, button')) element.disabled = !!disabled;
+  }
+  const back = $('#setup-back');
+  if (back) back.disabled = !!disabled;
+}
+
+/* Ответ проверки → понятная ошибка у поля. Технические детали (rclone,
+   ответы провайдера, HTTP-коды) пользователю не показываем. */
+function validationFailure(error, method) {
+  const data = (error && error.data) || {};
+  const status = Number(error && error.status) || 0;
+  const code = String(data.code || '');
+  const tokenMode = method === 'yandex-token';
+  if (code === 'invalid_request') {
+    if (data.field === 'token' || tokenMode) {
+      return { field: 'token', message: 'Токен не подошёл или истёк. Вставьте полный JSON-ответ OAuth.' };
+    }
+    if (!data.field) {
+      return { message: 'Не удалось проверить данные — обновите страницу и попробуйте ещё раз.' };
+    }
+    if (data.field === 'password' || data.field === 'pass') {
+      return { field: 'password', message: 'Проверьте пароль приложения: сервер не принял данные.' };
+    }
+    return { field: 'user', message: 'Проверьте логин: сервер не принял данные.' };
+  }
+  if (code === 'auth_failed') {
+    /* 401 от WebDAV: пароль приложения мог ещё не активироваться. */
+    if (data.retryAfterHint === true) {
+      return { field: 'password', message: 'Пароль приложения ещё не активировался — подождите 2–3 часа.' };
+    }
+    if (tokenMode) return { field: 'token', message: 'Токен не подошёл или истёк. Вставьте полный JSON-ответ OAuth.' };
+    return { field: 'password', message: 'Неверный логин или пароль приложения. Проверьте данные из Яндекс ID.' };
+  }
+  if (code === 'webdav_unavailable') {
+    return { message: 'WebDAV недоступен — нужен Яндекс 360.' };
+  }
+  if (status === 0 || status >= 500 || code === 'upstream_error' || code === 'timeout') {
+    return { message: 'Сервер не ответил — попробуйте ещё раз.' };
+  }
+  return tokenMode
+    ? { field: 'token', message: 'Токен не подошёл или истёк. Вставьте полный JSON-ответ OAuth.' }
+    : { message: 'Не удалось проверить доступ к Яндекс Диску. Попробуйте ещё раз.' };
+}
+
+async function validateAccount(body, method) {
+  try {
+    await api('/api/accounts/validate', { method: 'POST', body: JSON.stringify(body) });
+    return { ok: true };
+  } catch (error) {
+    /* TODO: временный фолбэк для старого сервера без POST /api/accounts/validate.
+       Пока ручки нет (404/405), создаём аккаунт как раньше — экран не ломаем.
+       Когда образ с проверкой станет обязательным, эту ветку удалить. */
+    if (error && (error.status === 404 || error.status === 405)) return { ok: true, legacy: true };
+    return { ok: false, ...validationFailure(error, method) };
+  }
+}
+
+/* Ошибка без поля — над футером, ошибка поля — под контролом. */
+function showConnectError(failure) {
+  const target = failure && failure.field ? $(VALIDATE_FIELD_TARGET[failure.field] || '') : null;
+  if (target && failure.message) {
+    setFieldError(target, failure.message);
+    return;
+  }
+  setupError((failure && failure.message) || 'Не удалось проверить доступ к Яндекс Диску. Попробуйте ещё раз.');
+}
+
 async function connectCloud() {
   const scope = $('#setup-body');
   clearFieldErrors(scope);
+  setupError('');
+  let body;
   if (wizard.method === 'webdav') {
     const user = (wizard.fields.user || '').trim();
     const password = wizard.fields.pass || '';
     if (!user) { setFieldError($('#f-user'), 'Укажите логин.'); return; }
     if (!password) { setFieldError($('#f-pass'), 'Укажите пароль приложения.'); return; }
-    const account = await api('/api/accounts', { method: 'POST', body: JSON.stringify({
-      name: 'Яндекс Диск', provider: 'webdav', url: 'https://webdav.yandex.ru', user, password }) });
-    await finishConnect(account);
-    return;
+    body = { name: 'Яндекс Диск', provider: 'webdav', url: 'https://webdav.yandex.ru', user, password };
+  } else {
+    const token = (wizard.fields.token || '').trim();
+    if (!token) {
+      setFieldError($('#f-token'), 'Вставьте JSON-токен.');
+      return;
+    }
+    let parsedToken;
+    try { parsedToken = JSON.parse(token); } catch {
+      setFieldError($('#f-token'), 'Токен должен быть JSON-объектом, а не строкой.');
+      return;
+    }
+    if (!parsedToken || typeof parsedToken !== 'object' || Array.isArray(parsedToken) || !parsedToken.access_token) {
+      setFieldError($('#f-token'), 'В JSON нет поля access_token.');
+      return;
+    }
+    if (!parsedToken.refresh_token || parsedToken.expiry == null || parsedToken.expiry === '') {
+      setFieldError($('#f-token'), 'В JSON нужны access_token, refresh_token и expiry — вставьте полный ответ OAuth.');
+      return;
+    }
+    body = { name: 'Яндекс Диск', provider: 'yandex-token', token };
   }
-  const token = (wizard.fields.token || '').trim();
-  if (!token) {
-    setFieldError($('#f-token'), 'Вставьте JSON-токен.');
-    return;
-  }
-  let parsedToken;
-  try { parsedToken = JSON.parse(token); } catch {
-    setFieldError($('#f-token'), 'Токен должен быть JSON-объектом, а не строкой.');
-    return;
-  }
-  if (!parsedToken || typeof parsedToken !== 'object' || Array.isArray(parsedToken) || !parsedToken.access_token) {
-    setFieldError($('#f-token'), 'В JSON нет поля access_token.');
-    return;
-  }
-  if (!parsedToken.refresh_token || parsedToken.expiry == null || parsedToken.expiry === '') {
-    setFieldError($('#f-token'), 'В JSON нужны access_token, refresh_token и expiry — вставьте полный ответ OAuth.');
-    return;
-  }
-  const account = await api('/api/accounts', { method: 'POST', body: JSON.stringify({
-    name: 'Яндекс Диск', provider: 'yandex-token', token }) });
+  /* Та же схема для пароля и токена: сначала проверка, потом создание. */
+  const checked = await validateAccount(body, wizard.method);
+  if (!checked.ok) { showConnectError(checked); return; }
+  const account = await api('/api/accounts', { method: 'POST', body: JSON.stringify(body) });
   await finishConnect(account);
 }
 
@@ -775,6 +885,8 @@ async function runConnect() {
   const scope = $('#setup-body');
   setBusy(next, true);
   setupBusy = true;
+  setSetupFieldsDisabled(true);
+  startValidateHint();
   try {
     await connectCloud();
   } catch (error) {
@@ -782,8 +894,15 @@ async function runConnect() {
     if (target) setFieldError(target, friendlyError(error));
     else setupError(friendlyError(error));
   } finally {
+    stopValidateHint();
     setupBusy = false;
-    if (wizard.step === 0) setBusy($('#setup-next'), false);
+    setSetupFieldsDisabled(false);
+    if (wizard.step === 0) {
+      setBusy($('#setup-next'), false);
+      /* Фокус — на поле с ошибкой: скринридер прочитает её из aria-describedby. */
+      const invalid = scope ? scope.querySelector('.control.has-error input, .control.has-error textarea') : null;
+      if (invalid) invalid.focus({ preventScroll: true });
+    }
   }
 }
 

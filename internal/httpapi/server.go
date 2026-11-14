@@ -157,6 +157,8 @@ func (s *Server) routes() error {
 	s.mux.HandleFunc("GET /api/fs/folders", s.handleFSDirs)
 	s.mux.HandleFunc("POST /api/fs/dirs", s.handleFSCreateDir)
 	s.mux.HandleFunc("POST /api/accounts", s.handleCreateAccount)
+	s.mux.HandleFunc("POST /api/accounts/validate", s.handleValidateAccount)
+	s.mux.HandleFunc("GET /api/accounts/validate", s.handleValidateAccountMethodGuard)
 	s.mux.HandleFunc("POST /api/oauth/yandex/start", s.handleYandexAuthURL)
 	s.mux.HandleFunc("POST /api/oauth/yandex/finish", s.handleYandexFinish)
 	s.mux.HandleFunc("POST /api/oauth/yandex/device/start", s.handleDeviceStart)
@@ -266,45 +268,9 @@ func (s *Server) handleCreateAccount(w http.ResponseWriter, r *http.Request) {
 	}
 	remote := "cf_" + id
 
-	params := map[string]any{}
-	opt := map[string]any{"nonInteractive": true}
-	login := ""
-
-	switch req.Provider {
-	case "webdav":
-		user := strings.TrimSpace(req.User)
-		if req.URL == "" || user == "" || req.Password == "" {
-			writeError(w, http.StatusBadRequest, "Заполните адрес, логин и пароль приложения.")
-			return
-		}
-		params["url"] = req.URL
-		params["vendor"] = "other"
-		params["user"] = user
-		params["pass"] = req.Password
-		opt["obscure"] = true
-		login = limitName(user)
-	case "yandex-token":
-		token := strings.TrimSpace(req.Token)
-		if token == "" {
-			writeError(w, http.StatusBadRequest, "Вставьте токен доступа.")
-			return
-		}
-		var parsed struct {
-			AccessToken string `json:"access_token"`
-		}
-		if err := json.Unmarshal([]byte(token), &parsed); err != nil || parsed.AccessToken == "" {
-			writeError(w, http.StatusBadRequest, "Токен должен быть JSON-объектом с полем access_token.")
-			return
-		}
-		params["token"] = token
-		if clientID := strings.TrimSpace(req.ClientID); clientID != "" {
-			params["client_id"] = clientID
-		}
-		if secret := strings.TrimSpace(req.ClientSecret); secret != "" {
-			params["client_secret"] = secret
-		}
-	default:
-		writeError(w, http.StatusBadRequest, "Этот способ подключения пока не поддерживается.")
+	params, opt, login, err := accountRemoteParams(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -336,6 +302,48 @@ func (s *Server) handleCreateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, account)
+}
+
+// accountRemoteParams maps the account form to rclone's config/create
+// arguments. Creating a real account and validating a temporary one must send
+// the same parameters, so both go through this single mapping.
+func accountRemoteParams(req createAccountRequest) (params, opt map[string]any, login string, err error) {
+	switch req.Provider {
+	case "webdav":
+		user := strings.TrimSpace(req.User)
+		if req.URL == "" || user == "" || req.Password == "" {
+			return nil, nil, "", errors.New("Заполните адрес, логин и пароль приложения.")
+		}
+		params = map[string]any{
+			"url":    req.URL,
+			"vendor": "other",
+			"user":   user,
+			"pass":   req.Password,
+		}
+		opt = map[string]any{"nonInteractive": true, "obscure": true}
+		return params, opt, limitName(user), nil
+	case "yandex-token":
+		token := strings.TrimSpace(req.Token)
+		if token == "" {
+			return nil, nil, "", errors.New("Вставьте токен доступа.")
+		}
+		var parsed struct {
+			AccessToken string `json:"access_token"`
+		}
+		if err := json.Unmarshal([]byte(token), &parsed); err != nil || parsed.AccessToken == "" {
+			return nil, nil, "", errors.New("Токен должен быть JSON-объектом с полем access_token.")
+		}
+		params = map[string]any{"token": token}
+		if clientID := strings.TrimSpace(req.ClientID); clientID != "" {
+			params["client_id"] = clientID
+		}
+		if secret := strings.TrimSpace(req.ClientSecret); secret != "" {
+			params["client_secret"] = secret
+		}
+		return params, map[string]any{"nonInteractive": true}, "", nil
+	default:
+		return nil, nil, "", errors.New("Этот способ подключения пока не поддерживается.")
+	}
 }
 
 // limitName trims and caps a user-supplied cloud name so it cannot break the

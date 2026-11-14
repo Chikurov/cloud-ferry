@@ -844,6 +844,19 @@ ul, dl, dd { margin: 0; padding: 0; }
    экране главная кнопка переносится и остаётся выровненной вправо. */
 .setup-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 44px; }
 .setup-actions .btn--primary { margin-left: auto; }
+/* Статус проверки доступа: появляется у главной кнопки только на медленной
+   сети (aria-live polite в разметке), поэтому пустым не занимает места. */
+.setup-status {
+  flex: 1 1 120px;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: 18px;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.setup-status:empty { display: none; }
+.setup-status:not(:empty) + .btn--primary { margin-left: 0; }
 .setup-hint { min-height: 18px; color: var(--amber); font-size: var(--text-xs); line-height: 18px; }
 .note { color: var(--muted); font-size: var(--text-xs); line-height: 18px; }
 .note a { color: var(--accent); }
