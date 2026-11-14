@@ -9,7 +9,7 @@ services:
     # compose at app start. Set it once with `make set-owner OWNER=<login>`.
     # The digest is the linux/amd64+linux/arm64 manifest-list digest printed by
     # `make digest` (or the publish CI job); pin it with `make pin-digest`.
-    image: ghcr.io/${OWNER}/cloud-ferry:0.1.0@sha256:efd042f3633f763b19a1ddf9bd09a6f3cdf1a4fde85dcaedbc23b06cd412328a
+    image: ghcr.io/chikurov/cloud-ferry:0.1.0@sha256:efd042f3633f763b19a1ddf9bd09a6f3cdf1a4fde85dcaedbc23b06cd412328a
     restart: on-failure
     init: true
     user: "1000:1000"

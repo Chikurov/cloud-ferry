@@ -6,7 +6,7 @@
 # ghcr.io/${OWNER}/cloud-ferry and the Makefile reads it from this line, so it
 # is the single place to change:
 #   make set-owner OWNER=<github-login>
-export OWNER="Chikurov"
+export OWNER="chikurov"
 
 export APP_CLOUDFERRY_RC_USER="cloudferry"
 export APP_CLOUDFERRY_RC_PASS="$(derive_entropy "${app_entropy_identifier}-rc-pass")"

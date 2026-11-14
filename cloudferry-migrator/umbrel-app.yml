@@ -62,7 +62,7 @@ releaseNotes: >-
   домашнем экране Umbrel.
 # Ориентировочный размер установки в байтах (несжатые слои образа). Уточните
 # после первой публикации: docker image inspect --format '{{.Size}}' <image>.
-installSize: 131072000
+installSize: 103824896
 developer: Cloud Ferry contributors
 website: https://github.com/Chikurov/cloud-ferry
 dependencies: []

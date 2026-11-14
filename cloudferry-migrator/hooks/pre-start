@@ -13,6 +13,7 @@ DATA_DIR="${APP_DATA_ROOT:-${APP_DIR}/data}"
 RUN_DIR="${DATA_DIR}/run"
 
 mkdir -p "$RUN_DIR"
+chown 1000:1000 "$RUN_DIR" 2>/dev/null || true
 
 for sock in "$RUN_DIR"/*.sock; do
 	[ -e "$sock" ] || continue
