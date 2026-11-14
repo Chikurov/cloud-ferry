@@ -115,6 +115,96 @@ func ValidateDest(roots []string, dest string) (string, error) {
 	return resolved.absolute, nil
 }
 
+// DirState is what ProbeDir found at one path.
+type DirState struct {
+	Exists  bool
+	Entries int
+}
+
+// ProbeDir reports whether name below dest is an existing directory and how
+// many entries it holds at its top level. dest must be inside one of roots;
+// name is a path relative to dest. A missing path, a file and a symlink all
+// report Exists == false: a folder the transfer has not created yet is a normal
+// answer, not an error. Nothing is created, nothing is read recursively and no
+// sizes are collected.
+func ProbeDir(roots []string, dest, name string) (DirState, error) {
+	name, err := cleanProbeName(name)
+	if err != nil {
+		return DirState{}, err
+	}
+	resolved, err := resolve(roots, dest, true)
+	if err != nil {
+		return DirState{}, err
+	}
+	defer resolved.close()
+	if resolved.root == nil {
+		// An unmounted root has no directories inside it yet.
+		return DirState{}, nil
+	}
+
+	rel := path.Join(resolved.rel, name)
+	// Lstat every component: a symlink is not followed, so it never counts as
+	// an existing destination folder even when it points inside the root.
+	parts := strings.Split(rel, "/")
+	for i := range parts {
+		partial := strings.Join(parts[:i+1], "/")
+		info, err := resolved.root.Lstat(partial)
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				return DirState{}, nil
+			}
+			return DirState{}, fmt.Errorf("inspect %s: %w", absolutePath(resolved.rootPath, rel), err)
+		}
+		if info.Mode()&fs.ModeSymlink != 0 || !info.IsDir() {
+			return DirState{}, nil
+		}
+	}
+
+	dir, err := resolved.root.Open(rel)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return DirState{}, nil
+		}
+		return DirState{}, fmt.Errorf("open %s: %w", absolutePath(resolved.rootPath, rel), err)
+	}
+	defer dir.Close()
+	entries, err := countEntries(dir)
+	if err != nil {
+		return DirState{}, fmt.Errorf("count %s: %w", absolutePath(resolved.rootPath, rel), err)
+	}
+	return DirState{Exists: true, Entries: entries}, nil
+}
+
+// cleanProbeName keeps one path relative to the destination. The HTTP layer
+// normalises cloud paths already; this is the last guard before os.Root.
+func cleanProbeName(name string) (string, error) {
+	name = strings.TrimSpace(name)
+	if name == "" || len(name) > maxPathLen || strings.ContainsRune(name, 0) {
+		return "", ErrInvalidPath
+	}
+	cleaned := path.Clean(name)
+	if cleaned == "." || cleaned == ".." || strings.HasPrefix(cleaned, "../") || strings.HasPrefix(cleaned, "/") {
+		return "", ErrInvalidPath
+	}
+	return cleaned, nil
+}
+
+// countEntries counts the top-level names of an opened directory without
+// keeping them and without descending into subdirectories.
+func countEntries(dir *os.File) (int, error) {
+	entries := 0
+	for {
+		batch, err := dir.ReadDir(256)
+		entries += len(batch)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return entries, nil
+			}
+			return 0, err
+		}
+	}
+}
+
 // Mkdir creates exactly one directory inside one of roots and returns its
 // cleaned absolute path. The parent must already exist: this is a single
 // mkdir, never a recursive one, so a typo in the middle of the path fails with

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" width="240" height="160" fill="none" role="img" aria-label="Подключите облако к серверу">
+  <title>Подключите облако</title>
+  <!-- Cloud Ferry · docs/design/assets · пустое состояние «нет аккаунта».
+       Палитра бренда: #005EFA / #89A7FF / #EEF3FF, акцент #FF5A33.
+       Холст 240×160, stroke 3, round caps. -->
+  <ellipse cx="118" cy="84" rx="92" ry="58" fill="#EEF3FF"/>
+  <g transform="translate(18 8) scale(6.2)" stroke-width="2.6" vector-effect="non-scaling-stroke">
+    <path d="M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z" fill="#FFFFFF" stroke="#005EFA" stroke-linejoin="round"/>
+  </g>
+  <path d="M149 88c9-4 17 0 21 8" stroke="#89A7FF" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="1 8"/>
+  <circle cx="179" cy="110" r="20" fill="#FF5A33"/>
+  <path d="M179 101v18M170 110h18" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round"/>
+  <circle cx="201" cy="48" r="5" fill="#FF8A66"/>
+</svg>

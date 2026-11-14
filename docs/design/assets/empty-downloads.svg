@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" width="240" height="160" fill="none" role="img" aria-label="Скачиваний пока нет">
+  <title>Скачиваний пока нет</title>
+  <!-- Cloud Ferry · docs/design/assets · пустое состояние «нет скачиваний».
+       Палитра бренда: #005EFA / #89A7FF / #EEF3FF, акцент #FF5A33. -->
+  <ellipse cx="118" cy="82" rx="90" ry="56" fill="#EEF3FF"/>
+  <g transform="translate(44 6) scale(5.2)" stroke-width="2.6" vector-effect="non-scaling-stroke">
+    <path d="M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z" fill="#FFFFFF" stroke="#005EFA" stroke-linejoin="round"/>
+  </g>
+  <path d="M120 106v28m0 0-11-11m11 11 11-11" stroke="#005EFA" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M61 128v7a9 9 0 0 0 9 9h100a9 9 0 0 0 9-9v-7" stroke="#89A7FF" stroke-width="2.6" stroke-linecap="round"/>
+  <circle cx="180" cy="52" r="6" fill="#FF5A33"/>
+  <path d="M64 154h112" stroke="#89A7FF" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="1 10" opacity=".8"/>
+</svg>

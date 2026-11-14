@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" width="240" height="160" fill="none" role="img" aria-label="В папке пока ничего нет">
+  <title>В папке пока ничего нет</title>
+  <!-- Cloud Ferry · docs/design/assets · пустое состояние «папка пуста».
+       Палитра бренда: #005EFA / #89A7FF / #EEF3FF, акцент #FF5A33.
+       Для состояния «нет доступа» используйте empty-folder-locked.svg. -->
+  <ellipse cx="118" cy="94" rx="90" ry="52" fill="#EEF3FF"/>
+  <path d="M56 48h40l10 12h76a11 11 0 0 1 11 11v52a11 11 0 0 1-11 11H56a11 11 0 0 1-11-11V59a11 11 0 0 1 11-11Z" fill="#FFFFFF" stroke="#005EFA" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M66 90h58" stroke="#89A7FF" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 8"/>
+  <path d="M66 108h40" stroke="#89A7FF" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 8"/>
+  <circle cx="203" cy="45" r="5.5" fill="#FF5A33"/>
+</svg>

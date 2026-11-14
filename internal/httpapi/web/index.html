@@ -109,6 +109,21 @@
         <p class="flow-count" id="folder-count" role="status" aria-live="polite">Выбрано: 0 из 20</p>
         <ul class="chips" id="folder-chips" aria-label="Выбранные папки" hidden></ul>
       </div>
+      <label class="switch-row switch-row--filter" for="folder-show-existing" id="folder-show-existing-row" hidden>
+        <span class="switch-copy">
+          <span class="switch-title">Показать уже скачанные</span>
+          <span class="switch-note" id="folder-show-existing-note">Уже скачанные папки видны, но недоступны.</span>
+        </span>
+        <span class="switch-control">
+          <input id="folder-show-existing" type="checkbox" role="switch" aria-describedby="folder-show-existing-note">
+          <span class="switch-track" aria-hidden="true"></span>
+        </span>
+      </label>
+      <p class="folder-existing-note" id="folder-existing-note" role="status" hidden></p>
+      <div class="folder-existing-error" id="folder-existing-error" role="alert" hidden>
+        <span class="folder-existing-error-text" id="folder-existing-error-text"></span>
+        <button class="btn btn--secondary btn--sm" type="button" id="folder-existing-retry">Повторить</button>
+      </div>
     </div>
     <div class="folder-crumbs" id="folder-crumbs" aria-label="Текущая папка"></div>
     <div class="folder-body" id="folder-body"></div>
@@ -144,7 +159,7 @@
       </button>
     </div>
     <div class="review-body" id="review-body"></div>
-    <p class="form-error modal-error" id="review-error" role="alert" hidden></p>
+    <p class="form-error modal-error" id="review-error" role="alert" tabindex="-1" hidden></p>
     <div class="modal-foot">
       <button class="btn btn--secondary" type="button" id="review-back">Назад</button>
       <div class="modal-actions">

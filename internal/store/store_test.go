@@ -177,6 +177,90 @@ func TestJobSourcePathsRoundTrip(t *testing.T) {
 	}
 }
 
+func TestJobSourceFilesRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	st, err := Open(dir)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	job := Job{
+		ID: "job-files", AccountID: "abc", Source: "cf_abc:",
+		SourcePaths: []string{"Документы"},
+		SourceFiles: []string{"a.txt", "b/c.md"},
+		Dest:        "/downloads/yandex", Mode: "copy", Status: StatusDone, CreatedAt: time.Now().UTC(),
+	}
+	if err := st.AddJob(job); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	raw, err := os.ReadFile(dir + "/state.json")
+	if err != nil {
+		t.Fatalf("read state: %v", err)
+	}
+	if !strings.Contains(string(raw), `"sourceFiles"`) {
+		t.Fatalf("state does not keep sourceFiles: %s", raw)
+	}
+
+	reopened, err := Open(dir)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	got, ok := reopened.Job("job-files")
+	if !ok {
+		t.Fatal("job not found after reopen")
+	}
+	if !reflect.DeepEqual(got.SourceFiles, []string{"a.txt", "b/c.md"}) {
+		t.Fatalf("sourceFiles = %#v", got.SourceFiles)
+	}
+	if !reflect.DeepEqual(got.SourcePaths, []string{"Документы"}) {
+		t.Fatalf("sourcePaths = %#v", got.SourcePaths)
+	}
+	if got.Source != "cf_abc:" {
+		t.Fatalf("source = %q", got.Source)
+	}
+}
+
+// TestLegacyStateWithoutSourceFiles makes sure a state.json written by a build
+// that only knew folder selections still loads: sourceFiles reads as nil and
+// the folder list is untouched.
+func TestLegacyStateWithoutSourceFiles(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	legacy := `{
+  "accounts": [{"id": "abc", "name": "Яндекс", "provider": "webdav", "remote": "cf_abc", "createdAt": "2026-11-13T20:00:00Z"}],
+  "jobs": [{
+    "id": "folders-only",
+    "accountId": "abc",
+    "source": "cf_abc:",
+    "sourcePaths": ["Фото", "Документы"],
+    "dest": "/downloads/yandex",
+    "mode": "copy",
+    "status": "done",
+    "createdAt": "2026-11-13T20:01:00Z"
+  }]
+}`
+	if err := os.WriteFile(dir+"/state.json", []byte(legacy), 0o600); err != nil {
+		t.Fatalf("write legacy state: %v", err)
+	}
+
+	st, err := Open(dir)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	job, ok := st.Job("folders-only")
+	if !ok {
+		t.Fatal("legacy job not loaded")
+	}
+	if job.SourceFiles != nil {
+		t.Fatalf("sourceFiles = %#v, want nil", job.SourceFiles)
+	}
+	if !reflect.DeepEqual(job.SourcePaths, []string{"Фото", "Документы"}) {
+		t.Fatalf("sourcePaths = %#v", job.SourcePaths)
+	}
+}
+
 func TestJobWithoutSourcePathsOmitsField(t *testing.T) {
 	dir := t.TempDir()
 	st, err := Open(dir)
@@ -196,6 +280,9 @@ func TestJobWithoutSourcePathsOmitsField(t *testing.T) {
 	}
 	if strings.Contains(string(raw), `"sourcePaths"`) {
 		t.Fatalf("empty sourcePaths must be omitted: %s", raw)
+	}
+	if strings.Contains(string(raw), `"sourceFiles"`) {
+		t.Fatalf("empty sourceFiles must be omitted: %s", raw)
 	}
 }
 
@@ -375,7 +462,7 @@ func TestSnapshotDoesNotAliasStoredState(t *testing.T) {
 	}
 	if err := st.AddJob(Job{
 		ID: "j1", Status: StatusDone, CreatedAt: time.Now(),
-		SourcePaths: []string{"A"}, Failures: []string{"a.jpg"},
+		SourcePaths: []string{"A"}, SourceFiles: []string{"a.txt"}, Failures: []string{"a.jpg"},
 		Check: &CheckResult{Differ: 1},
 	}); err != nil {
 		t.Fatalf("add job: %v", err)
@@ -383,12 +470,13 @@ func TestSnapshotDoesNotAliasStoredState(t *testing.T) {
 
 	_, jobs := st.Snapshot()
 	jobs[0].SourcePaths[0] = "hacked"
+	jobs[0].SourceFiles[0] = "hacked"
 	jobs[0].Failures[0] = "hacked"
 	jobs[0].Check.Differ = 99
 	jobs[0].Status = StatusRunning
 
 	stored, _ := st.Job("j1")
-	if stored.SourcePaths[0] != "A" || stored.Failures[0] != "a.jpg" {
+	if stored.SourcePaths[0] != "A" || stored.SourceFiles[0] != "a.txt" || stored.Failures[0] != "a.jpg" {
 		t.Fatalf("snapshot aliases stored slices: %+v", stored)
 	}
 	if stored.Check.Differ != 1 || stored.Check == jobs[0].Check {
@@ -402,12 +490,13 @@ func TestSnapshotDoesNotAliasStoredState(t *testing.T) {
 	// leak into the live state.
 	if err := st.UpdateJob("j1", func(j *Job) bool {
 		j.SourcePaths[0] = "changed"
+		j.SourceFiles[0] = "changed"
 		return false
 	}); err != nil {
 		t.Fatalf("update: %v", err)
 	}
-	if stored, _ := st.Job("j1"); stored.SourcePaths[0] != "A" {
-		t.Fatalf("rejected update leaked: %+v", stored.SourcePaths)
+	if stored, _ := st.Job("j1"); stored.SourcePaths[0] != "A" || stored.SourceFiles[0] != "a.txt" {
+		t.Fatalf("rejected update leaked: %+v %+v", stored.SourcePaths, stored.SourceFiles)
 	}
 }
 

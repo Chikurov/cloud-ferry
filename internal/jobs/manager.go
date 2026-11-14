@@ -36,6 +36,11 @@ var ErrConflict = errors.New("job state conflict")
 // ErrInvalidMode means the caller asked for an unknown transfer mode.
 var ErrInvalidMode = errors.New("unknown transfer mode")
 
+// ErrSyncWithFiles means sync mode was combined with individual files. Sync
+// deletes extra destination files, so a partial source would be dangerous; the
+// UI only offers copy for a file selection and the API states it explicitly.
+var ErrSyncWithFiles = errors.New("sync mode cannot download individual files")
+
 // ErrSourceNotFound means a selected cloud folder does not exist or is not a
 // directory. It is a user mistake, not an outage, so the HTTP layer answers 400.
 var ErrSourceNotFound = errors.New("cloud source not found")
@@ -49,12 +54,35 @@ func (e *SourceNotFoundError) Error() string { return "cloud source not found: "
 
 func (e *SourceNotFoundError) Unwrap() error { return ErrSourceNotFound }
 
+// ErrSourceFileNotFound means a selected cloud file does not exist or is a
+// folder. Like a missing folder it is a user mistake, so the HTTP layer answers
+// 400.
+var ErrSourceFileNotFound = errors.New("cloud source file not found")
+
+// SourceFileError names the selected file that failed verification. IsDir is
+// true when the path exists but is a folder, so the UI can explain the mix-up.
+type SourceFileError struct {
+	Path  string
+	IsDir bool
+}
+
+func (e *SourceFileError) Error() string {
+	if e.IsDir {
+		return "cloud source is a folder, not a file: " + e.Path
+	}
+	return "cloud source file not found: " + e.Path
+}
+
+func (e *SourceFileError) Unwrap() error { return ErrSourceFileNotFound }
+
 // Source is the cloud side of a job. Path is one legacy folder whose contents
 // go straight into Dest. Paths is the multi-folder selection whose structure is
-// preserved inside Dest. Paths wins when both are set.
+// preserved inside Dest; Files lists individual files picked alongside the
+// folders. Paths and Files win over Path when set.
 type Source struct {
 	Path  string
 	Paths []string
+	Files []string
 }
 
 // selectedPaths returns the cloud folders that need verification.
@@ -99,11 +127,26 @@ func IncludeRules(paths []string) []string {
 	return rules
 }
 
-// SourceFS returns the rclone srcFs for a source and, for a multi-folder
+// FileIncludeRules returns the rclone include rules that select exactly the
+// given files. A rule without a trailing "/**" matches one file rather than its
+// subtree, so a selected file does not pull in a same-named folder. The leading
+// slash keeps the match relative to the cloud root, as with folder rules.
+func FileIncludeRules(files []string) []string {
+	rules := make([]string, 0, len(files))
+	for _, f := range files {
+		rules = append(rules, "/"+escapeIncludeRule(f))
+	}
+	return rules
+}
+
+// SourceFS returns the rclone srcFs for a source and, for a folder or file
 // selection, the _filter block that restricts the transfer to it.
 func SourceFS(remote string, src Source) (string, map[string]any) {
-	if len(src.Paths) > 0 {
-		return remote + ":", map[string]any{"IncludeRule": IncludeRules(src.Paths)}
+	if len(src.Paths) > 0 || len(src.Files) > 0 {
+		rules := make([]string, 0, len(src.Paths)+len(src.Files))
+		rules = append(rules, IncludeRules(src.Paths)...)
+		rules = append(rules, FileIncludeRules(src.Files)...)
+		return remote + ":", map[string]any{"IncludeRule": rules}
 	}
 	if src.Path != "" {
 		return remote + ":/" + strings.TrimPrefix(src.Path, "/"), nil
@@ -111,29 +154,56 @@ func SourceFS(remote string, src Source) (string, map[string]any) {
 	return remote + ":", nil
 }
 
-// VerifySources checks that every folder exists in the cloud and is a
-// directory before a transfer starts. A missing folder is ErrSourceNotFound
-// (and names the folder); anything else is an rclone failure the caller must
-// report as an outage rather than a bad request.
-func VerifySources(ctx context.Context, caller Caller, remote string, paths []string) error {
-	for _, p := range paths {
-		var out struct {
-			Item *struct {
-				IsDir bool `json:"IsDir"`
-			} `json:"item"`
+// VerifySources checks that every selected cloud path exists and has the
+// expected type before a transfer starts: folders must be directories and files
+// must be files. A missing or mistyped selection is ErrSourceNotFound or
+// ErrSourceFileNotFound (and names the path); anything else is an rclone
+// failure the caller must report as an outage rather than a bad request.
+func VerifySources(ctx context.Context, caller Caller, remote string, src Source) error {
+	for _, p := range selectedPaths(src) {
+		if err := verifySource(ctx, caller, remote, p, true); err != nil {
+			return err
 		}
-		callCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		err := caller.Call(callCtx, "operations/stat", map[string]any{"fs": remote + ":", "remote": p}, &out)
-		cancel()
-		if err != nil {
-			if IsMissingSource(err) {
-				return &SourceNotFoundError{Path: p}
-			}
-			return fmt.Errorf("verify %s: %w", p, err)
+	}
+	for _, p := range src.Files {
+		if err := verifySource(ctx, caller, remote, p, false); err != nil {
+			return err
 		}
-		if out.Item == nil || !out.Item.IsDir {
+	}
+	return nil
+}
+
+// verifySource asks rclone's operations/stat about one path. wantDir selects
+// whether the path must be a folder or a file.
+func verifySource(ctx context.Context, caller Caller, remote, p string, wantDir bool) error {
+	var out struct {
+		Item *struct {
+			IsDir bool `json:"IsDir"`
+		} `json:"item"`
+	}
+	callCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	err := caller.Call(callCtx, "operations/stat", map[string]any{"fs": remote + ":", "remote": p}, &out)
+	cancel()
+	notFound := func() error {
+		if wantDir {
 			return &SourceNotFoundError{Path: p}
 		}
+		return &SourceFileError{Path: p}
+	}
+	if err != nil {
+		if IsMissingSource(err) {
+			return notFound()
+		}
+		return fmt.Errorf("verify %s: %w", p, err)
+	}
+	if out.Item == nil {
+		return notFound()
+	}
+	if wantDir && !out.Item.IsDir {
+		return notFound()
+	}
+	if !wantDir && out.Item.IsDir {
+		return &SourceFileError{Path: p, IsDir: true}
 	}
 	return nil
 }
@@ -181,8 +251,11 @@ func isMissingJob(err error) bool {
 // sourceForJob reconstructs the cloud source of a stored job, including jobs
 // written by older builds that only have Source.
 func sourceForJob(job store.Job) Source {
-	if len(job.SourcePaths) > 0 {
-		return Source{Paths: append([]string(nil), job.SourcePaths...)}
+	if len(job.SourcePaths) > 0 || len(job.SourceFiles) > 0 {
+		return Source{
+			Paths: append([]string(nil), job.SourcePaths...),
+			Files: append([]string(nil), job.SourceFiles...),
+		}
 	}
 	_, rest, ok := strings.Cut(job.Source, ":")
 	if !ok {
@@ -380,7 +453,10 @@ func (m *Manager) Start(ctx context.Context, account store.Account, src Source, 
 	if mode != "copy" && mode != "sync" {
 		return store.Job{}, ErrInvalidMode
 	}
-	if err := VerifySources(ctx, m.rc, account.Remote, selectedPaths(src)); err != nil {
+	if mode == "sync" && len(src.Files) > 0 {
+		return store.Job{}, ErrSyncWithFiles
+	}
+	if err := VerifySources(ctx, m.rc, account.Remote, src); err != nil {
 		return store.Job{}, err
 	}
 
@@ -402,6 +478,9 @@ func (m *Manager) Start(ctx context.Context, account store.Account, src Source, 
 	}
 	if len(src.Paths) > 0 {
 		job.SourcePaths = append([]string(nil), src.Paths...)
+	}
+	if len(src.Files) > 0 {
+		job.SourceFiles = append([]string(nil), src.Files...)
 	}
 
 	if err := m.claimDest(dstPath, func() error { return m.store.AddJob(job) }); err != nil {
@@ -434,15 +513,16 @@ func (m *Manager) Resume(ctx context.Context, id string) (store.Job, error) {
 	if job.Status != store.StatusFailed && job.Status != store.StatusInterrupted && job.Status != store.StatusCanceled {
 		return store.Job{}, ErrConflict
 	}
-	// A folder may have disappeared while the job was paused. Verify before the
-	// job is claimed again: a sync into a vanished folder would empty its
-	// destination.
-	if paths := selectedPaths(sourceForJob(job)); len(paths) > 0 {
+	// A folder or file may have disappeared while the job was paused. Verify
+	// before the job is claimed again: a sync into a vanished folder would
+	// empty its destination and a missing file would silently transfer less.
+	src := sourceForJob(job)
+	if len(selectedPaths(src)) > 0 || len(src.Files) > 0 {
 		remote := remoteOf(job.Source)
 		if remote == "" {
 			return store.Job{}, fmt.Errorf("job %s has no cloud source", id)
 		}
-		if err := VerifySources(ctx, m.rc, remote, paths); err != nil {
+		if err := VerifySources(ctx, m.rc, remote, src); err != nil {
 			return store.Job{}, err
 		}
 	}

@@ -267,6 +267,119 @@ func TestValidateDestNormalizesPath(t *testing.T) {
 	}
 }
 
+func TestProbeDir(t *testing.T) {
+	root := t.TempDir()
+	dest := filepath.Join(root, "dest")
+	mkdir(t, filepath.Join(dest, "полная"))
+	writeFile(t, filepath.Join(dest, "полная", "a.txt"))
+	writeFile(t, filepath.Join(dest, "полная", ".hidden"))
+	mkdir(t, filepath.Join(dest, "полная", "вложенная"))
+	writeFile(t, filepath.Join(dest, "полная", "вложенная", "deep.txt"))
+	mkdir(t, filepath.Join(dest, "пустая"))
+	mkdir(t, filepath.Join(dest, "родитель", "ребёнок"))
+	writeFile(t, filepath.Join(dest, "файл.txt"))
+
+	outside := t.TempDir()
+	mkdir(t, filepath.Join(outside, "снаружи"))
+	if err := os.Symlink(outside, filepath.Join(dest, "наружу")); err != nil {
+		t.Fatalf("symlink: %v", err)
+	}
+	if err := os.Symlink(filepath.Join(dest, "полная"), filepath.Join(dest, "внутрь")); err != nil {
+		t.Fatalf("symlink: %v", err)
+	}
+
+	cases := []struct {
+		name    string
+		folder  string
+		exists  bool
+		entries int
+	}{
+		{"folder with entries", "полная", true, 3},
+		{"empty folder", "пустая", true, 0},
+		{"missing folder", "нет", false, 0},
+		{"nested folder", "родитель/ребёнок", true, 0},
+		{"missing nested folder", "родитель/нет", false, 0},
+		{"file instead of folder", "файл.txt", false, 0},
+		{"symlink outside", "наружу", false, 0},
+		{"symlink inside root", "внутрь", false, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			state, err := ProbeDir([]string{root}, dest, tc.folder)
+			if err != nil {
+				t.Fatalf("probe: %v", err)
+			}
+			if state.Exists != tc.exists || state.Entries != tc.entries {
+				t.Fatalf("state = %+v, want exists=%v entries=%d", state, tc.exists, tc.entries)
+			}
+		})
+	}
+
+	if _, err := os.Stat(filepath.Join(dest, "нет")); !os.IsNotExist(err) {
+		t.Fatalf("probe created the missing folder: %v", err)
+	}
+}
+
+func TestProbeDirMissingDestination(t *testing.T) {
+	root := t.TempDir()
+	dest := filepath.Join(root, "new", "dest")
+
+	state, err := ProbeDir([]string{root}, dest, "Фото")
+	if err != nil {
+		t.Fatalf("probe: %v", err)
+	}
+	if state.Exists || state.Entries != 0 {
+		t.Fatalf("state = %+v, want not existing", state)
+	}
+	if _, err := os.Stat(dest); !os.IsNotExist(err) {
+		t.Fatalf("probe created the destination: %v", err)
+	}
+}
+
+func TestProbeDirRejectsInvalidName(t *testing.T) {
+	root := t.TempDir()
+	for _, name := range []string{"", "..", "../x", "a/../../b", "/x", "bad\x00name"} {
+		if _, err := ProbeDir([]string{root}, root, name); !errors.Is(err, ErrInvalidPath) {
+			t.Fatalf("%q: got %v, want ErrInvalidPath", name, err)
+		}
+	}
+}
+
+func TestProbeDirRejectsOutsideRoots(t *testing.T) {
+	root := t.TempDir()
+	outside := t.TempDir()
+	if _, err := ProbeDir([]string{root}, filepath.Join(outside, "dest"), "Фото"); !errors.Is(err, ErrOutsideRoots) {
+		t.Fatalf("expected ErrOutsideRoots, got %v", err)
+	}
+}
+
+func TestProbeDirRejectsUnsafeDestination(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "файл.txt"))
+	outside := t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(root, "escape")); err != nil {
+		t.Fatalf("symlink: %v", err)
+	}
+
+	if _, err := ProbeDir([]string{root}, filepath.Join(root, "файл.txt"), "Фото"); !errors.Is(err, ErrNotDir) {
+		t.Fatalf("file destination: got %v, want ErrNotDir", err)
+	}
+	if _, err := ProbeDir([]string{root}, filepath.Join(root, "escape"), "Фото"); !errors.Is(err, ErrSymlink) {
+		t.Fatalf("symlink destination: got %v, want ErrSymlink", err)
+	}
+}
+
+func TestProbeDirUnmountedRoot(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "not-mounted")
+	state, err := ProbeDir([]string{missing}, filepath.Join(missing, "dest"), "Фото")
+	if err != nil {
+		t.Fatalf("probe: %v", err)
+	}
+	if state.Exists {
+		t.Fatalf("state = %+v, want not existing", state)
+	}
+}
+
 func TestMatchRootSupportsFilesystemRoot(t *testing.T) {
 	rootPath, rel, err := matchRoot([]string{"/"}, "/tmp/example")
 	if err != nil {

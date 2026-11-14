@@ -35,6 +35,7 @@ type fakeEngine struct {
 	calls     []recordedCall
 	responses map[string]any
 	errors    map[string]error
+	statItems map[string]any
 	pingErr   error
 }
 
@@ -47,6 +48,12 @@ func (f *fakeEngine) Call(_ context.Context, method string, in, out any) error {
 	f.calls = append(f.calls, call)
 	failErr := f.errors[method]
 	response, ok := f.responses[method]
+	if method == "operations/stat" && f.statItems != nil {
+		remote, _ := call.input["remote"].(string)
+		if item, exists := f.statItems[remote]; exists {
+			response, ok = map[string]any{"item": item}, true
+		}
+	}
 	f.mu.Unlock()
 	if failErr != nil {
 		return failErr
@@ -65,6 +72,17 @@ func (f *fakeEngine) setResponse(method string, response any) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.responses[method] = response
+}
+
+// setStat makes operations/stat answer for one cloud path. A nil item means the
+// path does not exist; {"IsDir": ...} tells a folder from a file.
+func (f *fakeEngine) setStat(remote string, item map[string]any) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.statItems == nil {
+		f.statItems = map[string]any{}
+	}
+	f.statItems[remote] = item
 }
 
 func (f *fakeEngine) setError(method string, err error) {
@@ -1467,6 +1485,523 @@ func TestCreateJobEmptySourcePathsMeansWholeDisk(t *testing.T) {
 	stored, _ := st.Job(jobID)
 	if stored.SourcePaths != nil {
 		t.Fatalf("sourcePaths = %#v, want nil", stored.SourcePaths)
+	}
+}
+
+func TestCreateJobWithSourceFiles(t *testing.T) {
+	server, st, engine := newTestServer(t)
+	accountID := createTestAccount(t, server)
+	engine.setStat("Фото", map[string]any{"IsDir": true})
+	engine.setStat("a.txt", map[string]any{"IsDir": false})
+	engine.setStat("docs/b.md", map[string]any{"IsDir": false})
+
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs", map[string]any{
+		"accountId":   accountID,
+		"sourcePaths": []string{"Фото"},
+		"sourceFiles": []string{"docs/b.md", "a.txt"},
+		"destPath":    "/downloads/files",
+	})
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	files, _ := body["sourceFiles"].([]any)
+	if len(files) != 2 || files[0] != "a.txt" || files[1] != "docs/b.md" {
+		t.Fatalf("sourceFiles = %v, want [a.txt docs/b.md]", body["sourceFiles"])
+	}
+	paths, _ := body["sourcePaths"].([]any)
+	if len(paths) != 1 || paths[0] != "Фото" {
+		t.Fatalf("sourcePaths = %v", body["sourcePaths"])
+	}
+	source, _ := body["source"].(string)
+	if source == "" || !strings.HasSuffix(source, ":") {
+		t.Fatalf("source = %q, want <remote>:", source)
+	}
+
+	call, ok := engine.find("sync/copy")
+	if !ok {
+		t.Fatal("sync/copy was not called")
+	}
+	if call.input["srcFs"] != source {
+		t.Fatalf("srcFs = %v, body source = %v", call.input["srcFs"], source)
+	}
+	filter, ok := call.input["_filter"].(map[string]any)
+	if !ok {
+		t.Fatalf("_filter missing: %#v", call.input)
+	}
+	rules, _ := filter["IncludeRule"].([]string)
+	if len(rules) != 3 || rules[0] != "/Фото/**" || rules[1] != "/a.txt" || rules[2] != "/docs/b.md" {
+		t.Fatalf("rules = %v", filter["IncludeRule"])
+	}
+	if got := engine.count("operations/stat"); got != 3 {
+		t.Fatalf("operations/stat calls = %d, want 3 (folder + files)", got)
+	}
+
+	jobID, _ := body["id"].(string)
+	stored, ok := st.Job(jobID)
+	if !ok || len(stored.SourceFiles) != 2 || len(stored.SourcePaths) != 1 {
+		t.Fatalf("stored job = %+v", stored)
+	}
+}
+
+func TestCreateJobOnlyFiles(t *testing.T) {
+	server, st, engine := newTestServer(t)
+	accountID := createTestAccount(t, server)
+	engine.setStat("a.txt", map[string]any{"IsDir": false})
+	engine.setStat("b/c.md", map[string]any{"IsDir": false})
+
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs", map[string]any{
+		"accountId":   accountID,
+		"sourceFiles": []string{"a.txt", "b/c.md"},
+		"destPath":    "/downloads/only-files",
+	})
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	if source, _ := body["source"].(string); !strings.HasSuffix(source, ":") {
+		t.Fatalf("source = %q", source)
+	}
+	if _, exists := body["sourcePaths"]; exists {
+		t.Fatalf("sourcePaths must be omitted for a file-only job: %v", body["sourcePaths"])
+	}
+	call, _ := engine.find("sync/copy")
+	filter, ok := call.input["_filter"].(map[string]any)
+	if !ok {
+		t.Fatalf("_filter missing: %#v", call.input)
+	}
+	rules, _ := filter["IncludeRule"].([]string)
+	if len(rules) != 2 || rules[0] != "/a.txt" || rules[1] != "/b/c.md" {
+		t.Fatalf("rules = %v", filter["IncludeRule"])
+	}
+	if got := engine.count("operations/stat"); got != 2 {
+		t.Fatalf("operations/stat calls = %d, want 2 (only files, no folder)", got)
+	}
+	jobID, _ := body["id"].(string)
+	stored, _ := st.Job(jobID)
+	if stored.SourcePaths != nil || len(stored.SourceFiles) != 2 {
+		t.Fatalf("stored job = %+v", stored)
+	}
+}
+
+func TestCreateJobSourceFilesNormalised(t *testing.T) {
+	server, _, engine := newTestServer(t)
+	accountID := createTestAccount(t, server)
+	engine.setStat("A/f.txt", map[string]any{"IsDir": false})
+	engine.setStat("B/g.txt", map[string]any{"IsDir": false})
+
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs", map[string]any{
+		"accountId":   accountID,
+		"sourceFiles": []string{" B/g.txt/", "A/f.txt", "A/f.txt"},
+		"destPath":    "/downloads/files-norm",
+	})
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	files, _ := body["sourceFiles"].([]any)
+	if len(files) != 2 || files[0] != "A/f.txt" || files[1] != "B/g.txt" {
+		t.Fatalf("sourceFiles = %v, want [A/f.txt B/g.txt]", body["sourceFiles"])
+	}
+	if got := engine.count("operations/stat"); got != 2 {
+		t.Fatalf("operations/stat calls = %d, want 2 after dedupe", got)
+	}
+}
+
+func TestCreateJobSourceFilesLimit(t *testing.T) {
+	server, _, engine := newTestServer(t)
+	accountID := createTestAccount(t, server)
+	files := make([]string, 0, 101)
+	for i := 0; i < 101; i++ {
+		file := fmt.Sprintf("f-%03d.txt", i)
+		files = append(files, file)
+		engine.setStat(file, map[string]any{"IsDir": false})
+	}
+
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs", map[string]any{
+		"accountId":   accountID,
+		"sourceFiles": files[:100],
+		"destPath":    "/downloads/files-100",
+	})
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("100 files: status = %d, body = %v", resp.StatusCode, body)
+	}
+
+	// A duplicate in an over-limit request collapses before the limit is
+	// checked, so 101 entries with two equal paths still fit.
+	withDup := append(append([]string(nil), files[:100]...), files[0])
+	resp, body = doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs", map[string]any{
+		"accountId":   accountID,
+		"sourceFiles": withDup,
+		"destPath":    "/downloads/files-dedup",
+	})
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("duplicate at the limit: status = %d, body = %v", resp.StatusCode, body)
+	}
+
+	statCalls := engine.count("operations/stat")
+	resp, body = doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs", map[string]any{
+		"accountId":   accountID,
+		"sourceFiles": files,
+		"destPath":    "/downloads/files-101",
+	})
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("101 files: status = %d, body = %v", resp.StatusCode, body)
+	}
+	if body["field"] != "sourceFiles" {
+		t.Fatalf("field = %v", body["field"])
+	}
+	message, _ := body["error"].(string)
+	if !strings.Contains(message, "не больше 100 файлов") {
+		t.Fatalf("error = %q", message)
+	}
+	if got := engine.count("operations/stat"); got != statCalls {
+		t.Fatalf("operations/stat calls = %d, want %d: an over-limit request must not verify", got, statCalls)
+	}
+}
+
+func TestCreateJobFoldersAndFilesAtLimits(t *testing.T) {
+	server, _, engine := newTestServer(t)
+	accountID := createTestAccount(t, server)
+	folders := make([]string, 0, 20)
+	files := make([]string, 0, 100)
+	for i := 0; i < 20; i++ {
+		folder := fmt.Sprintf("папка-%02d", i)
+		folders = append(folders, folder)
+		engine.setStat(folder, map[string]any{"IsDir": true})
+	}
+	for i := 0; i < 100; i++ {
+		file := fmt.Sprintf("файл-%03d.txt", i)
+		files = append(files, file)
+		engine.setStat(file, map[string]any{"IsDir": false})
+	}
+
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs", map[string]any{
+		"accountId":   accountID,
+		"sourcePaths": folders,
+		"sourceFiles": files,
+		"destPath":    "/downloads/mixed-limits",
+	})
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	call, _ := engine.find("sync/copy")
+	filter, ok := call.input["_filter"].(map[string]any)
+	if !ok {
+		t.Fatalf("_filter missing: %#v", call.input)
+	}
+	rules, _ := filter["IncludeRule"].([]string)
+	if len(rules) != 120 {
+		t.Fatalf("rules = %d, want 120", len(rules))
+	}
+	if got := engine.count("operations/stat"); got != 120 {
+		t.Fatalf("operations/stat calls = %d, want 120", got)
+	}
+}
+
+func TestCreateJobSourceFilesRejectBadPaths(t *testing.T) {
+	server, _, _ := newTestServer(t)
+	accountID := createTestAccount(t, server)
+
+	cases := []struct {
+		name  string
+		files []string
+	}{
+		{"traversal", []string{"../secret.txt"}},
+		{"root itself", []string{"."}},
+		{"nested traversal", []string{"a/../../b.txt"}},
+		{"empty item", []string{""}},
+		{"too long", []string{strings.Repeat("a", maxSourcePathLen+1) + ".txt"}},
+		{"control characters", []string{"фото\nновое.txt"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs", map[string]any{
+				"accountId":   accountID,
+				"sourceFiles": tc.files,
+				"destPath":    "/downloads/bad-file",
+			})
+			if resp.StatusCode != http.StatusBadRequest {
+				t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+			}
+			if body["field"] != "sourceFiles" {
+				t.Fatalf("field = %v", body["field"])
+			}
+			if message, _ := body["error"].(string); message == "" {
+				t.Fatalf("empty error: %v", body)
+			}
+		})
+	}
+}
+
+func TestCreateJobMissingFile(t *testing.T) {
+	server, st, engine := newTestServer(t)
+	accountID := createTestAccount(t, server)
+	engine.setStat("gone.txt", nil)
+
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs", map[string]any{
+		"accountId":   accountID,
+		"sourceFiles": []string{"gone.txt"},
+		"destPath":    "/downloads/missing-file",
+	})
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	message, _ := body["error"].(string)
+	if !strings.Contains(message, "Файл не найден") || !strings.Contains(message, "«gone.txt»") {
+		t.Fatalf("error = %q", message)
+	}
+	if body["field"] != "sourceFiles" {
+		t.Fatalf("field = %v", body["field"])
+	}
+	if engine.count("sync/copy") != 0 {
+		t.Fatal("sync/copy must not start for a missing file")
+	}
+	if len(st.Jobs()) != 0 {
+		t.Fatalf("job persisted: %+v", st.Jobs())
+	}
+}
+
+func TestCreateJobFolderInsteadOfFile(t *testing.T) {
+	server, st, engine := newTestServer(t)
+	accountID := createTestAccount(t, server)
+	engine.setStat("Фото", map[string]any{"IsDir": true})
+
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs", map[string]any{
+		"accountId":   accountID,
+		"sourceFiles": []string{"Фото"},
+		"destPath":    "/downloads/folder-as-file",
+	})
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	message, _ := body["error"].(string)
+	if !strings.Contains(message, "это папка, а не файл") || !strings.Contains(message, "«Фото»") {
+		t.Fatalf("error = %q", message)
+	}
+	if body["field"] != "sourceFiles" {
+		t.Fatalf("field = %v", body["field"])
+	}
+	if len(st.Jobs()) != 0 {
+		t.Fatalf("job persisted: %+v", st.Jobs())
+	}
+}
+
+func TestCreateJobSourceFilesOutageIs502(t *testing.T) {
+	server, _, engine := newTestServer(t)
+	accountID := createTestAccount(t, server)
+	engine.setError("operations/stat", errors.New("rclone is down"))
+
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs", map[string]any{
+		"accountId":   accountID,
+		"sourceFiles": []string{"a.txt"},
+		"destPath":    "/downloads/file-outage",
+	})
+	if resp.StatusCode != http.StatusBadGateway {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	if message, _ := body["error"].(string); message == "" {
+		t.Fatalf("empty error: %v", body)
+	}
+}
+
+func TestCreateJobSyncWithFilesRejected(t *testing.T) {
+	server, st, engine := newTestServer(t)
+	accountID := createTestAccount(t, server)
+
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs", map[string]any{
+		"accountId":   accountID,
+		"sourceFiles": []string{"a.txt"},
+		"destPath":    "/downloads/sync-files",
+		"mode":        "sync",
+	})
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	message, _ := body["error"].(string)
+	if !strings.Contains(message, "только в режиме «Добавлять»") {
+		t.Fatalf("error = %q", message)
+	}
+	if body["field"] != "mode" {
+		t.Fatalf("field = %v", body["field"])
+	}
+	if engine.count("operations/stat") != 0 || engine.count("sync/sync") != 0 {
+		t.Fatalf("sync+files must not verify or launch: stat=%d sync=%d",
+			engine.count("operations/stat"), engine.count("sync/sync"))
+	}
+	if len(st.Jobs()) != 0 {
+		t.Fatalf("job persisted: %+v", st.Jobs())
+	}
+}
+
+func TestCreateJobLegacyPathWithFilesRejected(t *testing.T) {
+	server, _, _ := newTestServer(t)
+	accountID := createTestAccount(t, server)
+
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs", map[string]any{
+		"accountId":   accountID,
+		"sourcePath":  "Фото",
+		"sourceFiles": []string{"a.txt"},
+		"destPath":    "/downloads/legacy-files",
+	})
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	if body["field"] != "sourceFiles" {
+		t.Fatalf("field = %v", body["field"])
+	}
+}
+
+func TestCreateJobEmptySourceFilesMeansWholeDisk(t *testing.T) {
+	server, st, engine := newTestServer(t)
+	accountID := createTestAccount(t, server)
+
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs", map[string]any{
+		"accountId":   accountID,
+		"sourceFiles": []string{},
+		"destPath":    "/downloads/files-empty",
+	})
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	if source, _ := body["source"].(string); !strings.HasSuffix(source, ":") {
+		t.Fatalf("source = %q", source)
+	}
+	call, _ := engine.find("sync/copy")
+	if _, exists := call.input["_filter"]; exists {
+		t.Fatalf("whole disk must not carry a filter: %#v", call.input)
+	}
+	jobID, _ := body["id"].(string)
+	stored, _ := st.Job(jobID)
+	if stored.SourceFiles != nil || stored.SourcePaths != nil {
+		t.Fatalf("stored job = %+v", stored)
+	}
+}
+
+func TestPreflightWithSourceFiles(t *testing.T) {
+	server, _, engine := newTestServer(t)
+	accountID := createTestAccount(t, server)
+
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/preflight", map[string]any{
+		"accountId":   accountID,
+		"sourcePaths": []string{"Документы"},
+		"sourceFiles": []string{"a.txt", "b/c.md"},
+		"destPath":    "/downloads/yandex",
+	})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	if body["files"] != float64(10) || body["bytes"] != float64(1000) {
+		t.Fatalf("body = %v", body)
+	}
+	call, ok := engine.find("operations/size")
+	if !ok {
+		t.Fatal("operations/size was not called")
+	}
+	if fsPath, _ := call.input["fs"].(string); !strings.HasSuffix(fsPath, ":") {
+		t.Fatalf("fs = %v, want <remote>:", call.input["fs"])
+	}
+	filter, ok := call.input["_filter"].(map[string]any)
+	if !ok {
+		t.Fatalf("_filter missing: %#v", call.input)
+	}
+	rules, _ := filter["IncludeRule"].([]string)
+	if len(rules) != 3 || rules[0] != "/Документы/**" || rules[1] != "/a.txt" || rules[2] != "/b/c.md" {
+		t.Fatalf("rules = %v", filter["IncludeRule"])
+	}
+}
+
+func TestResumeWithSourceFilesKeepsRules(t *testing.T) {
+	server, st, engine := newTestServer(t)
+	accountID := createTestAccount(t, server)
+	engine.setStat("a.txt", map[string]any{"IsDir": false})
+	if err := st.AddJob(store.Job{
+		ID: "paused-files", AccountID: accountID, Source: "cf_x:",
+		SourceFiles: []string{"a.txt"}, Dest: "/downloads/files-resume",
+		Status: store.StatusInterrupted, CreatedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs/paused-files/resume", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	files, _ := body["sourceFiles"].([]any)
+	if len(files) != 1 || files[0] != "a.txt" {
+		t.Fatalf("sourceFiles = %v", body["sourceFiles"])
+	}
+	if got := engine.count("sync/copy"); got != 1 {
+		t.Fatalf("sync/copy calls = %d, want 1", got)
+	}
+	if got := engine.count("operations/stat"); got != 1 {
+		t.Fatalf("operations/stat calls = %d, want 1", got)
+	}
+	call, _ := engine.find("sync/copy")
+	filter, ok := call.input["_filter"].(map[string]any)
+	if !ok {
+		t.Fatalf("_filter missing: %#v", call.input)
+	}
+	rules, _ := filter["IncludeRule"].([]string)
+	if len(rules) != 1 || rules[0] != "/a.txt" {
+		t.Fatalf("rules = %v, want one exact rule", filter["IncludeRule"])
+	}
+
+	// A second resume must not start a second transfer for the same files.
+	resp, _ = doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs/paused-files/resume", nil)
+	if resp.StatusCode != http.StatusConflict {
+		t.Fatalf("second resume status = %d, want 409", resp.StatusCode)
+	}
+	if got := engine.count("sync/copy"); got != 1 {
+		t.Fatalf("sync/copy calls after second resume = %d, want 1", got)
+	}
+}
+
+func TestResumeMissingFileReturns400(t *testing.T) {
+	server, st, engine := newTestServer(t)
+	accountID := createTestAccount(t, server)
+	engine.setStat("gone.txt", nil)
+	if err := st.AddJob(store.Job{
+		ID: "paused-gone", AccountID: accountID, Source: "cf_x:",
+		SourceFiles: []string{"gone.txt"}, Dest: "/downloads/files-gone",
+		Status: store.StatusInterrupted, CreatedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs/paused-gone/resume", nil)
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	if body["field"] != "sourceFiles" {
+		t.Fatalf("field = %v", body["field"])
+	}
+	if message, _ := body["error"].(string); !strings.Contains(message, "«gone.txt»") {
+		t.Fatalf("error = %q", message)
+	}
+	stored, _ := st.Job("paused-gone")
+	if stored.Status != store.StatusInterrupted {
+		t.Fatalf("status = %q, want interrupted", stored.Status)
+	}
+	if got := engine.count("sync/copy"); got != 0 {
+		t.Fatalf("sync/copy calls = %d, want 0", got)
+	}
+}
+
+func TestStateExposesSourceFiles(t *testing.T) {
+	server, st, _ := newTestServer(t)
+	if err := st.AddJob(store.Job{
+		ID: "files-state", Source: "cf_x:", SourceFiles: []string{"a.txt", "b/c.md"},
+		Dest: "/downloads/yandex", Status: store.StatusDone, CreatedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+	_, body := doJSON(t, server.Client(), http.MethodGet, server.URL+"/api/state", nil)
+	jobs, _ := body["jobs"].([]any)
+	if len(jobs) != 1 {
+		t.Fatalf("jobs = %v", body["jobs"])
+	}
+	job, _ := jobs[0].(map[string]any)
+	files, _ := job["sourceFiles"].([]any)
+	if len(files) != 2 || files[0] != "a.txt" || files[1] != "b/c.md" {
+		t.Fatalf("sourceFiles = %v", job["sourceFiles"])
 	}
 }
 

@@ -21,22 +21,30 @@ type fakeRC struct {
 	inputs    []map[string]any
 	responses map[string]any
 	errors    map[string]error
+	statItems map[string]any
 	onCall    func(method string)
 }
 
 func (f *fakeRC) Call(_ context.Context, method string, in, out any) error {
 	f.mu.Lock()
 	f.calls = append(f.calls, method)
+	var input map[string]any
 	if typed, ok := in.(map[string]any); ok {
 		copied := make(map[string]any, len(typed))
 		for key, value := range typed {
 			copied[key] = value
 		}
-		f.inputs = append(f.inputs, copied)
-	} else {
-		f.inputs = append(f.inputs, nil)
+		input = copied
 	}
+	f.inputs = append(f.inputs, input)
 	failErr := f.errors[method]
+	response, ok := f.responses[method]
+	if method == "operations/stat" && f.statItems != nil {
+		remote, _ := input["remote"].(string)
+		if item, exists := f.statItems[remote]; exists {
+			response, ok = map[string]any{"item": item}, true
+		}
+	}
 	f.mu.Unlock()
 	if f.onCall != nil {
 		f.onCall(method)
@@ -44,8 +52,6 @@ func (f *fakeRC) Call(_ context.Context, method string, in, out any) error {
 	if failErr != nil {
 		return failErr
 	}
-
-	response, ok := f.responses[method]
 	if !ok || out == nil {
 		return nil
 	}
@@ -54,6 +60,17 @@ func (f *fakeRC) Call(_ context.Context, method string, in, out any) error {
 		return err
 	}
 	return json.Unmarshal(payload, out)
+}
+
+// setStat makes operations/stat answer for one cloud path. A nil item means
+// the path does not exist; {"IsDir": ...} tells a folder from a file.
+func (f *fakeRC) setStat(remote string, item map[string]any) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.statItems == nil {
+		f.statItems = map[string]any{}
+	}
+	f.statItems[remote] = item
 }
 
 // inputFor returns the recorded input of the last call to method.
@@ -798,6 +815,8 @@ func TestSourceFS(t *testing.T) {
 		wantFilter bool
 	}{
 		{"multi", Source{Paths: []string{"Документы", "Фотографии/2024"}}, "cf_a1:", true},
+		{"files only", Source{Files: []string{"a.txt", "b/c.md"}}, "cf_a1:", true},
+		{"folders and files", Source{Paths: []string{"Фото"}, Files: []string{"a.txt"}}, "cf_a1:", true},
 		{"legacy", Source{Path: "/Фото"}, "cf_a1:/Фото", false},
 		{"whole disk", Source{}, "cf_a1:", false},
 		{"explicit empty list", Source{Paths: []string{}}, "cf_a1:", false},
@@ -813,7 +832,9 @@ func TestSourceFS(t *testing.T) {
 			}
 			if tc.wantFilter {
 				rules, _ := filter["IncludeRule"].([]string)
-				want := IncludeRules(tc.src.Paths)
+				want := make([]string, 0, len(tc.src.Paths)+len(tc.src.Files))
+				want = append(want, IncludeRules(tc.src.Paths)...)
+				want = append(want, FileIncludeRules(tc.src.Files)...)
 				if !reflect.DeepEqual(rules, want) {
 					t.Fatalf("rules = %#v, want %#v", rules, want)
 				}
@@ -867,6 +888,297 @@ func TestStartMultiUsesRootAndFilter(t *testing.T) {
 	stat := fake.inputFor(t, "operations/stat")
 	if stat["fs"] != "cf_a1:" || stat["remote"] != "Фотографии/2024" {
 		t.Fatalf("stat input = %#v", stat)
+	}
+}
+
+func TestFileIncludeRulesEscape(t *testing.T) {
+	cases := []struct {
+		path string
+		want string
+	}{
+		{"a.txt", "/a.txt"},
+		{"A/b c.md", "/A/b c.md"},
+		{"a*b", `/a\*b`},
+		{"q?[x]{y}\\z", `/q\?\[x\]\{y\}\\z`},
+	}
+	for _, tc := range cases {
+		rules := FileIncludeRules([]string{tc.path})
+		if len(rules) != 1 || rules[0] != tc.want {
+			t.Fatalf("%q: rules = %#v, want %q", tc.path, rules, tc.want)
+		}
+	}
+}
+
+// TestStartFilesUsesRootAndExactRules checks the core of a file selection: one
+// rclone source at the cloud root and an exact include rule per file.
+func TestStartFilesUsesRootAndExactRules(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	fake.setStat("a.txt", map[string]any{"IsDir": false})
+	fake.setStat("b/c.md", map[string]any{"IsDir": false})
+	account := store.Account{ID: "a1", Name: "Яндекс", Remote: "cf_a1"}
+	src := Source{Files: []string{"a.txt", "b/c.md"}}
+
+	job, err := manager.Start(context.Background(), account, src, "/downloads/yandex", "copy")
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if job.Source != "cf_a1:" {
+		t.Fatalf("source = %q", job.Source)
+	}
+	if job.SourcePaths != nil {
+		t.Fatalf("sourcePaths = %#v, want nil", job.SourcePaths)
+	}
+	if !reflect.DeepEqual(job.SourceFiles, src.Files) {
+		t.Fatalf("sourceFiles = %#v", job.SourceFiles)
+	}
+	stored, ok := st.Job(job.ID)
+	if !ok || !reflect.DeepEqual(stored.SourceFiles, src.Files) {
+		t.Fatalf("stored job = %+v", stored)
+	}
+
+	call := fake.inputFor(t, "sync/copy")
+	if call["srcFs"] != "cf_a1:" {
+		t.Fatalf("srcFs = %v", call["srcFs"])
+	}
+	filter, ok := call["_filter"].(map[string]any)
+	if !ok {
+		t.Fatalf("_filter missing: %#v", call)
+	}
+	rules, _ := filter["IncludeRule"].([]string)
+	if !reflect.DeepEqual(rules, []string{"/a.txt", "/b/c.md"}) {
+		t.Fatalf("rules = %#v", rules)
+	}
+	if got := fake.count("operations/stat"); got != len(src.Files) {
+		t.Fatalf("operations/stat calls = %d, want %d", got, len(src.Files))
+	}
+	stat := fake.inputFor(t, "operations/stat")
+	if stat["fs"] != "cf_a1:" || stat["remote"] != "b/c.md" {
+		t.Fatalf("stat input = %#v", stat)
+	}
+}
+
+func TestStartFilesWithFoldersKeepsBothRuleSets(t *testing.T) {
+	manager, fake, _ := newTestManager(t)
+	fake.setStat("Фото", map[string]any{"IsDir": true})
+	fake.setStat("a.txt", map[string]any{"IsDir": false})
+	src := Source{Paths: []string{"Фото"}, Files: []string{"a.txt"}}
+
+	job, err := manager.Start(context.Background(), store.Account{ID: "a1", Remote: "cf_a1"}, src, "/downloads/yandex", "copy")
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if !reflect.DeepEqual(job.SourcePaths, src.Paths) || !reflect.DeepEqual(job.SourceFiles, src.Files) {
+		t.Fatalf("job = %+v", job)
+	}
+	call := fake.inputFor(t, "sync/copy")
+	filter, ok := call["_filter"].(map[string]any)
+	if !ok {
+		t.Fatalf("_filter missing: %#v", call)
+	}
+	rules, _ := filter["IncludeRule"].([]string)
+	if !reflect.DeepEqual(rules, []string{"/Фото/**", "/a.txt"}) {
+		t.Fatalf("rules = %#v", rules)
+	}
+	if got := fake.count("operations/stat"); got != 2 {
+		t.Fatalf("operations/stat calls = %d, want 2", got)
+	}
+}
+
+func TestStartSyncWithFilesRejected(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	_, err := manager.Start(context.Background(), store.Account{ID: "a1", Remote: "cf_a1"}, Source{Files: []string{"a.txt"}}, "/downloads/yandex", "sync")
+	if !errors.Is(err, ErrSyncWithFiles) {
+		t.Fatalf("err = %v, want ErrSyncWithFiles", err)
+	}
+	if got := fake.count("operations/stat"); got != 0 {
+		t.Fatalf("operations/stat calls = %d, want 0: a rejected mode must not be verified", got)
+	}
+	if got := fake.count("sync/sync"); got != 0 {
+		t.Fatalf("sync/sync calls = %d, want 0", got)
+	}
+	if jobs := st.Jobs(); len(jobs) != 0 {
+		t.Fatalf("job persisted for a rejected mode: %+v", jobs)
+	}
+}
+
+func TestStartMissingFileReturnsErrSourceFileNotFound(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	fake.setStat("gone.txt", nil)
+
+	_, err := manager.Start(context.Background(), store.Account{ID: "a1", Remote: "cf_a1"}, Source{Files: []string{"gone.txt"}}, "/downloads/yandex", "copy")
+	if !errors.Is(err, ErrSourceFileNotFound) {
+		t.Fatalf("err = %v, want ErrSourceFileNotFound", err)
+	}
+	var fileErr *SourceFileError
+	if !errors.As(err, &fileErr) || fileErr.Path != "gone.txt" || fileErr.IsDir {
+		t.Fatalf("error does not name the missing file: %v", err)
+	}
+	if len(st.Jobs()) != 0 {
+		t.Fatalf("job persisted despite a missing file: %+v", st.Jobs())
+	}
+	if got := fake.count("sync/copy"); got != 0 {
+		t.Fatalf("sync/copy calls = %d, want 0", got)
+	}
+}
+
+func TestStartFolderInsteadOfFileReturnsErrSourceFileNotFound(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	fake.setStat("Фото", map[string]any{"IsDir": true})
+
+	_, err := manager.Start(context.Background(), store.Account{ID: "a1", Remote: "cf_a1"}, Source{Files: []string{"Фото"}}, "/downloads/yandex", "copy")
+	if !errors.Is(err, ErrSourceFileNotFound) {
+		t.Fatalf("err = %v, want ErrSourceFileNotFound", err)
+	}
+	var fileErr *SourceFileError
+	if !errors.As(err, &fileErr) || fileErr.Path != "Фото" || !fileErr.IsDir {
+		t.Fatalf("error does not report a folder: %v", err)
+	}
+	if len(st.Jobs()) != 0 {
+		t.Fatalf("job persisted despite a folder source: %+v", st.Jobs())
+	}
+}
+
+func TestStartFilesNetworkFailureIsOutage(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	fake.errors = map[string]error{"operations/stat": errors.New("dial unix: connection refused")}
+
+	_, err := manager.Start(context.Background(), store.Account{ID: "a1", Remote: "cf_a1"}, Source{Files: []string{"a.txt"}}, "/downloads/yandex", "copy")
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	if errors.Is(err, ErrSourceFileNotFound) || errors.Is(err, ErrSourceNotFound) {
+		t.Fatalf("network failure must not look like a missing file: %v", err)
+	}
+	if len(st.Jobs()) != 0 {
+		t.Fatalf("job persisted during an outage: %+v", st.Jobs())
+	}
+}
+
+func TestResumeWithFilesReissuesExactRules(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	if err := st.AddAccount(store.Account{ID: "a1", Remote: "cf_a1"}); err != nil {
+		t.Fatalf("add account: %v", err)
+	}
+	fake.setStat("a.txt", map[string]any{"IsDir": false})
+	fake.setStat("b/c.md", map[string]any{"IsDir": false})
+	files := []string{"a.txt", "b/c.md"}
+	job, err := manager.Start(context.Background(), store.Account{ID: "a1", Remote: "cf_a1"}, Source{Files: files}, "/downloads/yandex", "copy")
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if err := st.UpdateJob(job.ID, func(j *store.Job) bool {
+		j.Status = store.StatusInterrupted
+		return true
+	}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	resumed, err := manager.Resume(context.Background(), job.ID)
+	if err != nil {
+		t.Fatalf("resume: %v", err)
+	}
+	if resumed.Status != store.StatusRunning {
+		t.Fatalf("status = %q", resumed.Status)
+	}
+	if !reflect.DeepEqual(resumed.SourceFiles, files) {
+		t.Fatalf("sourceFiles = %#v", resumed.SourceFiles)
+	}
+	if got := fake.count("sync/copy"); got != 2 {
+		t.Fatalf("sync/copy calls = %d, want 2", got)
+	}
+	if got := fake.count("operations/stat"); got != 2*len(files) {
+		t.Fatalf("operations/stat calls = %d, want %d (start + resume)", got, 2*len(files))
+	}
+	call := fake.inputFor(t, "sync/copy")
+	filter, ok := call["_filter"].(map[string]any)
+	if !ok {
+		t.Fatalf("resume filter missing: %#v", call)
+	}
+	rules, _ := filter["IncludeRule"].([]string)
+	if !reflect.DeepEqual(rules, []string{"/a.txt", "/b/c.md"}) {
+		t.Fatalf("rules = %#v", rules)
+	}
+}
+
+func TestResumeWithFilesRefusesMissingFile(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	if err := st.AddAccount(store.Account{ID: "a1", Remote: "cf_a1"}); err != nil {
+		t.Fatalf("add account: %v", err)
+	}
+	fake.setStat("a.txt", map[string]any{"IsDir": false})
+	job, err := manager.Start(context.Background(), store.Account{ID: "a1", Remote: "cf_a1"}, Source{Files: []string{"a.txt"}}, "/downloads/yandex", "copy")
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if err := st.UpdateJob(job.ID, func(j *store.Job) bool {
+		j.Status = store.StatusInterrupted
+		return true
+	}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	fake.setStat("a.txt", nil)
+
+	_, err = manager.Resume(context.Background(), job.ID)
+	if !errors.Is(err, ErrSourceFileNotFound) {
+		t.Fatalf("err = %v, want ErrSourceFileNotFound", err)
+	}
+	stored, _ := st.Job(job.ID)
+	if stored.Status != store.StatusInterrupted {
+		t.Fatalf("status = %q, want interrupted (job must not be claimed)", stored.Status)
+	}
+	if got := fake.count("sync/copy"); got != 1 {
+		t.Fatalf("sync/copy calls = %d, want 1", got)
+	}
+}
+
+func TestResumeLegacyJobWithoutFilesUsesSourcePath(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	fake.setStat("Фото", map[string]any{"IsDir": true})
+	if err := st.AddJob(store.Job{
+		ID: "legacy", Status: store.StatusInterrupted, Source: "cf_a1:/Фото",
+		Dest: "/downloads/yandex", Group: "g", CreatedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	resumed, err := manager.Resume(context.Background(), "legacy")
+	if err != nil {
+		t.Fatalf("resume: %v", err)
+	}
+	if resumed.SourceFiles != nil {
+		t.Fatalf("sourceFiles = %#v, want nil", resumed.SourceFiles)
+	}
+	call := fake.inputFor(t, "sync/copy")
+	if call["srcFs"] != "cf_a1:/Фото" {
+		t.Fatalf("srcFs = %v", call["srcFs"])
+	}
+	if _, exists := call["_filter"]; exists {
+		t.Fatalf("legacy job must not carry a filter: %#v", call)
+	}
+}
+
+func TestCheckUsesFilterForFilesJob(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	if err := st.AddJob(store.Job{
+		ID: "j1", Status: store.StatusDone, Source: "cf_a1:",
+		SourceFiles: []string{"a.txt", "b/c.md"}, Dest: "/downloads/yandex",
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+	if _, err := manager.Check(context.Background(), "j1"); err != nil {
+		t.Fatalf("check: %v", err)
+	}
+	call := fake.inputFor(t, "operations/check")
+	if call["srcFs"] != "cf_a1:" {
+		t.Fatalf("srcFs = %v", call["srcFs"])
+	}
+	filter, ok := call["_filter"].(map[string]any)
+	if !ok {
+		t.Fatalf("_filter missing: %#v", call)
+	}
+	rules, _ := filter["IncludeRule"].([]string)
+	if !reflect.DeepEqual(rules, []string{"/a.txt", "/b/c.md"}) {
+		t.Fatalf("rules = %#v", rules)
 	}
 }
 

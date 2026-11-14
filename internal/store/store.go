@@ -83,7 +83,11 @@ type Job struct {
 	// cloud root and normalised. When it is not empty, selected folders keep
 	// their structure inside Dest and Source is "<remote>:". Empty means the
 	// legacy behaviour: copy what Source points at.
-	SourcePaths  []string     `json:"sourcePaths,omitempty"`
+	SourcePaths []string `json:"sourcePaths,omitempty"`
+	// SourceFiles lists individual cloud files the user picked, relative to
+	// the cloud root and normalised. Together with SourcePaths it makes Source
+	// "<remote>:"; the selected files keep their structure inside Dest.
+	SourceFiles  []string     `json:"sourceFiles,omitempty"`
 	Dest         string       `json:"dest"`
 	Mode         string       `json:"mode"`
 	Status       string       `json:"status"`
@@ -176,6 +180,9 @@ func (s *Store) Snapshot() ([]Account, []Job) {
 func cloneJob(j Job) Job {
 	if j.SourcePaths != nil {
 		j.SourcePaths = append([]string(nil), j.SourcePaths...)
+	}
+	if j.SourceFiles != nil {
+		j.SourceFiles = append([]string(nil), j.SourceFiles...)
 	}
 	if j.Failures != nil {
 		j.Failures = append([]string(nil), j.Failures...)

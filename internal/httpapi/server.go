@@ -72,6 +72,7 @@ type Server struct {
 	cloud   *cloudInformer
 	folders *cloudFoldersCache
 	sizes   *cloudSizesCache
+	files   *cloudFilesCache
 }
 
 // New builds the HTTP handler.
@@ -91,6 +92,7 @@ func New(cfg Config) (*Server, error) {
 		cloud:   newCloudInformer(cfg.Store, cfg.Rclone, time.Now),
 		folders: newCloudFoldersCache(time.Now),
 		sizes:   newCloudSizesCache(time.Now),
+		files:   newCloudFilesCache(time.Now),
 	}
 	if err := s.routes(); err != nil {
 		return nil, err
@@ -178,9 +180,11 @@ func (s *Server) routes() error {
 	s.mux.HandleFunc("DELETE /api/accounts/{id}", s.handleDeleteAccount)
 	s.mux.HandleFunc("POST /api/accounts/{id}/probe", s.handleProbe)
 	s.mux.HandleFunc("GET /api/accounts/{id}/folders", s.handleCloudFolders)
+	s.mux.HandleFunc("GET /api/accounts/{id}/files", s.handleCloudFiles)
 	s.mux.HandleFunc("POST /api/cloud/sizes", s.handleCloudSizes)
 	s.mux.HandleFunc("POST /api/preflight", s.handlePreflight)
 	s.mux.HandleFunc("POST /api/jobs/preflight", s.handlePreflight)
+	s.mux.HandleFunc("POST /api/jobs/existing", s.handleExistingFolders)
 	s.mux.HandleFunc("POST /api/jobs", s.handleCreateJob)
 	s.mux.HandleFunc("POST /api/jobs/{id}/stop", s.handleStopJob)
 	s.mux.HandleFunc("POST /api/jobs/{id}/resume", s.handleResumeJob)
@@ -570,6 +574,7 @@ type preflightRequest struct {
 	AccountID   string    `json:"accountId"`
 	SourcePath  string    `json:"sourcePath"`
 	SourcePaths *[]string `json:"sourcePaths"`
+	SourceFiles *[]string `json:"sourceFiles"`
 	DestPath    string    `json:"destPath"`
 }
 
@@ -586,7 +591,7 @@ func (s *Server) handlePreflight(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "Подключение не найдено. Возможно, оно уже отключено.")
 		return
 	}
-	src, err := parseSources(req.SourcePath, req.SourcePaths)
+	src, err := parseSources(req.SourcePath, req.SourcePaths, req.SourceFiles)
 	if err != nil {
 		s.sourceError(w, err)
 		return
@@ -640,6 +645,7 @@ type createJobRequest struct {
 	AccountID   string    `json:"accountId"`
 	SourcePath  string    `json:"sourcePath"`
 	SourcePaths *[]string `json:"sourcePaths"`
+	SourceFiles *[]string `json:"sourceFiles"`
 	DestPath    string    `json:"destPath"`
 	Mode        string    `json:"mode"`
 }
@@ -656,7 +662,7 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	src, err := parseSources(req.SourcePath, req.SourcePaths)
+	src, err := parseSources(req.SourcePath, req.SourcePaths, req.SourceFiles)
 	if err != nil {
 		s.sourceError(w, err)
 		return
@@ -688,6 +694,14 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	case errors.Is(err, jobs.ErrInvalidMode):
 		writeError(w, http.StatusBadRequest, "Выберите режим «Добавлять» или «Как в облаке».")
+		return
+	case errors.Is(err, jobs.ErrSyncWithFiles):
+		// Sync deletes destination files that are absent in the source, so it
+		// cannot be combined with a partial source such as single files.
+		writeFieldError(w, http.StatusBadRequest, "mode", "Скачивание отдельных файлов доступно только в режиме «Добавлять».")
+		return
+	case errors.Is(err, jobs.ErrSourceFileNotFound):
+		sourceFileNotFound(w, err)
 		return
 	case errors.Is(err, jobs.ErrSourceNotFound):
 		sourceNotFound(w, sourceField(src), err)
@@ -740,6 +754,10 @@ func (s *Server) handleResumeJob(w http.ResponseWriter, r *http.Request) {
 	}
 	if errors.Is(err, jobs.ErrSourceNotFound) {
 		sourceNotFound(w, sourceFieldForPaths(stored.SourcePaths), err)
+		return
+	}
+	if errors.Is(err, jobs.ErrSourceFileNotFound) {
+		sourceFileNotFound(w, err)
 		return
 	}
 	if err != nil {
@@ -824,20 +842,33 @@ func (s *Server) cleanDestPath(p string) (string, error) {
 	return cleaned, nil
 }
 
+// destPathError keeps the short user sentence while preserving the fsbrowse
+// sentinel, so a handler can pick the HTTP status without parsing the message.
+type destPathError struct {
+	message string
+	cause   error
+}
+
+func (e *destPathError) Error() string { return e.message }
+
+func (e *destPathError) Unwrap() error { return e.cause }
+
 // destError turns a validation sentinel into a short user sentence.
 func (s *Server) destError(err error) error {
+	var message string
 	switch {
 	case errors.Is(err, fsbrowse.ErrInvalidPath):
-		return errors.New("Укажите полный путь на сервере, например /downloads.")
+		message = "Укажите полный путь на сервере, например /downloads."
 	case errors.Is(err, fsbrowse.ErrOutsideRoots):
-		return fmt.Errorf("В эту папку сохранять нельзя. Доступные папки: %s.", strings.Join(s.cfg.DestRoots, ", "))
+		message = fmt.Sprintf("В эту папку сохранять нельзя. Доступные папки: %s.", strings.Join(s.cfg.DestRoots, ", "))
 	case errors.Is(err, fsbrowse.ErrSymlink):
-		return errors.New("Эта папка ведёт за пределы доступной. Выберите другую.")
+		message = "Эта папка ведёт за пределы доступной. Выберите другую."
 	case errors.Is(err, fsbrowse.ErrNotDir):
-		return errors.New("Это файл, а не папка.")
+		message = "Это файл, а не папка."
 	default:
-		return errors.New("Не удалось проверить папку на сервере. Попробуйте ещё раз.")
+		message = "Не удалось проверить папку на сервере. Попробуйте ещё раз."
 	}
+	return &destPathError{message: message, cause: err}
 }
 
 // --- helpers ----------------------------------------------------------------

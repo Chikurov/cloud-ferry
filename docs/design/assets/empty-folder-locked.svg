@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" width="240" height="160" fill="none" role="img" aria-label="Нет доступа к папке">
+  <title>Нет доступа к папке</title>
+  <!-- Cloud Ferry · docs/design/assets · пустое/ошибочное состояние «нет доступа».
+       Тот же холст и стиль, что у empty-folder.svg, акцент — замок #FF5A33. -->
+  <ellipse cx="118" cy="94" rx="90" ry="52" fill="#EEF3FF"/>
+  <path d="M56 48h40l10 12h76a11 11 0 0 1 11 11v52a11 11 0 0 1-11 11H56a11 11 0 0 1-11-11V59a11 11 0 0 1 11-11Z" fill="#FFFFFF" stroke="#005EFA" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M66 90h30" stroke="#89A7FF" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 8"/>
+  <rect x="140" y="86" width="44" height="36" rx="9" fill="#FF5A33"/>
+  <path d="M151 86v-8a11 11 0 0 1 22 0v8" stroke="#E8361A" stroke-width="3.4" stroke-linecap="round"/>
+  <circle cx="162" cy="100" r="3.4" fill="#FFFFFF"/>
+  <path d="M162 103v7" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round"/>
+</svg>

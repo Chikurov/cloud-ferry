@@ -17,6 +17,10 @@ import (
 // can always fit the folders the picker actually allows.
 const maxSourcePaths = 20
 
+// maxSourceFiles bounds the individual files in one download. A folder and a
+// file selection together stay at most maxSourcePaths+maxSourceFiles items.
+const maxSourceFiles = 100
+
 // maxSourcePathLen bounds one cloud path before it reaches rclone.
 const maxSourcePathLen = 1024
 
@@ -35,18 +39,23 @@ func writeFieldError(w http.ResponseWriter, status int, field, message string) {
 	writeJSON(w, status, map[string]string{"error": message, "field": field})
 }
 
-// parseSources turns the request fields into the cloud source of a job.
-// A missing sourcePaths keeps the legacy single-folder behaviour; an explicit
-// empty array means the whole disk.
-func parseSources(sourcePath string, sourcePaths *[]string) (jobs.Source, error) {
+// parseSources turns the request fields into the cloud source of a job. A
+// missing sourcePaths/sourceFiles keeps the legacy single-folder behaviour; an
+// explicit empty array means the whole disk. Files may be combined with the
+// folder list, but not with the legacy single folder.
+func parseSources(sourcePath string, sourcePaths, sourceFiles *[]string) (jobs.Source, error) {
 	legacy := strings.TrimSpace(sourcePath)
-	if sourcePaths != nil && legacy != "" {
+	if legacy != "" && (sourcePaths != nil || sourceFiles != nil) {
+		field := "sourcePaths"
+		if sourcePaths == nil {
+			field = "sourceFiles"
+		}
 		return jobs.Source{}, &sourceFieldError{
-			field:   "sourcePaths",
-			message: "Укажите либо одну папку, либо список папок.",
+			field:   field,
+			message: "Укажите либо одну папку, либо список папок и файлов.",
 		}
 	}
-	if sourcePaths == nil {
+	if sourcePaths == nil && sourceFiles == nil {
 		if legacy == "" {
 			return jobs.Source{}, nil
 		}
@@ -57,14 +66,25 @@ func parseSources(sourcePath string, sourcePaths *[]string) (jobs.Source, error)
 		return jobs.Source{Path: cleaned}, nil
 	}
 
-	paths, err := normalizeSourcePaths(*sourcePaths)
-	if err != nil {
-		return jobs.Source{}, err
+	var paths, files []string
+	if sourcePaths != nil {
+		normalized, err := normalizeSourcePaths(*sourcePaths)
+		if err != nil {
+			return jobs.Source{}, err
+		}
+		paths = normalized
 	}
-	if len(paths) == 0 {
+	if sourceFiles != nil {
+		normalized, err := normalizeSourceFiles(*sourceFiles)
+		if err != nil {
+			return jobs.Source{}, err
+		}
+		files = normalized
+	}
+	if len(paths) == 0 && len(files) == 0 {
 		return jobs.Source{}, nil
 	}
-	return jobs.Source{Paths: paths}, nil
+	return jobs.Source{Paths: paths, Files: files}, nil
 }
 
 // normalizeSourcePaths validates every path, drops duplicates, then sorts the
@@ -109,6 +129,36 @@ func normalizeSourcePaths(raw []string) ([]string, error) {
 		return []string{}, nil
 	}
 	return kept, nil
+}
+
+// normalizeSourceFiles validates every file path the same way as a folder
+// path, drops duplicates and sorts the list. A file path keeps its exact
+// spelling (no trailing slash, no ".."): it selects one file, not a subtree.
+func normalizeSourceFiles(raw []string) ([]string, error) {
+	cleaned := make([]string, 0, len(raw))
+	seen := make(map[string]struct{}, len(raw))
+	for _, item := range raw {
+		value, err := normalizeSourcePath(item)
+		if err != nil {
+			return nil, &sourceFieldError{field: "sourceFiles", message: err.Error()}
+		}
+		if _, dup := seen[value]; dup {
+			continue
+		}
+		seen[value] = struct{}{}
+		cleaned = append(cleaned, value)
+	}
+	sort.Strings(cleaned)
+	if len(cleaned) > maxSourceFiles {
+		return nil, &sourceFieldError{
+			field:   "sourceFiles",
+			message: fmt.Sprintf("Можно выбрать не больше %d файлов за один раз.", maxSourceFiles),
+		}
+	}
+	if cleaned == nil {
+		return []string{}, nil
+	}
+	return cleaned, nil
 }
 
 // normalizeSourcePath makes one cloud folder path canonical: no surrounding
@@ -161,6 +211,24 @@ func sourceNotFound(w http.ResponseWriter, field string, err error) {
 		return
 	}
 	writeFieldError(w, http.StatusBadRequest, field, "Папка в облаке не найдена.")
+}
+
+// sourceFileNotFound answers a verified-missing cloud file with 400, naming the
+// file and the field the user should fix. A folder where a file was expected is
+// reported separately: it is a mix-up, not a vanished file.
+func sourceFileNotFound(w http.ResponseWriter, err error) {
+	var fileErr *jobs.SourceFileError
+	if errors.As(err, &fileErr) && fileErr.Path != "" {
+		if fileErr.IsDir {
+			writeFieldError(w, http.StatusBadRequest, "sourceFiles",
+				fmt.Sprintf("«%s» — это папка, а не файл. Выберите файл.", fileErr.Path))
+			return
+		}
+		writeFieldError(w, http.StatusBadRequest, "sourceFiles",
+			fmt.Sprintf("Файл не найден: «%s».", fileErr.Path))
+		return
+	}
+	writeFieldError(w, http.StatusBadRequest, "sourceFiles", "Файл не найден в облаке.")
 }
 
 // sourceField names the request field behind a source: the list for a
