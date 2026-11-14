@@ -14,7 +14,7 @@ DOCKERFILE := Dockerfile
 OWNER ?= $(shell sed -n 's/^export OWNER="\(.*\)"$$/\1/p' $(EXPORTS))
 IMAGE ?= ghcr.io/$(OWNER)/cloud-ferry
 # One tag format everywhere: git tag v0.1.0, image tag 0.1.0, manifest 0.1.0.
-TAG ?= 0.2.3
+TAG ?= 0.3.0
 PLATFORMS ?= linux/amd64,linux/arm64
 RCLONE_DIGEST := sha256:7cbeec24a44f206067597c0368be4de90ae19a64d5113c7d1938bd737a81e466
 TAG_RE := $(subst .,\.,$(TAG))

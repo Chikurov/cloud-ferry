@@ -1,0 +1,1168 @@
+{
+  "generatedAt": "2026-11-14T22:19:50.464Z",
+  "app": "http://127.0.0.1:8831",
+  "screenshots": [
+    "home-account-1000.png",
+    "account-panel-1000.png",
+    "account-needs-auth-1000.png",
+    "account-probe-error-1000.png",
+    "account-stale-1000.png",
+    "account-old-1000.png",
+    "account-unknown-1000.png",
+    "offline-bar-1000.png",
+    "offline-bar-390.png",
+    "skeleton-1000.png",
+    "skeleton-390.png",
+    "home-account-390.png",
+    "account-panel-390.png"
+  ],
+  "states": {
+    "home1000": {
+      "hasStorageCell": false,
+      "textHasStorage": false,
+      "textHasServerFree": false,
+      "accountCell": {
+        "login": "artem",
+        "method": "Пароль приложения",
+        "status": "Доступно",
+        "usage": "148 из 230 ГБ",
+        "usageStale": false,
+        "note": "",
+        "rect": {
+          "top": 0,
+          "left": 0,
+          "width": 0,
+          "height": 0,
+          "bottom": 0
+        }
+      },
+      "chip": {
+        "haspopup": "dialog",
+        "controls": "account-dialog",
+        "expanded": "false",
+        "title": "Аккаунт: artem · Доступно"
+      },
+      "dialog": {
+        "exists": true,
+        "open": false,
+        "tag": "DIALOG",
+        "role": "dialog",
+        "modal": "true"
+      },
+      "innerWidth": 1000,
+      "scrollWidth": 1000,
+      "horizontalScroll": false
+    },
+    "panel1000": {
+      "open": true,
+      "tag": "DIALOG",
+      "role": "dialog",
+      "ariaModal": "true",
+      "labelledby": "account-title",
+      "title": "Яндекс Диск",
+      "login": "artem",
+      "method": "Пароль приложения",
+      "status": "Доступно",
+      "checked": "проверено сегодня, 01:18",
+      "diskValue": "148 из 230 ГБ",
+      "diskStale": false,
+      "diskNote": "",
+      "diskColor": "rgb(12, 18, 34)",
+      "diskBar": "64%",
+      "serverValue": "76 ГБ из 500 ГБ",
+      "serverNote": "Папка назначения: /downloads",
+      "probeBusy": null,
+      "probeDisabled": null,
+      "probeText": "Проверить",
+      "reconnect": "Войти заново",
+      "logout": "Выйти",
+      "logoutClass": "btn btn--danger",
+      "result": {
+        "hidden": true,
+        "text": "",
+        "classes": "account-probe-result",
+        "role": "status",
+        "live": "polite"
+      },
+      "activeId": "account-title",
+      "insideDialog": true,
+      "chipExpanded": "true",
+      "dialogRect": {
+        "top": 81,
+        "left": 270,
+        "width": 460,
+        "height": 618,
+        "bottom": 699
+      },
+      "bodyScroll": {
+        "scrollHeight": 342,
+        "clientHeight": 342
+      },
+      "buttonHeights": [
+        44,
+        44,
+        44
+      ],
+      "toasts": [],
+      "innerWidth": 1000,
+      "innerHeight": 780,
+      "scrollWidth": 1000,
+      "horizontalScroll": false
+    },
+    "needsAuthHome": {
+      "hasStorageCell": false,
+      "textHasStorage": false,
+      "textHasServerFree": false,
+      "accountCell": {
+        "login": "artem",
+        "method": "Пароль приложения",
+        "status": "Нужен вход",
+        "usage": "—",
+        "usageStale": false,
+        "note": "Войдите заново, чтобы увидеть место",
+        "rect": {
+          "top": 0,
+          "left": 0,
+          "width": 0,
+          "height": 0,
+          "bottom": 0
+        }
+      },
+      "chip": {
+        "haspopup": "dialog",
+        "controls": "account-dialog",
+        "expanded": "false",
+        "title": "Аккаунт: artem · Нужен вход"
+      },
+      "dialog": {
+        "exists": true,
+        "open": false,
+        "tag": "DIALOG",
+        "role": "dialog",
+        "modal": "true"
+      },
+      "innerWidth": 1000,
+      "scrollWidth": 1000,
+      "horizontalScroll": false
+    },
+    "needsAuthPanel": {
+      "open": true,
+      "tag": "DIALOG",
+      "role": "dialog",
+      "ariaModal": "true",
+      "labelledby": "account-title",
+      "title": "Яндекс Диск",
+      "login": "artem",
+      "method": "Пароль приложения",
+      "status": "Нужен вход",
+      "checked": "проверено сегодня, 01:16",
+      "diskValue": "—",
+      "diskStale": false,
+      "diskNote": "Войдите заново, чтобы увидеть занятое место.",
+      "diskColor": "rgb(12, 18, 34)",
+      "diskBar": "0%",
+      "serverValue": "76 ГБ из 500 ГБ",
+      "serverNote": "Папка назначения: /downloads",
+      "probeBusy": null,
+      "probeDisabled": null,
+      "probeText": "Проверить",
+      "reconnect": "Войти заново",
+      "logout": "Выйти",
+      "logoutClass": "btn btn--danger",
+      "result": {
+        "hidden": true,
+        "text": "",
+        "classes": "account-probe-result",
+        "role": "status",
+        "live": "polite"
+      },
+      "activeId": "account-title",
+      "insideDialog": true,
+      "chipExpanded": "true",
+      "dialogRect": {
+        "top": 69,
+        "left": 270,
+        "width": 460,
+        "height": 642,
+        "bottom": 711
+      },
+      "bodyScroll": {
+        "scrollHeight": 366,
+        "clientHeight": 366
+      },
+      "buttonHeights": [
+        44,
+        44,
+        44
+      ],
+      "toasts": [],
+      "innerWidth": 1000,
+      "innerHeight": 780,
+      "scrollWidth": 1000,
+      "horizontalScroll": false
+    },
+    "probeError": {
+      "open": true,
+      "tag": "DIALOG",
+      "role": "dialog",
+      "ariaModal": "true",
+      "labelledby": "account-title",
+      "title": "Яндекс Диск",
+      "login": "artem",
+      "method": "Пароль приложения",
+      "status": "Доступно",
+      "checked": "проверено сегодня, 01:18",
+      "diskValue": "148 из 230 ГБ",
+      "diskStale": false,
+      "diskNote": "",
+      "diskColor": "rgb(12, 18, 34)",
+      "diskBar": "64%",
+      "serverValue": "76 ГБ из 500 ГБ",
+      "serverNote": "Папка назначения: /downloads",
+      "probeBusy": "false",
+      "probeDisabled": null,
+      "probeText": "Проверить",
+      "reconnect": "Войти заново",
+      "logout": "Выйти",
+      "logoutClass": "btn btn--danger",
+      "result": {
+        "hidden": false,
+        "text": "Не удалось проверить доступ. Сервис недоступен. Повторите позже.",
+        "classes": "account-probe-result account-probe-result--error",
+        "role": "status",
+        "live": "polite"
+      },
+      "activeId": "account-title",
+      "insideDialog": true,
+      "chipExpanded": "true",
+      "dialogRect": {
+        "top": 50,
+        "left": 270,
+        "width": 460,
+        "height": 680,
+        "bottom": 730
+      },
+      "bodyScroll": {
+        "scrollHeight": 404,
+        "clientHeight": 404
+      },
+      "buttonHeights": [
+        44,
+        44,
+        44
+      ],
+      "toasts": [],
+      "innerWidth": 1000,
+      "innerHeight": 780,
+      "scrollWidth": 1000,
+      "horizontalScroll": false
+    },
+    "stale": {
+      "open": true,
+      "tag": "DIALOG",
+      "role": "dialog",
+      "ariaModal": "true",
+      "labelledby": "account-title",
+      "title": "Яндекс Диск",
+      "login": "artem",
+      "method": "Пароль приложения",
+      "status": "Доступно",
+      "checked": "проверено сегодня, 01:13",
+      "diskValue": "148 из 230 ГБ",
+      "diskStale": true,
+      "diskNote": "последние данные, сегодня, 01:09",
+      "diskColor": "rgb(95, 102, 115)",
+      "diskBar": "64%",
+      "serverValue": "76 ГБ из 500 ГБ",
+      "serverNote": "Папка назначения: /downloads",
+      "probeBusy": null,
+      "probeDisabled": null,
+      "probeText": "Проверить",
+      "reconnect": "Войти заново",
+      "logout": "Выйти",
+      "logoutClass": "btn btn--danger",
+      "result": {
+        "hidden": true,
+        "text": "",
+        "classes": "account-probe-result",
+        "role": "status",
+        "live": "polite"
+      },
+      "activeId": "account-title",
+      "insideDialog": true,
+      "chipExpanded": "true",
+      "dialogRect": {
+        "top": 69,
+        "left": 270,
+        "width": 460,
+        "height": 642,
+        "bottom": 711
+      },
+      "bodyScroll": {
+        "scrollHeight": 366,
+        "clientHeight": 366
+      },
+      "buttonHeights": [
+        44,
+        44,
+        44
+      ],
+      "toasts": [],
+      "innerWidth": 1000,
+      "innerHeight": 780,
+      "scrollWidth": 1000,
+      "horizontalScroll": false
+    },
+    "old": {
+      "open": true,
+      "tag": "DIALOG",
+      "role": "dialog",
+      "ariaModal": "true",
+      "labelledby": "account-title",
+      "title": "Яндекс Диск",
+      "login": "artem",
+      "method": "Пароль приложения",
+      "status": "Доступно",
+      "checked": "проверено сегодня, 01:13",
+      "diskValue": "148 из 230 ГБ",
+      "diskStale": true,
+      "diskNote": "последние данные, сегодня, 01:13",
+      "diskColor": "rgb(95, 102, 115)",
+      "diskBar": "64%",
+      "serverValue": "76 ГБ из 500 ГБ",
+      "serverNote": "Папка назначения: /downloads",
+      "probeBusy": null,
+      "probeDisabled": null,
+      "probeText": "Проверить",
+      "reconnect": "Войти заново",
+      "logout": "Выйти",
+      "logoutClass": "btn btn--danger",
+      "result": {
+        "hidden": true,
+        "text": "",
+        "classes": "account-probe-result",
+        "role": "status",
+        "live": "polite"
+      },
+      "activeId": "account-title",
+      "insideDialog": true,
+      "chipExpanded": "true",
+      "dialogRect": {
+        "top": 69,
+        "left": 270,
+        "width": 460,
+        "height": 642,
+        "bottom": 711
+      },
+      "bodyScroll": {
+        "scrollHeight": 366,
+        "clientHeight": 366
+      },
+      "buttonHeights": [
+        44,
+        44,
+        44
+      ],
+      "toasts": [],
+      "innerWidth": 1000,
+      "innerHeight": 780,
+      "scrollWidth": 1000,
+      "horizontalScroll": false
+    },
+    "unknown": {
+      "open": true,
+      "tag": "DIALOG",
+      "role": "dialog",
+      "ariaModal": "true",
+      "labelledby": "account-title",
+      "title": "Яндекс Диск",
+      "login": "artem",
+      "method": "Пароль приложения",
+      "status": "Не проверялось",
+      "checked": "не проверялось",
+      "diskValue": "148 из 230 ГБ",
+      "diskStale": false,
+      "diskNote": "",
+      "diskColor": "rgb(12, 18, 34)",
+      "diskBar": "64%",
+      "serverValue": "76 ГБ из 500 ГБ",
+      "serverNote": "Папка назначения: /downloads",
+      "probeBusy": null,
+      "probeDisabled": null,
+      "probeText": "Проверить",
+      "reconnect": "Войти заново",
+      "logout": "Выйти",
+      "logoutClass": "btn btn--danger",
+      "result": {
+        "hidden": true,
+        "text": "",
+        "classes": "account-probe-result",
+        "role": "status",
+        "live": "polite"
+      },
+      "activeId": "account-title",
+      "insideDialog": true,
+      "chipExpanded": "true",
+      "dialogRect": {
+        "top": 81,
+        "left": 270,
+        "width": 460,
+        "height": 618,
+        "bottom": 699
+      },
+      "bodyScroll": {
+        "scrollHeight": 342,
+        "clientHeight": 342
+      },
+      "buttonHeights": [
+        44,
+        44,
+        44
+      ],
+      "toasts": [],
+      "innerWidth": 1000,
+      "innerHeight": 780,
+      "scrollWidth": 1000,
+      "horizontalScroll": false
+    },
+    "offline": {
+      "barVisible": true,
+      "barText": "Нет связи с серверомПоказаны последние данные Повторить",
+      "barRect": {
+        "top": 68,
+        "bottom": 122,
+        "height": 54
+      },
+      "headRect": {
+        "top": 8,
+        "bottom": 60,
+        "height": 52
+      },
+      "mainRect": {
+        "top": 138,
+        "bottom": 756,
+        "height": 618
+      },
+      "overlaps": false,
+      "fullScreenOfflineGone": true,
+      "dataKept": true,
+      "active": "flow-start",
+      "horizontalScroll": false,
+      "scrollWidth": 1000,
+      "innerWidth": 1000
+    },
+    "offline390": {
+      "visible": true,
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "horizontalScroll": false,
+      "retryHeight": 44
+    },
+    "skeleton": {
+      "visible": true,
+      "busy": "true",
+      "appHidden": true,
+      "spinner": false,
+      "skeletonCells": 3,
+      "header": {
+        "top": 8,
+        "left": 140,
+        "width": 720,
+        "height": 52,
+        "bottom": 60
+      },
+      "brand": "Cloud Ferry",
+      "accountCell": {
+        "top": 76,
+        "left": 558,
+        "width": 300,
+        "height": 180,
+        "bottom": 256
+      },
+      "lines": 11,
+      "scrollWidth": 1000,
+      "innerWidth": 1000,
+      "horizontalScroll": false
+    },
+    "skeleton390": {
+      "visible": true,
+      "cells": 3,
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "horizontalScroll": false
+    },
+    "home390": {
+      "hasStorageCell": false,
+      "textHasStorage": false,
+      "textHasServerFree": false,
+      "accountCell": {
+        "login": "artem",
+        "method": "Пароль приложения",
+        "status": "Доступно",
+        "usage": "148 из 230 ГБ",
+        "usageStale": false,
+        "note": "",
+        "rect": {
+          "top": 0,
+          "left": 0,
+          "width": 0,
+          "height": 0,
+          "bottom": 0
+        }
+      },
+      "chip": {
+        "haspopup": "dialog",
+        "controls": "account-dialog",
+        "expanded": "false",
+        "title": "Аккаунт: artem · Доступно"
+      },
+      "dialog": {
+        "exists": true,
+        "open": false,
+        "tag": "DIALOG",
+        "role": "dialog",
+        "modal": "true"
+      },
+      "innerWidth": 390,
+      "scrollWidth": 390,
+      "horizontalScroll": false
+    },
+    "panel390": {
+      "open": true,
+      "tag": "DIALOG",
+      "role": "dialog",
+      "ariaModal": "true",
+      "labelledby": "account-title",
+      "title": "Яндекс Диск",
+      "login": "artem",
+      "method": "Пароль приложения",
+      "status": "Доступно",
+      "checked": "проверено сегодня, 01:18",
+      "diskValue": "148 из 230 ГБ",
+      "diskStale": false,
+      "diskNote": "",
+      "diskColor": "rgb(12, 18, 34)",
+      "diskBar": "64%",
+      "serverValue": "76 ГБ из 500 ГБ",
+      "serverNote": "Папка назначения: /downloads",
+      "probeBusy": null,
+      "probeDisabled": null,
+      "probeText": "Проверить",
+      "reconnect": "Войти заново",
+      "logout": "Выйти",
+      "logoutClass": "btn btn--danger",
+      "result": {
+        "hidden": true,
+        "text": "",
+        "classes": "account-probe-result",
+        "role": "status",
+        "live": "polite"
+      },
+      "activeId": "account-title",
+      "insideDialog": true,
+      "chipExpanded": "true",
+      "dialogRect": {
+        "top": 0,
+        "left": 0,
+        "width": 390,
+        "height": 720,
+        "bottom": 720
+      },
+      "bodyScroll": {
+        "scrollHeight": 394,
+        "clientHeight": 368
+      },
+      "buttonHeights": [
+        44,
+        44,
+        44
+      ],
+      "toasts": [],
+      "innerWidth": 390,
+      "innerHeight": 844,
+      "scrollWidth": 390,
+      "horizontalScroll": false
+    }
+  },
+  "checks": [
+    {
+      "name": "1000: отдельной ячейки «Хранилище» нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "1000: серверное место не дублируется на главном",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "1000: карточка аккаунта показывает логин",
+      "ok": true,
+      "detail": "artem"
+    },
+    {
+      "name": "1000: способ входа «Пароль приложения»",
+      "ok": true,
+      "detail": "Пароль приложения"
+    },
+    {
+      "name": "1000: статус доступа «Доступно»",
+      "ok": true,
+      "detail": "Доступно"
+    },
+    {
+      "name": "1000: занятое место на Диске в карточке",
+      "ok": true,
+      "detail": "148 из 230 ГБ"
+    },
+    {
+      "name": "чип открывает dialog",
+      "ok": true,
+      "detail": "{\"haspopup\":\"dialog\",\"controls\":\"account-dialog\",\"expanded\":\"false\",\"title\":\"Аккаунт: artem · Доступно\"}"
+    },
+    {
+      "name": "1000: панель — dialog с role=dialog",
+      "ok": true,
+      "detail": "{\"exists\":true,\"open\":false,\"tag\":\"DIALOG\",\"role\":\"dialog\",\"modal\":\"true\"}"
+    },
+    {
+      "name": "1000: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "главный экран 1000: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "главный экран 1000: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "панель открыта",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "панель: role=dialog + aria-modal",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "панель: логин",
+      "ok": true,
+      "detail": "artem"
+    },
+    {
+      "name": "панель: способ входа",
+      "ok": true,
+      "detail": "Пароль приложения"
+    },
+    {
+      "name": "панель: статус «Доступно»",
+      "ok": true,
+      "detail": "Доступно"
+    },
+    {
+      "name": "панель: время последней проверки",
+      "ok": true,
+      "detail": "проверено сегодня, 01:18"
+    },
+    {
+      "name": "панель: занято на Диске",
+      "ok": true,
+      "detail": "148 из 230 ГБ"
+    },
+    {
+      "name": "панель: занятое место не помечено устаревшим",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "панель: свободно на сервере",
+      "ok": true,
+      "detail": "76 ГБ из 500 ГБ"
+    },
+    {
+      "name": "панель: папка назначения подписана",
+      "ok": true,
+      "detail": "Папка назначения: /downloads"
+    },
+    {
+      "name": "панель: кнопка «Проверить»",
+      "ok": true,
+      "detail": "{\"text\":\"Проверить\",\"busy\":null}"
+    },
+    {
+      "name": "панель: «Войти заново»",
+      "ok": true,
+      "detail": "Войти заново"
+    },
+    {
+      "name": "панель: «Выйти» красным отдельным блоком",
+      "ok": true,
+      "detail": "btn btn--danger"
+    },
+    {
+      "name": "фокус после открытия — в панели",
+      "ok": true,
+      "detail": "account-title"
+    },
+    {
+      "name": "чип помечен aria-expanded",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "1000: панель без горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "панель 1000: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "панель 1000: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tab не выходит за пределы панели",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Esc закрывает панель",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "фокус вернулся на чип",
+      "ok": true,
+      "detail": "account-chip"
+    },
+    {
+      "name": "карточка: «Нужен вход»",
+      "ok": true,
+      "detail": "Нужен вход"
+    },
+    {
+      "name": "панель: «Нужен вход»",
+      "ok": true,
+      "detail": "Нужен вход"
+    },
+    {
+      "name": "панель: объяснение вместо места",
+      "ok": true,
+      "detail": "Войдите заново, чтобы увидеть занятое место."
+    },
+    {
+      "name": "панель: время проверки рядом со статусом",
+      "ok": true,
+      "detail": "проверено сегодня, 01:16"
+    },
+    {
+      "name": "1000: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "нужен вход: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "нужен вход: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "«Проверить»: busy на кнопке",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "name": "«Проверить»: busy-текст в панели",
+      "ok": true,
+      "detail": "Проверяем доступ к Диску…"
+    },
+    {
+      "name": "ошибка проверки — inline в панели",
+      "ok": true,
+      "detail": "Не удалось проверить доступ. Сервис недоступен. Повторите позже."
+    },
+    {
+      "name": "ошибка не ушла тостом",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "после ошибки кнопка снова доступна",
+      "ok": true,
+      "detail": "{\"busy\":\"false\",\"disabled\":null}"
+    },
+    {
+      "name": "результат объявляется одним live-регионом",
+      "ok": true,
+      "detail": "{\"hidden\":false,\"text\":\"Не удалось проверить доступ. Сервис недоступен. Повторите позже.\",\"classes\":\"account-probe-result account-probe-result--error\",\"role\":\"status\",\"live\":\"polite\"}"
+    },
+    {
+      "name": "проверка с ошибкой: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "проверка с ошибкой: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "cloud.stale: число приглушено",
+      "ok": true,
+      "detail": "148 из 230 ГБ"
+    },
+    {
+      "name": "cloud.stale: подпись «последние данные»",
+      "ok": true,
+      "detail": "последние данные, сегодня, 01:09"
+    },
+    {
+      "name": "cloud.stale: приглушённый цвет",
+      "ok": true,
+      "detail": "rgb(95, 102, 115)"
+    },
+    {
+      "name": "1000: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "устаревшие данные: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "устаревшие данные: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "возраст > 5 мин: пометка устаревших",
+      "ok": true,
+      "detail": "последние данные, сегодня, 01:13"
+    },
+    {
+      "name": "старые данные по возрасту: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "старые данные по возрасту: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "панель: «Не проверялось»",
+      "ok": true,
+      "detail": "Не проверялось"
+    },
+    {
+      "name": "панель: время «не проверялось»",
+      "ok": true,
+      "detail": "не проверялось"
+    },
+    {
+      "name": "не проверялось: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "не проверялось: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "офлайн: полоса видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "офлайн: текст «Нет связи с сервером»",
+      "ok": true,
+      "detail": "Нет связи с серверомПоказаны последние данные Повторить"
+    },
+    {
+      "name": "офлайн: кнопка «Повторить»",
+      "ok": true,
+      "detail": "Нет связи с серверомПоказаны последние данные Повторить"
+    },
+    {
+      "name": "офлайн: полного экрана нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "офлайн: данные на экране сохранены",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "офлайн: полоса под шапкой",
+      "ok": true,
+      "detail": "{\"bar\":{\"top\":68,\"bottom\":122,\"height\":54},\"head\":{\"top\":8,\"bottom\":60,\"height\":52}}"
+    },
+    {
+      "name": "офлайн: полоса не перекрывает контент",
+      "ok": true,
+      "detail": "{\"bar\":{\"top\":68,\"bottom\":122,\"height\":54},\"main\":{\"top\":138,\"bottom\":756,\"height\":618}}"
+    },
+    {
+      "name": "офлайн: фокус не отобран",
+      "ok": true,
+      "detail": "flow-start"
+    },
+    {
+      "name": "1000: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "офлайн: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "офлайн: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "«Повторить» возвращает связь",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "390: офлайн-полоса видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "390: «Повторить» 44 px",
+      "ok": true,
+      "detail": "44"
+    },
+    {
+      "name": "390: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "офлайн 390: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "офлайн 390: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "скелет: виден до ответа API",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "скелет: aria-busy",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "name": "скелет: без спиннера",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "скелет: шапка на месте",
+      "ok": true,
+      "detail": "{\"top\":8,\"left\":140,\"width\":720,\"height\":52,\"bottom\":60}"
+    },
+    {
+      "name": "скелет: три контура ячеек",
+      "ok": true,
+      "detail": "3"
+    },
+    {
+      "name": "скелет: контуры строк",
+      "ok": true,
+      "detail": "11"
+    },
+    {
+      "name": "1000: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "1000/1000"
+    },
+    {
+      "name": "скелет: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "скелет: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "после загрузки шапка не прыгнула",
+      "ok": true,
+      "detail": "{\"before\":{\"top\":8,\"left\":140,\"width\":720,\"height\":52,\"bottom\":60},\"after\":{\"top\":8,\"height\":52}}"
+    },
+    {
+      "name": "390: скелет виден",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "390: три контура",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "390: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "скелет 390: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "скелет 390: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "390: нет горизонтальной прокрутки на главном",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "390: панель открыта",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "390: кнопки не меньше 44 px",
+      "ok": true,
+      "detail": "[44,44,44]"
+    },
+    {
+      "name": "390: нет горизонтальной прокрутки",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "390: тело панели прокручивается при переполнении",
+      "ok": true,
+      "detail": "{\"scrollHeight\":394,\"clientHeight\":368}"
+    },
+    {
+      "name": "панель 390: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "панель 390: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "«Выйти» открывает подтверждение",
+      "ok": true,
+      "detail": "{\"panelOpen\":false,\"exitOpen\":true,\"title\":\"Выйти из Яндекс Диска?\",\"insideExit\":true}"
+    },
+    {
+      "name": "подтверждение: заголовок",
+      "ok": true,
+      "detail": "Выйти из Яндекс Диска?"
+    },
+    {
+      "name": "после «Остаться» фокус на чипе",
+      "ok": true,
+      "detail": "account-chip"
+    },
+    {
+      "name": "подтверждение выхода: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "подтверждение выхода: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "«Войти заново» открывает мастер",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "панель закрыта при уходе в мастер",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "вход заново: JS-исключений нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "вход заново: неожиданных сетевых ошибок нет",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "unexpectedConsoleErrors": [],
+  "expectedNetworkErrors": [
+    {
+      "label": "проверка с ошибкой",
+      "status": 502,
+      "path": "/api/accounts/acc-1/probe"
+    },
+    {
+      "label": "устаревшие данные",
+      "status": 502,
+      "path": "/api/accounts/acc-1/probe"
+    },
+    {
+      "label": "офлайн",
+      "status": 503,
+      "path": "/api/state"
+    },
+    {
+      "label": "офлайн",
+      "status": 503,
+      "path": "/api/system"
+    },
+    {
+      "label": "офлайн 390",
+      "status": 503,
+      "path": "/api/state"
+    },
+    {
+      "label": "офлайн 390",
+      "status": 503,
+      "path": "/api/system"
+    }
+  ],
+  "summary": {
+    "total": 108,
+    "failed": 0,
+    "consoleErrors": 0,
+    "expectedNetworkErrors": 6
+  }
+}

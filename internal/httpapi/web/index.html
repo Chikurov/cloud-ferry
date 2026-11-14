@@ -18,20 +18,51 @@
     </div>
   </noscript>
 
-  <div id="boot-view" class="boot" aria-busy="true">
-    <span class="boot-spinner" aria-hidden="true"></span>
-    <p class="boot-text">Загрузка…</p>
-  </div>
+  <!-- Загрузка — скелет оболочки: шапка и контуры ячеек на своих местах,
+       поэтому после ответа API макет не прыгает. -->
+  <div id="boot-view" class="shell shell--boot" aria-busy="true" aria-label="Загрузка Cloud Ferry">
+    <header class="shell-head">
+      <span class="brand">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z"/></svg>
+        </span>
+        <span class="brand-name">Cloud Ferry</span>
+      </span>
+      <div class="shell-actions">
+        <span class="skeleton skeleton--chip" aria-hidden="true"></span>
+      </div>
+    </header>
 
-  <div id="offline-view" class="boot" hidden>
-    <div class="offline-card">
-      <h1 class="offline-title" id="offline-title">Нет связи с сервером</h1>
-      <p class="offline-note">Проверьте, что приложение запущено, и повторите попытку.</p>
-      <button class="btn btn--primary" type="button" id="offline-retry">Повторить</button>
+    <div class="offline-bar" data-offline-bar hidden>
+      <svg class="offline-bar-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.4 5.4 3.6 17.2A1.9 1.9 0 0 0 5.25 20h13.5a1.9 1.9 0 0 0 1.65-2.8L13.6 5.4a1.85 1.85 0 0 0-3.2 0Z"/><path d="M12 9.6v4M12 16.6h.01"/></svg>
+      <p class="offline-bar-text"><span role="status" aria-live="polite">Нет связи с сервером</span><span class="offline-bar-note">Проверьте, что приложение запущено</span></p>
+      <button class="btn btn--secondary btn--sm js-offline-retry" type="button">Повторить</button>
     </div>
+
+    <div class="dashboard dashboard--boot" aria-hidden="true">
+      <section class="cell cell--now skeleton-cell">
+        <div class="skeleton-cell-head"><span class="skeleton skeleton--dot"></span><span class="skeleton skeleton--line skeleton--w30"></span></div>
+        <div class="skeleton-cell-body"><span class="skeleton skeleton--line skeleton--w80"></span><span class="skeleton skeleton--line skeleton--w60"></span><span class="skeleton skeleton--line skeleton--w40"></span></div>
+      </section>
+      <section class="cell cell--start skeleton-cell">
+        <div class="skeleton-cell-head"><span class="skeleton skeleton--dot"></span><span class="skeleton skeleton--line skeleton--w25"></span></div>
+        <div class="skeleton-cell-body"><span class="skeleton skeleton--line skeleton--w70"></span><span class="skeleton skeleton--line skeleton--w45"></span><span class="skeleton skeleton--pill"></span></div>
+      </section>
+      <section class="cell cell--account skeleton-cell">
+        <div class="skeleton-cell-head"><span class="skeleton skeleton--dot"></span><span class="skeleton skeleton--line skeleton--w30"></span></div>
+        <div class="skeleton-cell-body"><span class="skeleton skeleton--line skeleton--w65"></span><span class="skeleton skeleton--line skeleton--w50"></span><span class="skeleton skeleton--line skeleton--w35"></span></div>
+      </section>
+    </div>
+    <p class="sr-only" role="status">Загрузка данных</p>
   </div>
 
   <section id="setup-view" class="setup" hidden>
+    <div class="offline-bar" data-offline-bar hidden>
+      <svg class="offline-bar-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.4 5.4 3.6 17.2A1.9 1.9 0 0 0 5.25 20h13.5a1.9 1.9 0 0 0 1.65-2.8L13.6 5.4a1.85 1.85 0 0 0-3.2 0Z"/><path d="M12 9.6v4M12 16.6h.01"/></svg>
+      <p class="offline-bar-text"><span role="status" aria-live="polite">Нет связи с сервером</span><span class="offline-bar-note">Проверьте, что приложение запущено</span></p>
+      <button class="btn btn--secondary btn--sm js-offline-retry" type="button">Повторить</button>
+    </div>
+
     <div class="setup-brand">
       <span class="logo" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z"/></svg>
@@ -63,108 +94,115 @@
       <div class="shell-actions">
         <span id="offline-dot" class="offline-dot" title="Нет связи с сервером" hidden><span class="sr-only">Нет связи с сервером</span></span>
         <div class="account" id="account-wrap" hidden>
-          <button class="account-chip" id="account-chip" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="account-menu">
+          <button class="account-chip" id="account-chip" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="account-dialog">
             <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z"/></svg>
             <span class="account-chip-name" id="account-chip-name">Яндекс Диск</span>
             <svg class="icon account-chip-chev" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
           </button>
-          <div class="menu" id="account-menu" role="menu" aria-labelledby="account-chip" hidden>
-            <button class="menu-item menu-item--stack" type="button" role="menuitem" tabindex="0" data-menu="probe" title="Проверяет доступ к диску и обновляет занятое место">
-              <span class="menu-item-label">Проверить подключение</span>
-              <span class="menu-item-note">Проверит доступ и обновит занятое место</span>
-            </button>
-            <div class="menu-sep" role="separator" aria-hidden="true"></div>
-            <button class="menu-item menu-item--danger" type="button" role="menuitem" tabindex="-1" data-menu="disconnect">Выйти</button>
-          </div>
         </div>
       </div>
     </header>
 
+    <div class="offline-bar" data-offline-bar hidden>
+      <svg class="offline-bar-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.4 5.4 3.6 17.2A1.9 1.9 0 0 0 5.25 20h13.5a1.9 1.9 0 0 0 1.65-2.8L13.6 5.4a1.85 1.85 0 0 0-3.2 0Z"/><path d="M12 9.6v4M12 16.6h.01"/></svg>
+      <p class="offline-bar-text"><span role="status" aria-live="polite">Нет связи с сервером</span><span class="offline-bar-note">Показаны последние данные</span></p>
+      <button class="btn btn--secondary btn--sm js-offline-retry" type="button">Повторить</button>
+    </div>
+
     <main id="home-view" class="dashboard"></main>
   </div>
 
-  <dialog id="folder-dialog" class="modal" aria-labelledby="folder-title" aria-describedby="folder-note">
-    <div class="modal-head">
-      <div class="modal-heading">
-        <p class="modal-kicker" id="folder-kicker" hidden></p>
-        <h2 class="modal-title" id="folder-title" tabindex="-1">Папка в облаке</h2>
-        <p class="modal-note" id="folder-note">Отметьте папки, которые нужно скачать.</p>
-      </div>
-      <button class="btn btn--ghost btn--icon" type="button" data-dialog-close aria-label="Закрыть">
+  <!-- Один диалог на все три шага «Нового скачивания»: шапка и футер —
+       строки flex-каркаса, прокручивается только тело (B.4 спеки flow-v2). -->
+  <dialog id="folder-dialog" class="modal modal--flow" aria-labelledby="folder-title">
+    <div class="flow-head" id="flow-head">
+      <div class="flow-stepper" id="flow-progress" aria-hidden="true"><i></i><i></i><i></i></div>
+      <p class="modal-kicker" id="folder-kicker" hidden></p>
+      <h2 class="modal-title" id="folder-title" tabindex="-1">Куда сохранить</h2>
+      <p class="modal-note" id="folder-note" hidden></p>
+      <button class="btn btn--ghost btn--icon flow-close" type="button" data-dialog-close aria-label="Закрыть">
         <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11m0-11-11 11"/></svg>
       </button>
     </div>
-    <div class="flow-source" id="flow-source-bar" hidden>
-      <label class="switch-row" for="folder-all">
-        <span class="switch-copy">
-          <span class="switch-title">Весь диск</span>
-          <span class="switch-note" id="folder-all-note">Все папки и файлы Яндекс Диска</span>
-        </span>
-        <span class="switch-control">
-          <input id="folder-all" type="checkbox" role="switch" aria-describedby="folder-all-note">
-          <span class="switch-track" aria-hidden="true"></span>
-        </span>
-      </label>
-      <div class="flow-source-meta">
-        <p class="flow-count" id="folder-count" role="status" aria-live="polite">Выбрано: 0 из 20</p>
-        <ul class="chips" id="folder-chips" aria-label="Выбранные папки" hidden></ul>
-      </div>
-      <label class="switch-row switch-row--filter" for="folder-show-existing" id="folder-show-existing-row" hidden>
-        <span class="switch-copy">
-          <span class="switch-title">Показать уже скачанные</span>
-          <span class="switch-note" id="folder-show-existing-note">Уже скачанные папки видны, но недоступны.</span>
-        </span>
-        <span class="switch-control">
-          <input id="folder-show-existing" type="checkbox" role="switch" aria-describedby="folder-show-existing-note">
-          <span class="switch-track" aria-hidden="true"></span>
-        </span>
-      </label>
-      <p class="folder-existing-note" id="folder-existing-note" role="status" hidden></p>
-      <div class="folder-existing-error" id="folder-existing-error" role="alert" hidden>
-        <span class="folder-existing-error-text" id="folder-existing-error-text"></span>
-        <button class="btn btn--secondary btn--sm" type="button" id="folder-existing-retry">Повторить</button>
-      </div>
-    </div>
-    <div class="folder-crumbs" id="folder-crumbs" aria-label="Текущая папка"></div>
-    <div class="folder-body" id="folder-body"></div>
-    <div class="folder-create" id="folder-create-panel" hidden>
-      <div class="control folder-create-field">
-        <label class="sr-only" for="folder-new-name">Новая папка</label>
-        <input id="folder-new-name" name="folderName" type="text" placeholder="Имя папки" autocomplete="off" spellcheck="false" autocapitalize="none" maxlength="255">
-        <p class="control-error" id="folder-create-error" role="alert" hidden></p>
-      </div>
-      <button class="btn btn--primary" type="button" id="folder-create-submit">Создать</button>
-      <button class="btn btn--secondary" type="button" id="folder-create-cancel">Отмена</button>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn--secondary" type="button" id="folder-back" hidden>Назад</button>
-      <button class="btn btn--secondary" type="button" id="folder-create" hidden>Создать папку</button>
-      <p class="folder-limit" id="folder-limit" role="alert" hidden></p>
-      <div class="modal-actions">
-        <button class="btn btn--quiet" type="button" data-dialog-close>Отмена</button>
-        <button class="btn btn--primary" type="button" id="folder-choose">Выбрать эту папку</button>
-      </div>
-    </div>
-  </dialog>
 
-  <dialog id="review-dialog" class="modal modal--review" aria-labelledby="review-title" aria-describedby="review-note">
-    <div class="modal-head">
-      <div class="modal-heading">
-        <p class="modal-kicker">Шаг 3 из 3</p>
-        <h2 class="modal-title" id="review-title" tabindex="-1">Проверка</h2>
-        <p class="modal-note" id="review-note">Сверьте выбор перед скачиванием.</p>
-      </div>
-      <button class="btn btn--ghost btn--icon" type="button" data-dialog-close aria-label="Закрыть">
-        <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11m0-11-11 11"/></svg>
-      </button>
+    <div class="flow-content" id="flow-content">
+      <section class="flow-step" id="flow-step-1" data-flow-step="1" aria-labelledby="folder-title">
+        <div class="dest-path" id="flow-dest-path">
+          <svg class="icon dest-path-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2-2h3.6l2 2H18a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z"/></svg>
+          <span class="dest-path-value" id="folder-path" tabindex="-1"></span>
+          <button class="btn btn--quiet dest-up" type="button" id="folder-up" aria-label="На уровень выше" title="На уровень выше">
+            <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>
+            <span class="dest-up-text">На уровень выше</span>
+          </button>
+        </div>
+        <p class="flow-hint" id="folder-hint">Нажмите на строку, чтобы открыть вложенную папку.</p>
+        <div class="folder-toolbar" id="folder-toolbar">
+          <span class="folder-toolbar-label">Содержимое</span>
+          <button class="btn btn--quiet folder-new" type="button" id="folder-create">
+            <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Новая папка</span>
+          </button>
+        </div>
+        <form class="folder-create" id="folder-create-panel" novalidate hidden>
+          <div class="folder-create-field">
+            <input id="folder-new-name" name="folderName" type="text" placeholder="Название папки" aria-label="Название папки" autocomplete="off" spellcheck="false" autocapitalize="none" maxlength="255">
+          </div>
+          <div class="folder-create-actions">
+            <button class="btn btn--primary btn--sm" type="submit" id="folder-create-submit">Создать</button>
+            <button class="btn btn--secondary btn--sm" type="button" id="folder-create-cancel">Отмена</button>
+          </div>
+          <p class="control-error folder-create-error" id="folder-create-error" hidden></p>
+        </form>
+        <div class="folder-body" id="flow-dest-body"></div>
+      </section>
+
+      <section class="flow-step" id="flow-step-2" data-flow-step="2" aria-labelledby="folder-title" hidden>
+        <label class="mode-switch" for="folder-all">
+          <span class="mode-copy">
+            <span class="mode-title">Весь диск</span>
+            <span class="mode-note mode-note--wide">Все папки и файлы. Выключите, чтобы выбрать отдельные.</span>
+            <span class="mode-note mode-note--narrow">Все папки и файлы.</span>
+          </span>
+          <span class="switch-control">
+            <input id="folder-all" type="checkbox" role="switch">
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+        <label class="filter-switch" for="folder-show-existing" id="folder-show-existing-row">
+          <span class="mode-copy">
+            <span class="mode-title">Показывать уже скачанные</span>
+            <span class="mode-note" id="folder-show-existing-note">Они видны в списке, но недоступны.</span>
+          </span>
+          <span class="switch-control">
+            <input id="folder-show-existing" type="checkbox" role="switch">
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+        <p class="folder-existing-note" id="folder-existing-note" role="status" hidden></p>
+        <div class="folder-existing-error" id="folder-existing-error" hidden>
+          <span class="folder-existing-error-text" id="folder-existing-error-text" title=""></span>
+          <button class="btn btn--secondary btn--sm" type="button" id="folder-existing-retry">Повторить</button>
+        </div>
+        <div class="source-tree" id="flow-source-tree" role="group" aria-label="Папки облака"></div>
+      </section>
+
+      <section class="flow-step" id="flow-step-3" data-flow-step="3" aria-labelledby="folder-title" hidden>
+        <div class="review-body" id="review-body"></div>
+        <p class="form-error flow-inline-error" id="review-error" role="alert" tabindex="-1" hidden></p>
+      </section>
     </div>
-    <div class="review-body" id="review-body"></div>
-    <p class="form-error modal-error" id="review-error" role="alert" tabindex="-1" hidden></p>
-    <div class="modal-foot">
-      <button class="btn btn--secondary" type="button" id="review-back">Назад</button>
-      <div class="modal-actions">
-        <button class="btn btn--secondary" type="button" id="review-estimate">Узнать объём</button>
-        <button class="btn btn--primary" type="button" id="review-start">Скачать</button>
+
+    <p class="sr-only" id="flow-live" role="status" aria-live="polite" aria-atomic="true"></p>
+    <div class="toasts toasts--flow" id="toasts-flow"></div>
+
+    <div class="modal-foot flow-foot" id="flow-foot">
+      <p class="flow-foot-note" id="flow-foot-note" role="alert" hidden>
+        <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.4 5.4 3.6 17.2A1.9 1.9 0 0 0 5.25 20h13.5a1.9 1.9 0 0 0 1.65-2.8L13.6 5.4a1.85 1.85 0 0 0-3.2 0Z"/><path d="M12 9.6v4M12 16.6h.01"/></svg>
+        <span id="flow-foot-note-text"></span>
+      </p>
+      <div class="flow-foot-row">
+        <button class="btn btn--secondary flow-back" type="button" id="folder-back" hidden>Назад</button>
+        <button class="btn btn--primary flow-primary" type="button" id="folder-choose">Сохранить сюда</button>
       </div>
     </div>
   </dialog>
@@ -178,6 +216,79 @@
     <div class="modal-actions modal-actions--end">
       <button class="btn btn--secondary" type="button" data-dialog-close>Остаться</button>
       <button class="btn btn--danger" type="button" id="exit-confirm">Выйти</button>
+    </div>
+  </dialog>
+
+  <!-- П3 «Аккаунт и место»: панель, а не отдельный экран. Логин, способ входа,
+       доступ, занятое на Диске и свободное на сервере — в одном месте.
+       Опасный «Выйти» отделён внизу и подтверждается отдельным диалогом. -->
+  <dialog id="account-dialog" class="modal modal--account" role="dialog" aria-modal="true" aria-labelledby="account-title" aria-describedby="account-note">
+    <div class="modal-head">
+      <div class="modal-heading">
+        <p class="modal-kicker">Аккаунт</p>
+        <h2 class="modal-title" id="account-title" tabindex="-1">Яндекс Диск</h2>
+        <p class="modal-note" id="account-note">Доступ, занятое место и действия с подключением.</p>
+      </div>
+      <button class="btn btn--ghost btn--icon" type="button" data-dialog-close aria-label="Закрыть">
+        <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11m0-11-11 11"/></svg>
+      </button>
+    </div>
+
+    <div class="account-body">
+      <dl class="account-facts">
+        <div class="account-fact">
+          <dt>Логин</dt>
+          <dd id="account-login">—</dd>
+        </div>
+        <div class="account-fact">
+          <dt>Способ входа</dt>
+          <dd id="account-method">—</dd>
+        </div>
+        <div class="account-fact">
+          <dt>Доступ</dt>
+          <dd class="account-access">
+            <span id="account-status"></span>
+            <span class="account-checked" id="account-checked">не проверялось</span>
+          </dd>
+        </div>
+      </dl>
+
+      <section class="account-meter" aria-labelledby="account-disk-title">
+        <div class="account-meter-head">
+          <h3 class="account-meter-title" id="account-disk-title">Занято на Яндекс Диске</h3>
+          <span class="account-meter-value" id="account-disk-value">—</span>
+        </div>
+        <span class="meter-bar" aria-hidden="true"><i id="account-disk-bar"></i></span>
+        <p class="account-meter-note" id="account-disk-note" hidden></p>
+      </section>
+
+      <section class="account-server" aria-labelledby="account-server-title">
+        <div class="account-server-head">
+          <h3 class="account-server-title" id="account-server-title">Свободно на сервере</h3>
+          <span class="account-server-value" id="account-server-value">—</span>
+        </div>
+        <p class="account-server-note" id="account-server-note">Куда сохраняются файлы: /downloads</p>
+      </section>
+
+      <div class="account-actions">
+        <button class="btn btn--primary" type="button" id="account-probe">Проверить</button>
+        <button class="btn btn--secondary" type="button" id="account-reconnect">Войти заново</button>
+      </div>
+      <p class="account-probe-result" id="account-probe-result" role="status" aria-live="polite" hidden></p>
+    </div>
+
+    <div class="account-danger">
+      <div class="account-danger-copy">
+        <p class="account-danger-title">Выйти из Яндекс Диска</p>
+        <p class="account-danger-note">Активное скачивание остановится. Уже скачанные файлы останутся на сервере.</p>
+      </div>
+      <button class="btn btn--danger" type="button" id="account-logout">Выйти</button>
+    </div>
+
+    <div class="modal-foot">
+      <div class="modal-actions modal-actions--end">
+        <button class="btn btn--secondary" type="button" data-dialog-close>Закрыть</button>
+      </div>
     </div>
   </dialog>
 
