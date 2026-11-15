@@ -3540,7 +3540,7 @@ function folderNavigate(path) {
 }
 
 function focusFolderContent() {
-  if (folderBusy()) return;
+  if (folder.target === 'cloud' ? folderBusy() : folder.loading) return;
   const scope = folder.context === 'flow-source' ? $('#flow-source-tree') : $('#flow-dest-body');
   const target = (scope && (scope.querySelector('.folder-row')
     || scope.querySelector('.folder-check:not([disabled])')
@@ -3928,6 +3928,7 @@ function toggleFolderSelection(path, checked) {
     const rest = folder.selected.filter((selected) => selected !== path && !selected.startsWith(`${path}/`));
     if (rest.length + 1 > MAX_SOURCE_FOLDERS) {
       setFlowAlert('Можно выбрать не больше 20 папок. Снимите одну из выбранных.');
+      renderSourceTree();
       return;
     }
     folder.selected = [...rest, path].sort();
@@ -4820,6 +4821,12 @@ function requestCloseFlow() {
   const dialog = $('#folder-dialog');
   if (!dialog || !dialog.open) return;
   if (flowBusy) return;
+  /* Закрытие X/Esc не очищает черновик: выбор шага 2 сохраняем в модуле. */
+  if (folder.context === 'flow-source') {
+    const tree = $('#flow-source-tree');
+    if (tree) folder.treeScroll = tree.scrollTop;
+    syncSelectionFromFolder();
+  }
   forceCloseFolderDialog();
 }
 
