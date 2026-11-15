@@ -2443,24 +2443,13 @@ body:has(dialog[open]) { overflow: hidden; }
    Каркас: шапка 114 / тело со скроллом / футер 76 (с alert 102). Ширина 480,
    ≤640 — полноэкранный лист. Все состояния и тексты — docs/design/flow-v2.md. */
 
-/* Индикатор шага 3×4 px; текст «Шаг N из 3» доступен отдельно. */
-.flow-stepper { display: flex; gap: 4px; height: 4px; margin: 0 0 10px; }
-.flow-stepper i {
-  flex: 1 1 0;
-  height: 4px;
-  border-radius: 2px;
-  background: #e3e7ee;
-  transition: background-color 180ms var(--ease);
-}
-.flow-stepper i.is-done { background: var(--step-done); }
-.flow-stepper i.is-active { background: var(--accent); }
-
 .modal--flow {
   width: min(480px, calc(100vw - 32px));
   height: min(640px, calc(100dvh - 48px));
   max-height: min(640px, calc(100dvh - 48px));
   padding: 0;
   overflow: hidden;
+  overflow: clip;
   border-radius: var(--r-lg);
 }
 .modal--flow[open] {
@@ -2791,6 +2780,9 @@ body:has(dialog[open]) { overflow: hidden; }
 }
 .folder-node-row.is-selected { background: var(--accent-soft); }
 .folder-node-row.is-selected .folder-row-name { font-weight: 600; }
+.folder-node-main,
+.file-main,
+.file-select-all { position: relative; }
 .folder-node-main {
   display: grid;
   grid-template-columns: 20px 16px minmax(0, 1fr);
@@ -3199,4 +3191,262 @@ body:has(dialog[open]) { overflow: hidden; }
   .skeleton-lines span { animation: none !important; opacity: 1; }
   .modal--flow[open] { transform: none; }
   .flow-step { transform: none; }
+}
+
+
+/* ── 20. Flow v3: шапка, меню источника, сводка ───────────────────────────
+   Шапка называется «Новое скачивание» один раз; позиция шага — «N из 3» без
+   полосок. Одна основная кнопка на представление, остальное — тихие действия. */
+
+.flow-head { padding: 18px 20px 12px; border-bottom: 1px solid var(--hairline); }
+.flow-head .modal-title { font-size: var(--text-2xl); letter-spacing: -.02em; }
+.flow-content { padding-top: 12px; }
+
+.flow-step-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.flow-step-title {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: 26px;
+  letter-spacing: -.01em;
+  outline: none;
+}
+.flow-step-title:focus,
+.flow-step-title:focus-visible,
+.flow-head .modal-title:focus { outline: none; }
+.flow-step-pos {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 20px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- шаг 1: одна строка навигации --- */
+.dest-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+}
+.dest-nav .dest-up { flex: none; color: var(--ink-soft); }
+.dest-nav .dest-up .icon { width: 18px; height: 18px; }
+.dest-path-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 4px;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: var(--text-md);
+  font-weight: 600;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+.dest-path-value:focus,
+.dest-path-value:focus-visible { outline: none; }
+.dest-nav .folder-new {
+  flex: none;
+  height: 36px;
+  padding: 0 10px;
+  color: var(--accent);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+.flow-content .folder-body { margin-top: 4px; }
+
+/* --- шаг 2: фильтр и меню --- */
+.source-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 44px;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+  line-height: 18px;
+  cursor: pointer;
+}
+.filter-title { min-width: 0; }
+.filter-toggle .switch-control { flex: none; width: 38px; height: 22px; }
+.filter-toggle .switch-track::after { top: 2px; left: 2px; width: 18px; height: 18px; }
+.filter-toggle .switch-control input:checked + .switch-track::after { transform: translateX(16px); }
+.source-menu { position: relative; flex: none; }
+.source-menu-btn {
+  height: 36px;
+  min-width: 0;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.source-menu-btn.is-mode { color: var(--ink); font-weight: 500; }
+.source-menu-btn .icon { width: 16px; height: 16px; }
+.menu--source { top: calc(100% + 6px); width: 216px; }
+.source-tree { margin-top: 8px; }
+
+/* Подтверждение выбора всей ветки — компактно, на месте строки. */
+.folder-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 2px 8px 8px 28px;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-control);
+  background: var(--surface-sunken);
+}
+.folder-confirm-text {
+  flex: 1 1 160px;
+  min-width: 0;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+.folder-confirm-actions { display: flex; gap: 4px; margin-left: auto; }
+.folder-confirm .btn { height: 32px; }
+
+/* --- шаг 3: сводка без карточек --- */
+.flow-content .review-body {
+  display: block;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+}
+.review-list { display: block; margin: 0; }
+.review-row {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 11px 0;
+}
+.review-row + .review-row { border-top: 1px solid var(--line); }
+.review-row dt {
+  padding-top: 1px;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 20px;
+}
+.review-row dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  min-width: 0;
+  margin: 0;
+}
+.review-line { display: flex; align-items: baseline; gap: 8px; width: 100%; min-width: 0; }
+.review-value {
+  min-width: 0;
+  color: var(--ink);
+  font-size: var(--text-md);
+  font-weight: 500;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.review-value--source { font-size: var(--text-lg); font-weight: 600; }
+.review-value--total { font-size: var(--text-lg); font-weight: 600; }
+.review-value--muted { color: var(--muted); font-weight: 400; }
+.review-path {
+  min-width: 0;
+  color: var(--ink);
+  font-size: var(--text-md);
+  font-weight: 500;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.review-change {
+  flex: none;
+  height: 28px;
+  margin-left: auto;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--accent);
+  font: 500 var(--text-sm)/18px var(--font);
+  cursor: pointer;
+}
+.review-change:hover { text-decoration: underline; }
+.review-change:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.review-row .review-chips { flex-basis: 100%; }
+.review-estimate { flex-direction: column; align-items: flex-start; gap: 2px; }
+.review-estimate #review-estimate { outline: none; }
+.review-estimate #review-estimate:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: var(--r-xs); }
+.review-sub { display: block; color: var(--muted); font-size: var(--text-xs); line-height: 16px; }
+.review-short {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--amber);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 18px;
+}
+.review-short-icon { flex: none; width: 16px; height: 16px; color: var(--orange); }
+.review-retry { height: 28px; min-width: 0; padding: 0 6px; color: var(--accent); font-size: var(--text-sm); }
+.review-note { margin-top: 12px; color: var(--muted); font-size: var(--text-xs); line-height: 16px; }
+
+/* --- футер: зарезервированная зона сообщения --- */
+.flow-foot[data-context="flow-source"] .flow-foot-note {
+  display: flex;
+  min-height: 32px;
+  margin-bottom: 8px;
+}
+.flow-foot[data-context="flow-source"] .flow-foot-note[data-empty="true"] { visibility: hidden; }
+.flow-foot-note--status { color: var(--muted); font-weight: 400; }
+.flow-foot-note--status .icon { display: none; }
+
+@media (pointer: coarse) {
+  .source-menu-btn { height: 44px; min-height: 44px; }
+  .review-change { min-height: 44px; }
+  .dest-nav .folder-new { height: 44px; }
+}
+@media (max-width: 640px) {
+  .flow-step-title { font-size: var(--text-xl); }
+  .flow-foot[data-context="flow-source"] .flow-foot-note { min-height: 32px; }
+}
+@media (max-width: 520px) {
+  .dest-nav { flex-wrap: wrap; padding-bottom: 4px; }
+  .dest-path-value {
+    order: -1;
+    flex: 1 1 100%;
+    padding: 4px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .dest-nav .folder-new { margin-left: auto; }
+  .review-row { grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 10px 0; }
+  .review-row dt { padding-top: 0; font-size: var(--text-xs); line-height: 16px; }
+  .review-change { margin-left: auto; }
+  .folder-confirm { margin-left: 16px; }
+}
+@media (max-width: 360px) {
+  .flow-foot-row { flex-wrap: wrap; }
+  .flow-foot-row .flow-back { flex: 1 1 100%; min-width: 0; }
+  .flow-foot-row .flow-primary { flex: 1 1 100%; max-width: none; margin-left: 0; }
+  .source-bar { flex-wrap: wrap; }
+  .source-menu { margin-left: auto; }
 }

@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"path"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -40,6 +41,17 @@ var ErrInvalidMode = errors.New("unknown transfer mode")
 // deletes extra destination files, so a partial source would be dangerous; the
 // UI only offers copy for a file selection and the API states it explicitly.
 var ErrSyncWithFiles = errors.New("sync mode cannot download individual files")
+
+// ErrIdempotencyConflict means an idempotency key was reused for a different
+// request. The key names one operation, so replaying a request with another
+// source, destination or mode would answer with a job that does the wrong
+// transfer.
+var ErrIdempotencyConflict = errors.New("idempotency key reused for a different request")
+
+// idempotencyWindow is how long a key remembers its job. A retry after the
+// window is treated as a new request: the client clearly no longer waits for
+// the first answer, and forgetting old keys keeps a reused token harmless.
+const idempotencyWindow = 24 * time.Hour
 
 // ErrSourceNotFound means a selected cloud folder does not exist or is not a
 // directory. It is a user mistake, not an outage, so the HTTP layer answers 400.
@@ -458,20 +470,64 @@ func (m *Manager) oldJobAlive(ctx context.Context, job store.Job) (bool, error) 
 	return !status.Finished && sameTransfer(job, status), nil
 }
 
-// claimDest reserves a destination for one transfer. It reports ErrConflict
-// when another queued or running job already writes into an overlapping tree.
-// Reserve runs while createMu is held, so a concurrent Start or Resume cannot
-// pass the same check: the winner is persisted before the loser looks.
-func (m *Manager) claimDest(dst string, reserve func() error) error {
+// createSerialized runs fn while holding the creation mutex. Job creation is
+// serialized so a check and the write it guards cannot interleave: concurrent
+// requests either see each other's job or are ordered by the lock.
+func (m *Manager) createSerialized(fn func() error) error {
 	m.createMu.Lock()
 	defer m.createMu.Unlock()
+	return fn()
+}
 
+// activeDestConflict reports ErrConflict when another queued or running job
+// already writes into an overlapping tree.
+func (m *Manager) activeDestConflict(dst string) error {
 	for _, existing := range m.store.Jobs() {
 		if (existing.Status == store.StatusRunning || existing.Status == store.StatusQueued) && destOverlapsActive(dst, existing.Dest) {
 			return ErrConflict
 		}
 	}
-	return reserve()
+	return nil
+}
+
+// claimDest reserves a destination for one transfer. It reports ErrConflict
+// when another queued or running job already writes into an overlapping tree.
+// The check and reserve run under createSerialized, so a concurrent Start or
+// Resume cannot pass the same check: the winner is persisted before the loser
+// looks.
+func (m *Manager) claimDest(dst string, reserve func() error) error {
+	return m.createSerialized(func() error {
+		if err := m.activeDestConflict(dst); err != nil {
+			return err
+		}
+		return reserve()
+	})
+}
+
+// sameSource reports whether two cloud selections pick the same items.
+func sameSource(a, b Source) bool {
+	return a.Path == b.Path && slices.Equal(a.Paths, b.Paths) && slices.Equal(a.Files, b.Files)
+}
+
+// idempotentJob finds the job a key already stands for. A job older than
+// idempotencyWindow does not count: its key is forgotten and may be used again.
+// A known key with another account, source, destination or mode is
+// ErrIdempotencyConflict, because it cannot answer the current request.
+func (m *Manager) idempotentJob(accountID string, src Source, dstPath, mode, key string) (store.Job, error) {
+	now := time.Now()
+	for _, existing := range m.store.Jobs() {
+		if existing.IdempotencyKey != key || existing.AccountID != accountID {
+			continue
+		}
+		if now.Sub(existing.CreatedAt) > idempotencyWindow {
+			continue
+		}
+		if existing.Dest != dstPath || existing.Mode != mode || !sameSource(sourceForJob(existing), src) {
+			return store.Job{}, ErrIdempotencyConflict
+		}
+		return existing, nil
+	}
+	return store.Job{}, nil
 }
 
 // Start records the job before launching rclone: if the process dies between
@@ -479,31 +535,52 @@ func (m *Manager) claimDest(dst string, reserve func() error) error {
 // requests can never start transfers into the same tree. Selected cloud folders
 // are verified before anything is persisted or launched.
 func (m *Manager) Start(ctx context.Context, account store.Account, src Source, dstPath, mode string) (store.Job, error) {
+	job, _, err := m.StartIdempotent(ctx, account, src, dstPath, mode, "")
+	return job, err
+}
+
+// StartIdempotent is Start with an optional client key that makes the request
+// repeatable. When a job already exists for the same account, key and request
+// (source, destination, mode) within idempotencyWindow, it is returned with
+// replayed set and nothing is launched. The key is resolved before the cloud is
+// touched, so a retry answers even while the source is unreachable. An empty
+// key keeps plain Start behaviour.
+func (m *Manager) StartIdempotent(ctx context.Context, account store.Account, src Source, dstPath, mode, key string) (job store.Job, replayed bool, err error) {
 	if mode != "copy" && mode != "sync" {
-		return store.Job{}, ErrInvalidMode
+		return store.Job{}, false, ErrInvalidMode
 	}
 	if mode == "sync" && len(src.Files) > 0 {
-		return store.Job{}, ErrSyncWithFiles
+		return store.Job{}, false, ErrSyncWithFiles
+	}
+	if key != "" {
+		existing, err := m.idempotentJob(account.ID, src, dstPath, mode, key)
+		if err != nil {
+			return store.Job{}, false, err
+		}
+		if existing.ID != "" {
+			return existing, true, nil
+		}
 	}
 	if err := VerifySources(ctx, m.rc, account.Remote, src); err != nil {
-		return store.Job{}, err
+		return store.Job{}, false, err
 	}
 
 	id, err := newID()
 	if err != nil {
-		return store.Job{}, err
+		return store.Job{}, false, err
 	}
 	source, _ := SourceFS(account.Remote, src)
 
-	job := store.Job{
-		ID:        id,
-		AccountID: account.ID,
-		Source:    source,
-		Dest:      dstPath,
-		Mode:      mode,
-		Status:    store.StatusQueued,
-		Group:     newGroup(id),
-		CreatedAt: time.Now().UTC(),
+	job = store.Job{
+		ID:             id,
+		AccountID:      account.ID,
+		IdempotencyKey: key,
+		Source:         source,
+		Dest:           dstPath,
+		Mode:           mode,
+		Status:         store.StatusQueued,
+		Group:          newGroup(id),
+		CreatedAt:      time.Now().UTC(),
 	}
 	if len(src.Paths) > 0 {
 		job.SourcePaths = append([]string(nil), src.Paths...)
@@ -512,24 +589,48 @@ func (m *Manager) Start(ctx context.Context, account store.Account, src Source, 
 		job.SourceFiles = append([]string(nil), src.Files...)
 	}
 
-	if err := m.claimDest(dstPath, func() error { return m.store.AddJob(job) }); err != nil {
-		return store.Job{}, err
+	var replay store.Job
+	err = m.createSerialized(func() error {
+		if key != "" {
+			// Repeat the lookup under the lock: the first one ran before the
+			// cloud check and a concurrent request may have registered the key
+			// since. This lookup decides, so two requests with one key create
+			// one job: the loser waits here and finds the winner's record.
+			existing, err := m.idempotentJob(account.ID, src, dstPath, mode, key)
+			if err != nil {
+				return err
+			}
+			if existing.ID != "" {
+				replay = existing
+				return nil
+			}
+		}
+		if err := m.activeDestConflict(dstPath); err != nil {
+			return err
+		}
+		return m.store.AddJob(job)
+	})
+	if err != nil {
+		return store.Job{}, false, err
+	}
+	if replay.ID != "" {
+		return replay, true, nil
 	}
 
 	rcloneJobID, executeID, err := m.launch(ctx, job)
 	if err != nil {
 		m.markFailed(job.ID, err)
-		return job, err
+		return job, false, err
 	}
 	if err := m.markRunning(job.ID, rcloneJobID, executeID); err != nil {
 		// The job is no longer ours: stop the orphan so two transfers do not
 		// write into the same folder.
 		m.stopRclone(context.Background(), rcloneJobID)
-		return store.Job{}, err
+		return store.Job{}, false, err
 	}
 
 	updated, _ := m.store.Job(job.ID)
-	return updated, nil
+	return updated, false, nil
 }
 
 // Resume continues an interrupted or failed job. It refuses to touch a job that

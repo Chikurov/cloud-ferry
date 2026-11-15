@@ -648,12 +648,21 @@ type createJobRequest struct {
 	SourceFiles *[]string `json:"sourceFiles"`
 	DestPath    string    `json:"destPath"`
 	Mode        string    `json:"mode"`
+	// ClientToken is an optional client-generated key that makes a retry safe:
+	// the same key returns the job it already created instead of starting a
+	// second download. The Idempotency-Key header wins over this field.
+	ClientToken string `json:"clientToken"`
 }
 
 func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 	var req createJobRequest
 	if err := decodeJSON(r, &req); err != nil {
 		s.badRequest(w, err)
+		return
+	}
+	key, keyField, err := requestIdempotencyKey(r, req.ClientToken)
+	if err != nil {
+		writeIdempotencyError(w, http.StatusBadRequest, "invalid_request", keyField, err.Error())
 		return
 	}
 	account, ok := s.cfg.Store.Account(req.AccountID)
@@ -687,8 +696,12 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := contextWithTimeout(r, 90*time.Second)
 	defer cancel()
-	job, err := s.cfg.Jobs.Start(ctx, account, src, dst, mode)
+	job, replayed, err := s.cfg.Jobs.StartIdempotent(ctx, account, src, dst, mode, key)
 	switch {
+	case errors.Is(err, jobs.ErrIdempotencyConflict):
+		writeIdempotencyError(w, http.StatusConflict, "idempotency_conflict", keyField,
+			"Этот ключ уже использован для другого скачивания. Возьмите новый ключ.")
+		return
 	case errors.Is(err, jobs.ErrConflict):
 		writeError(w, http.StatusConflict, "По этому пути уже идёт скачивание. Дождитесь окончания или остановите его.")
 		return
@@ -708,6 +721,11 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	case err != nil:
 		s.fail(w, http.StatusBadGateway, "Не удалось начать скачивание. Попробуйте ещё раз.", err)
+		return
+	}
+	if replayed {
+		w.Header().Set("Idempotent-Replay", "true")
+		writeJSON(w, http.StatusOK, job)
 		return
 	}
 	writeJSON(w, http.StatusCreated, job)

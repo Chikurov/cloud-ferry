@@ -75,6 +75,11 @@ type CheckResult struct {
 type Job struct {
 	ID        string `json:"id"`
 	AccountID string `json:"accountId"`
+	// IdempotencyKey is the client key that created this job; empty when the
+	// request had none. A retry with the same key returns this job instead of
+	// starting a second transfer. The field is absent in state files written
+	// by older builds and is not written while empty.
+	IdempotencyKey string `json:"idempotencyKey,omitempty"`
 	// Source is the rclone srcFs recorded at start: "<remote>:" for the whole
 	// disk and for a multi-folder selection, "<remote>:/<path>" for a legacy
 	// single folder.
