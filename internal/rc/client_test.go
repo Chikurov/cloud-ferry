@@ -164,3 +164,37 @@ func TestCallReportsOversizedResponse(t *testing.T) {
 		t.Fatalf("expected ErrResponseTooLarge, got %v", err)
 	}
 }
+
+func TestCallWithPayloadErrorKeepsErrorField(t *testing.T) {
+	// job/status answers 200 with success=false and the reason in "error".
+	// A plain Call would surface APIError; the payload variant must decode it.
+	socket := fakeServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"finished":true,"success":false,"error":"failed to open source object: 503 Service Unavailable","executeId":"e1"}`))
+	})
+	client := NewClient(socket, "", "")
+
+	var status struct {
+		Finished bool   `json:"finished"`
+		Success  bool   `json:"success"`
+		Error    string `json:"error"`
+	}
+	if err := client.CallWithPayloadError(context.Background(), "job/status", map[string]any{"jobid": 1}, &status); err != nil {
+		t.Fatalf("payload call: %v", err)
+	}
+	if !status.Finished || status.Success {
+		t.Fatalf("status = %+v", status)
+	}
+	if !strings.Contains(status.Error, "503") {
+		t.Fatalf("error = %q", status.Error)
+	}
+
+	var plain struct {
+		Finished bool `json:"finished"`
+	}
+	err := client.Call(context.Background(), "job/status", map[string]any{"jobid": 1}, &plain)
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("plain Call error = %v, want APIError", err)
+	}
+}

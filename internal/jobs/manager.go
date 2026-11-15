@@ -299,6 +299,10 @@ type Options struct {
 	Checkers  int
 	TpsLimit  int
 	PollEvery time.Duration
+	// StatusErrorGrace is how long a running job may keep answering rclone
+	// errors before it is treated as lost. Without it an engine that answers
+	// errors for ever would leave the job "running" in the UI indefinitely.
+	StatusErrorGrace time.Duration
 }
 
 func (o Options) withDefaults() Options {
@@ -314,6 +318,9 @@ func (o Options) withDefaults() Options {
 	if o.PollEvery <= 0 {
 		o.PollEvery = 2 * time.Second
 	}
+	if o.StatusErrorGrace <= 0 {
+		o.StatusErrorGrace = 2 * time.Minute
+	}
 	return o
 }
 
@@ -323,6 +330,8 @@ type Manager struct {
 	rc    Caller
 	opts  Options
 
+	statusErrorSince map[string]time.Time
+
 	createMu     sync.Mutex
 	mu           sync.Mutex
 	statusErrors map[string]int
@@ -330,7 +339,13 @@ type Manager struct {
 
 // NewManager wires a manager. Call Recover once at startup.
 func NewManager(st *store.Store, client Caller, opts Options) *Manager {
-	return &Manager{store: st, rc: client, opts: opts.withDefaults(), statusErrors: map[string]int{}}
+	return &Manager{
+		store:            st,
+		rc:               client,
+		opts:             opts.withDefaults(),
+		statusErrors:     map[string]int{},
+		statusErrorSince: map[string]time.Time{},
+	}
 }
 
 // Recover reconciles jobs that were running when the process died. A job whose
@@ -389,6 +404,12 @@ type rcloneStatus struct {
 	Output    json.RawMessage `json:"output"`
 }
 
+// payloadErrorCaller is implemented by rc clients that can call methods whose
+// "error" field is payload, not a transport failure.
+type payloadErrorCaller interface {
+	CallWithPayloadError(ctx context.Context, method string, in, out any) error
+}
+
 // errNoRcloneJob marks a stored job that has no engine job behind it.
 var errNoRcloneJob = errors.New("job has no rclone job id")
 
@@ -401,7 +422,15 @@ func (m *Manager) statusOf(ctx context.Context, job store.Job) (rcloneStatus, er
 	defer cancel()
 
 	var status rcloneStatus
-	err := m.rc.Call(callCtx, "job/status", map[string]any{"jobid": job.RcloneJobID}, &status)
+	// job/status reports a finished-but-failed transfer with success=false and
+	// a top-level "error" string. That error is the result of the transfer, not
+	// a failed rc call, so it must land in the status payload.
+	caller, ok := m.rc.(payloadErrorCaller)
+	if !ok {
+		err := m.rc.Call(callCtx, "job/status", map[string]any{"jobid": job.RcloneJobID}, &status)
+		return status, err
+	}
+	err := caller.CallWithPayloadError(callCtx, "job/status", map[string]any{"jobid": job.RcloneJobID}, &status)
 	return status, err
 }
 
@@ -782,8 +811,12 @@ func (m *Manager) pollOne(ctx context.Context, job store.Job) bool {
 		}
 		if !isMissingJob(err) {
 			// rclone answered with some other error. The job may well be alive,
-			// so do not count this as a lost transfer; a later poll will tell.
+			// so a single failure is not a lost transfer; a later poll will tell.
 			log.Printf("jobs: poll %s: rclone answered with %v", job.ID, err)
+			if m.statusErrorLongEnough(job.ID) {
+				m.stopRclone(ctx, job.RcloneJobID)
+				m.markInterrupted(job.ID, "Скачивание прервалось: движок не сообщает статус.")
+			}
 			return reachable
 		}
 		if failures := m.bumpStatusError(job.ID); failures >= maxStatusFailures {
@@ -861,6 +894,23 @@ func (m *Manager) resetStatusError(id string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	delete(m.statusErrors, id)
+	delete(m.statusErrorSince, id)
+}
+
+// statusErrorLongEnough reports whether a job has been answering rclone errors
+// for longer than StatusErrorGrace, i.e. the engine is not coming back.
+func (m *Manager) statusErrorLongEnough(id string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.statusErrorSince == nil {
+		m.statusErrorSince = make(map[string]time.Time)
+	}
+	since, ok := m.statusErrorSince[id]
+	if !ok {
+		m.statusErrorSince[id] = time.Now()
+		return false
+	}
+	return time.Since(since) >= m.opts.StatusErrorGrace
 }
 
 // markInterrupted moves a job out of "running" so the user can continue it.

@@ -58,7 +58,21 @@ func NewClient(socket, user, pass string) *Client {
 }
 
 // Call invokes one rc method. in may be nil; out may be nil.
+//
+// A top-level "error" field is treated as a failed call. Some methods answer it
+// as part of their payload instead (job/status reports a finished transfer with
+// success=false and error text), so those callers use CallWithPayloadError.
 func (c *Client) Call(ctx context.Context, method string, in, out any) error {
+	return c.call(ctx, method, in, out, false)
+}
+
+// CallWithPayloadError is Call for methods whose "error" field is data rather
+// than a transport failure: only a non-200 answer counts as an error.
+func (c *Client) CallWithPayloadError(ctx context.Context, method string, in, out any) error {
+	return c.call(ctx, method, in, out, true)
+}
+
+func (c *Client) call(ctx context.Context, method string, in, out any, payloadError bool) error {
 	if !Allowed(method) {
 		return fmt.Errorf("%w: %s", ErrMethodNotAllowed, method)
 	}
@@ -95,11 +109,13 @@ func (c *Client) Call(ctx context.Context, method string, in, out any) error {
 		return fmt.Errorf("%w: %s", ErrResponseTooLarge, method)
 	}
 
-	var probe struct {
-		Error string `json:"error"`
-	}
-	if json.Unmarshal(data, &probe) == nil && probe.Error != "" {
-		return &APIError{Method: method, Status: resp.StatusCode, Body: probe.Error}
+	if !payloadError {
+		var probe struct {
+			Error string `json:"error"`
+		}
+		if json.Unmarshal(data, &probe) == nil && probe.Error != "" {
+			return &APIError{Method: method, Status: resp.StatusCode, Body: probe.Error}
+		}
 	}
 	if resp.StatusCode != http.StatusOK {
 		return &APIError{Method: method, Status: resp.StatusCode, Body: string(data)}

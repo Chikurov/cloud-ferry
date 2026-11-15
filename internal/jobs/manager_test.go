@@ -62,6 +62,12 @@ func (f *fakeRC) Call(_ context.Context, method string, in, out any) error {
 	return json.Unmarshal(payload, out)
 }
 
+// CallWithPayloadError mirrors Call: tests drive the payload shape through
+// responses, and the client itself is covered in the rc package.
+func (f *fakeRC) CallWithPayloadError(ctx context.Context, method string, in, out any) error {
+	return f.Call(ctx, method, in, out)
+}
+
 // setStat makes operations/stat answer for one cloud path. A nil item means
 // the path does not exist; {"IsDir": ...} tells a folder from a file.
 func (f *fakeRC) setStat(remote string, item map[string]any) {
@@ -1507,5 +1513,58 @@ func TestResumeResetsStartedAt(t *testing.T) {
 	}
 	if !resumed.FinishedAt.IsZero() {
 		t.Fatalf("finishedAt = %v, want zero", resumed.FinishedAt)
+	}
+}
+
+func TestPollFinalisesFailedJobWithEngineErrorPayload(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	// rclone reports a finished transfer that failed: success=false with the
+	// reason in the top-level "error" field. That is data, not a broken rc call,
+	// so the job must become failed instead of hanging in "running" for ever.
+	fake.responses = map[string]any{"job/status": map[string]any{
+		"finished": true,
+		"success":  false,
+		"error":    "failed to open source object: 503 Service Unavailable",
+	}}
+	if err := st.AddJob(store.Job{
+		ID: "j1", Status: store.StatusRunning, RcloneJobID: 7, ExecuteID: "exec-1",
+		Group: "migrate/j1", Source: "cf_a1:", Dest: "/downloads/yandex",
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	manager.Poll(context.Background())
+
+	stored, _ := st.Job("j1")
+	if stored.Status != store.StatusFailed {
+		t.Fatalf("status = %q, want failed", stored.Status)
+	}
+	if !strings.Contains(stored.Error, "503") {
+		t.Fatalf("error = %q, want the engine reason", stored.Error)
+	}
+}
+
+func TestPollInterruptsJobAfterStatusErrorGrace(t *testing.T) {
+	manager, fake, st := newTestManager(t)
+	manager.opts.StatusErrorGrace = 0
+	// rclone answers with a non-job error for ever. After the grace period the
+	// record must become interruptible instead of hanging in "running".
+	fake.errors = map[string]error{"job/status": &rc.APIError{Method: "job/status", Status: http.StatusInternalServerError, Body: "internal error"}}
+	if err := st.AddJob(store.Job{
+		ID: "j1", Status: store.StatusRunning, RcloneJobID: 7, Group: "migrate/j1",
+		Source: "cf_a1:", Dest: "/downloads/yandex",
+	}); err != nil {
+		t.Fatalf("add job: %v", err)
+	}
+
+	manager.Poll(context.Background())
+	manager.Poll(context.Background())
+
+	stored, _ := st.Job("j1")
+	if stored.Status != store.StatusInterrupted {
+		t.Fatalf("status = %q, want interrupted", stored.Status)
+	}
+	if fake.count("job/stop") != 1 {
+		t.Fatalf("job/stop calls = %d, want 1", fake.count("job/stop"))
 	}
 }
