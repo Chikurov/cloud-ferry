@@ -50,8 +50,18 @@ var ErrIdempotencyConflict = errors.New("idempotency key reused for a different 
 
 // idempotencyWindow is how long a key remembers its job. A retry after the
 // window is treated as a new request: the client clearly no longer waits for
-// the first answer, and forgetting old keys keeps a reused token harmless.
-const idempotencyWindow = 24 * time.Hour
+// the first answer, and forgetting old keys keeps a reused token harmless. The
+// store prunes by the same window, so a key that can still be replayed is never
+// evicted from the history.
+const idempotencyWindow = store.IdempotencyWindow
+
+// errJobNotQueued means Stop canceled the record before the transfer started;
+// nothing was launched.
+var errJobNotQueued = errors.New("job is no longer queued")
+
+// errLaunchWindowLost means the record changed while the engine was starting.
+// The fresh engine job has already been stopped when this is returned.
+var errLaunchWindowLost = errors.New("job changed while its transfer was starting")
 
 // ErrSourceNotFound means a selected cloud folder does not exist or is not a
 // directory. It is a user mistake, not an outage, so the HTTP layer answers 400.
@@ -343,6 +353,9 @@ type Manager struct {
 	opts  Options
 
 	statusErrorSince map[string]time.Time
+	// checking holds the jobs whose check is running right now, so two clicks
+	// cannot start two expensive comparisons of the same tree.
+	checking map[string]struct{}
 
 	createMu     sync.Mutex
 	mu           sync.Mutex
@@ -357,6 +370,7 @@ func NewManager(st *store.Store, client Caller, opts Options) *Manager {
 		opts:             opts.withDefaults(),
 		statusErrors:     map[string]int{},
 		statusErrorSince: map[string]time.Time{},
+		checking:         map[string]struct{}{},
 	}
 }
 
@@ -525,9 +539,24 @@ func (m *Manager) idempotentJob(accountID string, src Source, dstPath, mode, key
 		if existing.Dest != dstPath || existing.Mode != mode || !sameSource(sourceForJob(existing), src) {
 			return store.Job{}, ErrIdempotencyConflict
 		}
+		if unreplayable(existing) {
+			// The transfer never started: a failed launch or a stop before the
+			// engine call left no result to replay. The retry must try again.
+			continue
+		}
 		return existing, nil
 	}
 	return store.Job{}, nil
+}
+
+// unreplayable reports whether a stored job with an idempotency key never
+// produced a transfer. Answering a retry with such a record would claim a
+// download that never happened.
+func unreplayable(job store.Job) bool {
+	if job.RcloneJobID != 0 {
+		return false
+	}
+	return job.Status == store.StatusFailed || job.Status == store.StatusCanceled
 }
 
 // Start records the job before launching rclone: if the process dies between
@@ -617,16 +646,19 @@ func (m *Manager) StartIdempotent(ctx context.Context, account store.Account, sr
 		return replay, true, nil
 	}
 
-	rcloneJobID, executeID, err := m.launch(ctx, job)
-	if err != nil {
-		m.markFailed(job.ID, err)
-		return job, false, err
-	}
-	if err := m.markRunning(job.ID, rcloneJobID, executeID); err != nil {
-		// The job is no longer ours: stop the orphan so two transfers do not
-		// write into the same folder.
-		m.stopRclone(context.Background(), rcloneJobID)
-		return store.Job{}, false, err
+	if err := m.launchQueued(ctx, job); err != nil {
+		switch {
+		case errors.Is(err, errJobNotQueued):
+			// Stop canceled the record before the transfer began. Answer with
+			// the stored record instead of starting a download nobody waits for.
+			updated, _ := m.store.Job(job.ID)
+			return updated, false, nil
+		case errors.Is(err, errLaunchWindowLost):
+			return store.Job{}, false, err
+		default:
+			m.markFailed(job.ID, err)
+			return job, false, err
+		}
 	}
 
 	updated, _ := m.store.Job(job.ID)
@@ -703,17 +735,56 @@ func (m *Manager) Resume(ctx context.Context, id string) (store.Job, error) {
 	}
 
 	job.Group = group
-	rcloneJobID, executeID, err := m.launch(ctx, job)
-	if err != nil {
-		m.markFailed(id, err)
-		return store.Job{}, err
-	}
-	if err := m.markRunning(id, rcloneJobID, executeID); err != nil {
-		m.stopRclone(context.Background(), rcloneJobID)
-		return store.Job{}, err
+	// A new attempt gets a fresh error grace period: a status error recorded
+	// before the pause must not interrupt the resumed transfer immediately.
+	m.resetStatusError(id)
+	if err := m.launchQueued(ctx, job); err != nil {
+		switch {
+		case errors.Is(err, errJobNotQueued):
+			return store.Job{}, ErrConflict
+		case errors.Is(err, errLaunchWindowLost):
+			return store.Job{}, err
+		default:
+			m.markFailed(id, err)
+			return store.Job{}, err
+		}
 	}
 	updated, _ := m.store.Job(id)
 	return updated, nil
+}
+
+// launchQueued starts the engine job for a record that is still queued. Stop
+// can cancel the record between its creation and the engine call, and a
+// canceled download must not transfer anything: the status is re-read under
+// createMu right before launching. A stop that lands while the engine call is
+// already in flight is caught by markRunning, which stops the fresh engine job
+// instead of attaching it to the canceled record.
+func (m *Manager) launchQueued(ctx context.Context, job store.Job) error {
+	ready := false
+	if err := m.createSerialized(func() error {
+		current, ok := m.store.Job(job.ID)
+		if ok && current.Status == store.StatusQueued {
+			ready = true
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	if !ready {
+		return errJobNotQueued
+	}
+
+	rcloneJobID, executeID, err := m.launch(ctx, job)
+	if err != nil {
+		return err
+	}
+	if err := m.markRunning(job.ID, rcloneJobID, executeID); err != nil {
+		// The job is no longer ours: stop the orphan so two transfers do not
+		// write into the same folder.
+		m.stopRclone(context.Background(), rcloneJobID)
+		return fmt.Errorf("%w: %w", errLaunchWindowLost, err)
+	}
+	return nil
 }
 
 // Stop cancels a job. It only affects a transfer that is queued or running and
@@ -822,7 +893,16 @@ func (m *Manager) markRunning(id string, rcloneJobID int64, executeID string) er
 }
 
 func (m *Manager) markFailed(id string, cause error) {
+	m.resetStatusError(id)
 	if err := m.store.UpdateJob(id, func(j *store.Job) bool {
+		// A user's stop or an already finished result must not be rewritten by
+		// a late launch error.
+		if j.Status != store.StatusQueued && j.Status != store.StatusRunning {
+			return false
+		}
+		// Nothing was transferred, so there is nothing to replay: drop the
+		// client key and let a retry start the download again.
+		j.IdempotencyKey = ""
 		j.Status = store.StatusFailed
 		j.Error = cause.Error()
 		applyHint(j)
@@ -982,6 +1062,8 @@ func (m *Manager) finalize(job store.Job, status rcloneStatus) {
 	}); err != nil {
 		log.Printf("jobs: save final state for %s: %v", job.ID, err)
 	}
+	// The job will not be polled again: do not keep its grace state around.
+	m.resetStatusError(job.ID)
 }
 
 func (m *Manager) bumpStatusError(id string) int {
@@ -996,6 +1078,26 @@ func (m *Manager) resetStatusError(id string) {
 	defer m.mu.Unlock()
 	delete(m.statusErrors, id)
 	delete(m.statusErrorSince, id)
+}
+
+// claimCheck reserves the one running check of a job.
+func (m *Manager) claimCheck(id string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.checking == nil {
+		m.checking = make(map[string]struct{})
+	}
+	if _, busy := m.checking[id]; busy {
+		return false
+	}
+	m.checking[id] = struct{}{}
+	return true
+}
+
+func (m *Manager) releaseCheck(id string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.checking, id)
 }
 
 // statusErrorLongEnough reports whether a job has been answering rclone errors
@@ -1015,7 +1117,10 @@ func (m *Manager) statusErrorLongEnough(id string) bool {
 }
 
 // markInterrupted moves a job out of "running" so the user can continue it.
+// The error grace state is dropped with it: the next attempt starts counting
+// from scratch instead of inheriting the previous run's accumulated errors.
 func (m *Manager) markInterrupted(id, reason string) {
+	m.resetStatusError(id)
 	if err := m.store.UpdateJob(id, func(j *store.Job) bool {
 		if j.Status != store.StatusRunning {
 			return false
@@ -1031,12 +1136,28 @@ func (m *Manager) markInterrupted(id, reason string) {
 	}
 }
 
-// Check runs operations/check between source and destination of a job.
+// Check runs operations/check between source and destination of a job. Only a
+// finished job can be checked: checking a running transfer compares a moving
+// target. A job is also checked at most once, because the comparison is
+// expensive and repeating it would overwrite the stored result; Resume clears
+// the result, so the next attempt can be checked again.
 func (m *Manager) Check(ctx context.Context, id string) (store.CheckResult, error) {
 	job, ok := m.store.Job(id)
 	if !ok {
 		return store.CheckResult{}, fmt.Errorf("job %s not found", id)
 	}
+	switch job.Status {
+	case store.StatusDone, store.StatusFailed, store.StatusInterrupted:
+	default:
+		return store.CheckResult{}, ErrConflict
+	}
+	if job.Check != nil {
+		return store.CheckResult{}, ErrConflict
+	}
+	if !m.claimCheck(id) {
+		return store.CheckResult{}, ErrConflict
+	}
+	defer m.releaseCheck(id)
 
 	req := map[string]any{
 		"dstFs":        job.Dest,
@@ -1122,17 +1243,35 @@ func applyHint(job *store.Job) {
 }
 
 // transferLimit returns rclone's --max-transfer value for a destination,
-// keeping a safety margin of ten percent.
+// keeping a safety margin of ten percent. Any measured free space yields a
+// limit: without one rclone would happily fill the disk to zero even when only
+// a few hundred megabytes are left.
 func transferLimit(dest string) (string, bool) {
 	free, err := disk.Free(dest)
-	if err != nil || free < 1<<30 {
+	if err != nil {
+		return "", false
+	}
+	return transferLimitForFree(free)
+}
+
+// transferLimitForFree formats the transfer limit for a known amount of free
+// space. Sizes use rclone's binary SizeSuffix units; a bare number would be
+// read as KiB, so a sub-KiB limit keeps the explicit B suffix.
+func transferLimitForFree(free uint64) (string, bool) {
+	if free == 0 {
 		return "", false
 	}
 	limit := disk.TransferLimit(free)
-	if limit >= 1<<30 {
+	switch {
+	case limit >= 1<<30:
 		return fmt.Sprintf("%dG", limit/(1<<30)), true
+	case limit >= 1<<20:
+		return fmt.Sprintf("%dM", limit/(1<<20)), true
+	case limit >= 1<<10:
+		return fmt.Sprintf("%dK", limit/(1<<10)), true
+	default:
+		return fmt.Sprintf("%dB", limit), true
 	}
-	return fmt.Sprintf("%dM", limit/(1<<20)), true
 }
 
 func newGroup(id string) string {

@@ -204,7 +204,7 @@ func TestValidateYandexTokenAccountSucceeds(t *testing.T) {
 	assertStoreUntouched(t, before, st, server)
 }
 
-func TestValidateAuthFailureWebDAV401SuggestsActivation(t *testing.T) {
+func TestValidateAuthFailureWebDAV401(t *testing.T) {
 	server, st, engine := newTestServer(t)
 	before := storeSnapshot(st)
 	engine.setError("operations/about", errors.New("401 Unauthorized"))
@@ -216,8 +216,8 @@ func TestValidateAuthFailureWebDAV401SuggestsActivation(t *testing.T) {
 	if body["code"] != "auth_failed" {
 		t.Fatalf("code = %v", body["code"])
 	}
-	if body["retryAfterHint"] != true {
-		t.Fatalf("retryAfterHint = %v, want true for WebDAV 401", body["retryAfterHint"])
+	if _, exists := body["retryAfterHint"]; exists {
+		t.Fatalf("401 must not claim the password is still activating: %v", body)
 	}
 	if body["field"] != "password" {
 		t.Fatalf("field = %v, want password", body["field"])

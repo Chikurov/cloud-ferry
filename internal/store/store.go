@@ -301,33 +301,46 @@ func (s *Store) AddJob(j Job) error {
 }
 
 // maxJobs bounds the stored history so the state file and the API response do
-// not grow forever. Active jobs are always kept.
+// not grow forever. Active jobs and jobs whose idempotency key is still valid
+// are always kept; the state can therefore briefly exceed maxJobs, but a key
+// that would still replay can never be silently forgotten.
 const maxJobs = 100
 
-// pruneJobs bounds the job history without touching the input slice.
+// IdempotencyWindow is how long a client idempotency key stays meaningful. The
+// job manager replays keys within it and pruning keeps such a job alive for the
+// same time, so both must use one value.
+const IdempotencyWindow = 24 * time.Hour
+
+// pruneJobs bounds the job history without touching the input slice. A job
+// with an unexpired idempotency key survives even when it is the oldest record:
+// evicting it would make a retry with the same key start a second transfer.
 func pruneJobs(jobs []Job) []Job {
 	if len(jobs) <= maxJobs {
 		return jobs
 	}
-	finished := make([]Job, 0, len(jobs))
+	now := time.Now()
 	active := make([]Job, 0, len(jobs))
+	protected := make([]Job, 0, len(jobs))
+	finished := make([]Job, 0, len(jobs))
 	for _, job := range jobs {
-		switch job.Status {
-		case StatusRunning, StatusQueued, StatusVerifying:
+		switch {
+		case job.Status == StatusRunning || job.Status == StatusQueued || job.Status == StatusVerifying:
 			active = append(active, job)
+		case job.IdempotencyKey != "" && now.Sub(job.CreatedAt) <= IdempotencyWindow:
+			protected = append(protected, job)
 		default:
 			finished = append(finished, job)
 		}
 	}
 	sort.Slice(finished, func(a, b int) bool { return finished[a].CreatedAt.After(finished[b].CreatedAt) })
-	keep := maxJobs - len(active)
+	keep := maxJobs - len(active) - len(protected)
 	if keep < 0 {
 		keep = 0
 	}
 	if len(finished) > keep {
 		finished = finished[:keep]
 	}
-	return append(active, finished...)
+	return append(append(active, protected...), finished...)
 }
 
 // Job returns one job by id.

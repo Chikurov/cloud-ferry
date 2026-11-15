@@ -9,9 +9,25 @@ FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS build
 ARG TARGETOS
 ARG TARGETARCH
 
+# Release version, without the leading v (0.3.2). Required: an image must never
+# claim a version that no tag owns. `.git` is not in the build context, so the
+# Dockerfile cannot read the tag itself — the Makefile and CI pass VERSION, and
+# the build fails loudly when it is missing.
+ARG VERSION
+
+RUN printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { \
+	echo "error: build arg VERSION is required and must look like 0.3.2 (without the leading v), got '$VERSION'" >&2; \
+	exit 1; \
+    }
+
 WORKDIR /src
 ENV CGO_ENABLED=0
 
+# The module has no third-party dependencies yet, so there is no go.sum and no
+# vendor/ directory and the build needs neither the network nor a module cache.
+# When the first dependency lands, add `COPY go.sum ./` (or `COPY vendor ./vendor`
+# plus `-mod=vendor` here) in the same commit — otherwise the image build would
+# silently depend on the Go module proxy being reachable and unchanged.
 COPY go.mod ./
 COPY cmd ./cmd
 COPY internal ./internal
@@ -24,14 +40,18 @@ RUN GOOS=$TARGETOS GOARCH=$TARGETARCH \
 # rclone 1.76.0 (linux/amd64 + linux/arm64) so both Umbrel architectures work.
 FROM rclone/rclone:1.76.0@sha256:7cbeec24a44f206067597c0368be4de90ae19a64d5113c7d1938bd737a81e466
 
-ARG VERSION=0.1.0
+ARG VERSION
+# Commit the image was built from, so the published index can be traced back to
+# its source. Empty is allowed for plain local builds.
+ARG REVISION=
 
 LABEL org.opencontainers.image.title="Cloud Ferry" \
       org.opencontainers.image.description="Download files from cloud storage to your Umbrel" \
       org.opencontainers.image.version="$VERSION" \
+      org.opencontainers.image.revision="$REVISION" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.source="https://github.com/Chikurov/cloud-ferry" \
-      org.opencontainers.image.url="https://github.com/Chikurov/cloud-ferry"
+      org.opencontainers.image.source="https://github.com/chikurov/cloud-ferry" \
+      org.opencontainers.image.url="https://github.com/chikurov/cloud-ferry"
 
 # Licence for the app plus the rclone MIT notice required by its licence; the
 # runtime image is a redistribution, so both must ship with it.

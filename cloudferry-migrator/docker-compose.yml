@@ -5,10 +5,15 @@ services:
       APP_PORT: 3000
 
   api:
-    # ${OWNER} is exported by cloudferry-migrator/exports.sh and substituted by
-    # compose at app start. Set it once with `make set-owner OWNER=<login>`.
+    # The image reference is literal on purpose: umbreld does not expand
+    # ${OWNER} from exports.sh when it pulls the image, and an unresolved owner
+    # turns into ghcr.io//cloud-ferry (404 on install). This line is the single
+    # source of the owner; `make set-owner OWNER=<login>` rewrites it together
+    # with the manifest URLs and the Dockerfile labels.
     # The digest is the linux/amd64+linux/arm64 manifest-list digest printed by
-    # `make digest` (or the publish CI job); pin it with `make pin-digest`.
+    # `make digest` or the publish CI job; pin it with `make pin-digest`.
+    # A zero digest means "never published" and is not installable:
+    # `make check-version` and the release-tag CI job fail on it.
     image: ghcr.io/chikurov/cloud-ferry:0.3.1@sha256:70cbd48141c92cb00924ba9a27e316c983527025cc9d50e63fc2d01780e0347d
     restart: on-failure
     init: true

@@ -211,9 +211,13 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := contextWithTimeout(r, 4*time.Second)
 	defer cancel()
 	if v, err := s.cfg.Rclone.Ping(ctx); err != nil {
+		// The liveness probe is public: rclone's error text can name sockets,
+		// hosts and paths, so the details go to the log and the answer stays a
+		// short phrase.
+		log.Printf("healthz: rclone ping: %v", err)
 		resp["ok"] = false
 		resp["rclone"] = nil
-		resp["error"] = err.Error()
+		resp["error"] = "rclone недоступен"
 	} else {
 		resp["rclone"] = v.Version
 	}
@@ -270,6 +274,13 @@ func (s *Server) handleCreateAccount(w http.ResponseWriter, r *http.Request) {
 	var req createAccountRequest
 	if err := decodeJSON(r, &req); err != nil {
 		s.badRequest(w, err)
+		return
+	}
+	// The create endpoint runs the same form checks as the "check connection"
+	// endpoint: scheme, host, allowed lengths and the local-network ban must not
+	// depend on which of the two the UI calls.
+	if fieldErr := validateAccountInput(&req); fieldErr != nil {
+		writeFieldError(w, http.StatusBadRequest, fieldErr.field, fieldErr.message)
 		return
 	}
 	req.Name = limitName(req.Name)
@@ -613,6 +624,23 @@ func (s *Server) handlePreflight(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := contextWithTimeout(r, 10*time.Minute)
 	defer cancel()
+	// Verify the selected folders first: a folder that no longer exists is a
+	// user mistake, so it must answer 400 with the field to fix, exactly like
+	// POST /api/jobs, instead of surfacing as an upstream 502. Individual files
+	// are verified when the job starts; preflight sizes them, and statting up
+	// to a hundred files would cost more than this UI step should.
+	folders := jobs.Source{Path: src.Path, Paths: src.Paths}
+	if err := jobs.VerifySources(ctx, s.cfg.Rclone, account.Remote, folders); err != nil {
+		switch {
+		case errors.Is(err, jobs.ErrSourceNotFound):
+			sourceNotFound(w, sourceField(src), err)
+		case errors.Is(err, jobs.ErrSourceFileNotFound):
+			sourceFileNotFound(w, err)
+		default:
+			s.fail(w, http.StatusBadGateway, "Не удалось проверить папки в облаке. Попробуйте ещё раз.", err)
+		}
+		return
+	}
 	if err := s.cfg.Rclone.Call(ctx, "operations/size", sizeReq, &size); err != nil {
 		s.fail(w, http.StatusBadGateway, "Не удалось посчитать объём. Попробуйте ещё раз.", err)
 		return
@@ -767,7 +795,7 @@ func (s *Server) handleResumeJob(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	job, err := s.cfg.Jobs.Resume(ctx, r.PathValue("id"))
 	if errors.Is(err, jobs.ErrConflict) {
-		writeError(w, http.StatusConflict, "Это скачивание нельзя продолжить: оно уже идёт или завершено.")
+		writeError(w, http.StatusConflict, "Это скачивание нельзя продолжить: оно уже идёт, завершено или остановлено.")
 		return
 	}
 	if errors.Is(err, jobs.ErrSourceNotFound) {
@@ -793,6 +821,10 @@ func (s *Server) handleCheckJob(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := contextWithTimeout(r, 2*time.Hour)
 	defer cancel()
 	result, err := s.cfg.Jobs.Check(ctx, r.PathValue("id"))
+	if errors.Is(err, jobs.ErrConflict) {
+		writeError(w, http.StatusConflict, "Проверить можно только завершённое или прерванное скачивание, и только один раз.")
+		return
+	}
 	if err != nil {
 		s.fail(w, http.StatusBadGateway, "Не удалось проверить файлы. Попробуйте ещё раз.", err)
 		return

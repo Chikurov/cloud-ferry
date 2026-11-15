@@ -1,365 +1,330 @@
 # Cloud Ferry: сборка, публикация и установка на Umbrel
 
-Пошаговая инструкция от исходников до работающего приложения в community
-app store. Публикация в официальный `getumbrel/umbrel-apps` не требуется.
+От исходников до работающего приложения в community app store. Публикация в
+официальный `getumbrel/umbrel-apps` не требуется.
 
-> Состояние: образ `0.1.0` опубликован в GHCR, digest закреплён в
-> `cloudferry-migrator/docker-compose.yml`, `OWNER=Chikurov`, репозиторий
-> `github.com/Chikurov/cloud-ferry` запушен. Для обычной установки достаточно
-> раздела «Установка из store»; шаги 1–3 нужны только при выпуске новой версии.
+> Состояние на 0.3.1: образ `ghcr.io/chikurov/cloud-ferry:0.3.1` опубликован,
+> digest `sha256:70cbd481…347d` закреплён в
+> `cloudferry-migrator/docker-compose.yml`, пакет GHCR публичный, репозиторий
+> `github.com/chikurov/cloud-ferry`. Для установки достаточно раздела
+> «Установка из store»; остальное — про выпуск следующей версии.
 
 ## Требования
 
 | Что | Зачем |
 | --- | --- |
-| GitHub-аккаунт, публичный репозиторий | community store и GHCR-образ должны быть публично доступны |
-| Docker Engine 24+ с `buildx` | multi-arch сборка `linux/amd64` + `linux/arm64` |
+| GitHub-аккаунт, публичный репозиторий | community store и GHCR-образ должны быть доступны без авторизации |
+| Docker Engine 24+ с `buildx` | multi-arch сборка `linux/amd64` + `linux/arm64` и проверки реестра |
 | GitHub token со scope `write:packages` (и `read:packages`) | локальный push в GHCR; в CI достаточно `GITHUB_TOKEN` |
 | Umbrel с umbrelOS **2.0+**, свободный порт `8741` | `manifestVersion: "2.0"`, `folderAccess`, `storage.dataRoot` |
 | SSH-доступ к Umbrel | диагностика контейнеров и сокета |
 | Go 1.24+ (только для локальных проверок) | `go build ./...`, `go test ./...` |
 
-## Формат версий: один тег на всё
+## Контракт версии и digest
 
 Единый формат — **без ведущей `v` в образе**:
 
-| Место | Значение |
+| Место | Значение для 0.3.1 |
 | --- | --- |
-| git-тег | `v0.1.0` |
-| тег образа | `ghcr.io/<owner>/cloud-ferry:0.1.0` |
-| `umbrel-app.yml` → `version` | `"0.1.0"` |
-| `Makefile` → `TAG` | `0.1.0` |
-| compose | `cloud-ferry:0.1.0@sha256:<digest>` |
+| git-тег | `v0.3.1` |
+| тег образа | `ghcr.io/chikurov/cloud-ferry:0.3.1` |
+| `umbrel-app.yml` → `version` | `"0.3.1"` |
+| `Makefile` → `TAG` | `0.3.1` |
+| compose | `cloud-ferry:0.3.1@sha256:<digest индекса>` |
 
-GitHub Actions снимает ведущую `v` (`${GITHUB_REF_NAME#v}`) и падает, если
-версия в манифесте или тег в compose не совпадают с тегом. Именно это
-рассинхронизировало раньше: compose ждал `0.1.0`, а CI публиковал `v0.1.0`.
+CI снимает ведущую `v` (`${GITHUB_REF_NAME#v}`), падает на теге, который не
+похож на `vX.Y.Z`, и передаёт в Dockerfile `VERSION` без `v`.
 
-Проверка локально:
+Digest в compose — это digest **manifest list** (индекс с `linux/amd64` и
+`linux/arm64`), а не digest отдельной архитектуры: с дайджестом архитектуры
+установка пройдёт только на одной из них.
 
-```sh
-make check-version          # version в манифесте == TAG == тег в compose
-make -n docker-push         # что именно соберётся
-```
+### Нулевой digest недопустим
 
-## 1. Подставить свой GitHub-логин
+`sha256:000…000` (64 нуля) означает «образ ещё не публиковался». Такой пин
+нельзя установить: тег `v0.3.1` однажды уже уехал с нулевым digest, а реальный
+`sha256:70cbd481…347d` появился отдельным коммитом после тега — то есть
+установка по тегу гарантированно ломалась. Сейчас это жёсткая ошибка везде:
 
-`OWNER` встречается в нескольких местах и меняется одной командой:
+- `make check-version` падает с `the digest is the zero placeholder`, а он же
+  выполняется на каждый push в `main` и pull request;
+- job `image` на релизном теге падает (`Release tag must pin a real digest`);
+- `make release-tag` не создаст тег, пока digest нулевой;
+- `make pin-digest` отказывается записывать нулевой digest.
 
-```sh
-make set-owner OWNER=<github-login>
-```
-
-Что команда делает:
-
-- `cloudferry-migrator/exports.sh`: `export OWNER="<login>"` — compose
-  подставляет его в `image: ghcr.io/${OWNER}/cloud-ferry:...`;
-- `cloudferry-migrator/umbrel-app.yml`: `website`, `repo`, `support`, `icon`
-  и `submission` — в них `github.com/OWNER/cloud-ferry` заменяется на ваш
-  логин;
-- `Dockerfile`: OCI-лейблы `image.source` и `image.url`.
-
-Проверьте diff (коммит — только после отдельного согласования):
-
-```sh
-git diff -- cloudferry-migrator/exports.sh cloudferry-migrator/umbrel-app.yml
-grep -n '^export OWNER=' cloudferry-migrator/exports.sh
-grep -n 'github.com/' cloudferry-migrator/umbrel-app.yml
-```
-
-Если в вашем umbrelOS `${OWNER}` из `exports.sh` не доходит до подстановки
-compose (проверяется на устройстве, см. шаг 6), замените в
-`cloudferry-migrator/docker-compose.yml` `${OWNER}` на логин вручную — это
-равнозначный вариант, просто менее удобный при смене аккаунта.
-
-## 2. Собрать и опубликовать образ
-
-### Вариант A — GitHub Actions (рекомендуется)
-
-Workflow `.github/workflows/build.yml` собирает `linux/amd64` и
-`linux/arm64` и публикует в GHCR при push тега `v*`.
-
-```sh
-# git-операции — только с отдельного согласования
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-После сборки:
-
-- в логе job `image` и в Summary будет строка
-  `Manifest-list digest: sha256:...`;
-- отдельный шаг `docker buildx imagetools inspect` печатает обе платформы
-  (`linux/amd64`, `linux/arm64`) и падает, если какой-то нет;
-- обязательный шаг вручную: **GitHub → Packages → `cloud-ferry` → Package
-  settings → Change visibility → Public**. Пакет, созданный `GITHUB_TOKEN`,
-  по умолчанию приватный, а Umbrel тянет образ без авторизации.
-
-Тег-сборка намеренно не требует уже подставленного digest: digest появляется
-только в результате этой сборки. Контракт «версия совпадает» проверяется на
-теге, а пиннинг digest — отдельный шаг 3.
-
-### Вариант B — локально
-
-```sh
-# smoke-сборка для текущей архитектуры
-make docker
-```
-```sh
-# если multi-arch builder ещё не создан
-docker buildx create --name cloudferry --use --bootstrap
-```
-```sh
-# вход в GHCR; токен не печатать и не коммитить
-echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-login> --password-stdin
-
-# сразу две архитектуры и push
-make docker-push
-
-# digest манифест-листа (не отдельной архитектуры)
-make digest
-```
-
-`make docker-push` и `make pin-digest` требуют заданного `OWNER` (не
-заглушку) и завершатся ошибкой, пока он не подставлен.
-
-## 3. Подставить digest в compose
-
-```sh
-# digest берётся из реестра
-make pin-digest
-
-# или из вывода CI
-make pin-digest DIGEST=sha256:<digest_из_CI>
-```
-
-Команда обязана подставить **индекс-дайджест** (manifest list) — именно его
-печатает CI и `make digest`. Дайджест отдельной архитектуры приведёт к тому,
-что на второй архитектуре установка упадёт.
-
-Проверка:
+Проверить текущее состояние:
 
 ```sh
 make check-version
-# ожидаемо: OK: ... and ... use 0.1.0; rclone is pinned
-grep -n 'cloud-ferry:0.1.0@' cloudferry-migrator/docker-compose.yml
-docker buildx imagetools inspect rclone/rclone:1.76.0@sha256:7cbeec24a44f206067597c0368be4de90ae19a64d5113c7d1938bd737a81e466
+grep -n 'image: ghcr.io/.*/cloud-ferry' cloudferry-migrator/docker-compose.yml
 ```
 
-`rclone/rclone:1.76.0@sha256:7cbeec2...` уже запинен в обоих compose-файлах:
-это официальный multi-arch индекс (`linux/amd64` + `linux/arm64`), дайджест
-сверен с Docker Hub.
+## Владелец образа: один источник
 
-После пиннинга закоммитьте `docker-compose.yml` (и `exports.sh`/манифест из
-шага 1) в ветку по умолчанию — это и есть установочное состояние store.
+Владелец записан **литералом** в `cloudferry-migrator/docker-compose.yml`
+(`image: ghcr.io/chikurov/cloud-ferry:…`) и это единственный источник правды:
 
-## 4. Добавить community store в Umbrel
+- `Makefile` читает его оттуда (`OWNER`, `make owner`);
+- `umbrel-app.yml` (`website`, `repo`, `support`, `submission`, `icon`) и
+  `Dockerfile` (OCI-лейблы) обязаны использовать того же владельца.
 
-1. Репозиторий должен быть **публичным**, в ветке по умолчанию — корневой
+`${OWNER}` в compose **не используется намеренно**: umbreld не раскрывает
+переменные из `exports.sh` при pull образа, и неразвёрнутый владелец
+превращается в `ghcr.io//cloud-ferry` → 404 при установке. Поэтому
+`exports.sh` больше не экспортирует `OWNER` (там только rc-секрет), а
+`make check-version` отдельно запрещает `export OWNER=` в `exports.sh` и
+`${OWNER}` в строке образа.
+
+Смена владельца одной командой:
+
+```sh
+make set-owner OWNER=<github-login>   # только строчные буквы, цифры и дефис
+git diff -- cloudferry-migrator Dockerfile
+```
+
+Команда переписывает ссылку на образ в compose, URL в манифесте и лейблы в
+`Dockerfile`, принимает только `^[a-z0-9-]+$` (пути GHCR регистрозависимы,
+логин GitHub — нет) и проверяет результат по **новому** значению. Поэтому она
+идемпотентна и не падает на grep, если в файлах остался владелец в другом
+регистре или старый логин.
+
+Если владелец в compose не совпадает с владельцем репозитория, оба job'а CI
+падают с явной ошибкой — форк не опубликует образ в чужой namespace.
+
+## Порядок релиза: две фазы
+
+Digest появляется только после сборки, а тег должен указывать на коммит, в
+котором digest уже закреплён. Поэтому релиз разделён на две фазы — публикацию
+и проверку — и идёт в таком порядке:
+
+1. **опубликовать** образ новой версии, пока `main` ещё на старой: никто не
+   получит манифест, который ссылается на несуществующий образ;
+2. **поднять версию и закрепить digest одним коммитом** в `main`;
+3. **поставить тег** и дать CI проверить, что пин совпадает с опубликованным
+   образом.
+
+Job `image` на теге **не пересобирает** образ, а сверяет пин с реестром:
+повторная сборка того же тега даёт другой digest индекса (слои не
+воспроизводятся байт в байт), и тогда проверка «compose == только что
+собранный индекс» либо ложно ломает каждый релиз, либо подменяет артефакт,
+который пользователи уже скачали. Проверять надо именно то, что они получат.
+
+### Шаг 1. Опубликовать образ
+
+Через GitHub Actions (рекомендуется):
+
+- **Actions → build → Run workflow**, ветка `main`, `version` = `0.3.2`
+  (без `v`); кнопка появляется после того, как workflow попал в `main`;
+- job `publish` ждёт `test`, собирает `linux/amd64` + `linux/arm64`, печатает
+  `Manifest-list digest: sha256:…` в Summary и падает, если образ этой версии
+  уже опубликован (перевыпуск запрещён) или workflow запущен не из `main`.
+
+Локально:
+
+```sh
+make docker-push TAG=0.3.2
+make digest TAG=0.3.2         # digest индекса, не отдельной архитектуры
+```
+
+Пока версия в `main` не поднята, старый манифест продолжает отдавать старую
+версию с её настоящим digest — установка не ломается.
+
+При первой публикации нового пакета: **GitHub → Packages → `cloud-ferry` →
+Package settings → Change visibility → Public**. Пакет, созданный
+`GITHUB_TOKEN`, по умолчанию приватный, а Umbrel тянет образ без авторизации —
+приватный пакет даёт 404/`denied` при установке. Для `0.3.1` это уже сделано.
+
+### Шаг 2. Поднять версию и закрепить digest
+
+Обе команды выполняются до коммита, одним состоянием:
+
+```sh
+make set-version VERSION=0.3.2     # TAG, version и тег в compose; digest -> нули
+make pin-digest TAG=0.3.2 DIGEST=sha256:<digest из шага 1>
+make check-version                 # OK: версия и реальный digest совпадают
+git add Makefile cloudferry-migrator/umbrel-app.yml cloudferry-migrator/docker-compose.yml
+git commit -m "0.3.2: bump version and pin image digest"
+git push origin main               # только после согласования
+```
+
+Между `set-version` и `pin-digest` в `main` ничего не пушится: коммит с
+нулевым digest означает 404 у всех, кто ставит или обновляет приложение.
+Поэтому CI запускает `make check-version` на каждый push в `main` и на pull
+request — такой коммит краснеет, даже если его всё же запушили.
+
+`set-version` меняет `TAG` в `Makefile`, `version` в манифесте и тег в compose
+одной операцией и обнуляет digest; `pin-digest` записывает в него digest
+индекса из шага 1.
+
+### Шаг 3. Поставить тег
+
+```sh
+make release-tag TAG=0.3.2
+```
+
+`release-tag` ничего не пушит. Он проверяет и только затем создаёт
+аннотированный тег `v0.3.2`:
+
+- версия совпадает в `Makefile`, манифесте и compose;
+- digest не нулевой, формата `sha256:<64 hex>`;
+- пин закоммичен (`git diff HEAD` по релизным файлам пуст, а в `HEAD` compose
+  уже содержит нужный digest);
+- в реестре для `ghcr.io/<owner>/cloud-ferry:0.3.2` лежит ровно этот digest;
+- в индексе есть `linux/amd64` и `linux/arm64`;
+- пакет публичный (анонимный pull);
+- тега `v0.3.2` ещё нет — опубликованный тег никогда не переставляется.
+
+Без Docker проверки реестра пропускаются
+(`make release-tag TAG=0.3.2 IMAGE_CHECK=0`) — тогда тег ставить нельзя, пока
+digest и архитектуры не сверены вручную.
+
+Пуш тега — отдельное действие, после проверки:
+
+```sh
+git push origin v0.3.2
+```
+
+После пуша CI запускает `test`, затем job `image`. Он проверяет, что тег стоит
+на `main`, версия совпадает везде, digest не нулевой, совпадает с
+опубликованным индексом, в индексе обе архитектуры, пакет публичный. Любое
+расхождение — красный job, релиз не считается выпущенным.
+
+### Откат на предыдущую версию
+
+Umbrel обновляет приложение только при смене `version` в манифесте, а compose
+обязан ссылаться на тег своей версии. Поэтому откат — это новая версия с
+прежним кодом, а не возврат старого digest под новой версией (такой тег в
+реестре не существует, и `make check-image` справедливо его не пропустит):
+
+```sh
+git revert <плохой коммит>        # исходники возвращаются к прежнему коду
+# дальше обычный порядок: publish 0.3.3 -> set-version + pin-digest -> release-tag
+```
+
+Вариант без смены версии — удалить и установить приложение заново, но это
+удалит данные приложения.
+
+## Локальные проверки
+
+```sh
+make check-version     # офлайн: версии, digest, владелец, rclone, Dockerfile
+make check-image       # реестр: digest = пин, amd64+arm64, публичность (нужен docker)
+make -n docker-push    # что именно соберётся
+sh -n cloudferry-migrator/exports.sh
+```
+
+`check-version` не ходит в сеть и работает без Docker; `check-image` требует
+Docker и опубликованный пакет. `make lint` — официальный линтер Umbrel (нужен
+клон `getumbrel/umbrel-apps` с `npm ci`):
+
+```sh
+make lint UMBREL_APPS=/tmp/umbrel-apps
+make lint-images UMBREL_APPS=/tmp/umbrel-apps
+```
+
+## Установка из store
+
+1. Репозиторий **публичный**, в ветке по умолчанию лежат корневой
    `umbrel-app-store.yml` и папка `cloudferry-migrator/`.
-2. На Umbrel: **App Store → ⋮ → Community App Stores → Add → URL
-   `https://github.com/<login>/cloud-ferry`**.
-3. Откройте добавленный магазин: там должен появиться **Cloud Ferry 0.1.0**
-   с иконкой.
-4. `umbrel-app-store.yml` имеет `id: cloudferry`; id приложения
-   `cloudferry-migrator` начинается с `cloudferry-` — это требование
-   community store.
+2. На Umbrel: **App Store → ⋮ → Community App Stores → Add → URL**
+   `https://github.com/chikurov/cloud-ferry`.
+3. В добавленном магазине появится **Cloud Ferry 0.3.1**; **Install**.
+4. В настройках приложения выберите папку назначения (**Downloads** по
+   умолчанию, второй слот — необязательная папка `/destination`).
+5. Откройте приложение на `http://umbrel.local:8741` и подключите Яндекс Диск
+   (способы — в README).
 
-Что откуда берётся в манифесте:
+`umbrel-app-store.yml` имеет `id: cloudferry`; id приложения
+`cloudferry-migrator` начинается с `cloudferry-` — требование community store.
 
-- `icon` — `icon.png` (512×512, лежит в корне репозитория, отдаётся по
-  raw-ссылке; `icon.svg` оставлен источником);
-- `releaseNotes` — текст для диалога обновлений;
-- `installSize` — ориентировочный размер в байтах; поле есть в схеме
-  `AppManifestSchema` umbreld 2.0 («In bytes»), значение надо уточнить после
-  первой публикации:
-  `docker image inspect --format '{{.Size}}' ghcr.io/<login>/cloud-ferry:0.1.0`;
-- `permissions: [STORAGE_DOWNLOADS]` — образ монтирует общую папку Downloads.
-
-## 5. Установить и открыть
-
-1. В карточке приложения — **Install**.
-2. В настройках приложения выберите папку назначения (**Downloads** по
-   умолчанию; второй слот — необязательная папка, в интерфейсе её путь
-   `/destination`).
-3. Откройте приложение на `http://umbrel.local:8741` (логин Umbrel).
-4. Подключите Яндекс Диск (способы — в README) и запустите тестовое
-   скачивание.
-
-## 6. Smoke-тест после установки
-
-Проверять по порядку; `<app-data>` — каталог приложения, обычно
-`~/umbrel/app-data/cloudferry-migrator` (для 2.0 с переносом данных путь
-может отличаться — смотрите в настройках приложения).
-
-### 6.1 Контейнеры и healthcheck
+## Smoke-тест после установки
 
 ```sh
 sudo docker ps --filter name=cloudferry
-# оба контейнера Up (healthy); app_proxy в umbrelOS 2.0 не создаётся отдельно
-sudo docker inspect --format '{{.Name}} {{.State.Health.Status}}' $(sudo docker ps -q --filter name=cloudferry)
-```
-
-Ожидаемо: `api` — `healthy`, `rclone` — `healthy`. Если `unhealthy`, ниже —
-логи и сокет.
-
-### 6.2 Логи
-
-```sh
+# api и rclone -> Up (healthy); app_proxy отдельно в umbrelOS 2.0 не создаётся
 sudo docker logs --tail=100 $(sudo docker ps -q --filter name=cloudferry-migrator_api_1)
-sudo docker logs --tail=100 $(sudo docker ps -q --filter name=cloudferry-migrator_rclone_1)
-```
-
-Не должно быть повторяющегося `bind: address already in use` у rclone и
-`dial unix /run/rclone/rclone.sock` у api после старта.
-
-### 6.3 Сокет rclone
-
-```sh
-ls -l <app-data>/data/run/
-sudo docker exec $(sudo docker ps -q --filter name=cloudferry-migrator_rclone_1) \
-  rclone rc --unix-socket /run/rclone/rclone.sock \
-  --user "$(sudo docker exec $(sudo docker ps -q --filter name=cloudferry-migrator_rclone_1) printenv RCLONE_RC_USER)" \
-  --pass "$(sudo docker exec $(sudo docker ps -q --filter name=cloudferry-migrator_rclone_1) printenv RCLONE_RC_PASS)" \
-  --no-output core/version
-```
-
-Команда должна завершиться кодом 0. Файл сокета существует ровно один
-(`rclone.sock`), мусорных `*.sock` нет.
-
-### 6.4 Готовность API
-
-```sh
 sudo docker exec $(sudo docker ps -q --filter name=cloudferry-migrator_api_1) \
-  wget -q -O - http://127.0.0.1:3000/api/readyz
+  wget -q -O - http://127.0.0.1:3000/api/readyz      # {"ok":true,...}
 ```
 
-Ожидаемо `{"ok":true,...}`. Проверка «rclone недоступен»: остановите rclone
-(`sudo docker stop <rclone>`) — `/api/readyz` должен вернуть 503, а
-`/api/healthz` — по-прежнему 200 с `"ok":false`. Поднимите контейнер обратно.
+Проверьте по порядку: оба контейнера `healthy`; в логах нет
+`address already in use` и `dial unix /run/rclone/rclone.sock`; `/api/readyz`
+отдаёт 200, а при остановленном rclone — 503; папка видна движку
+(`rclone lsf /downloads`); скачивание тестовой папки, пауза и продолжение;
+перезагрузка Umbrel — приложение поднялось само, незавершённая задача показана
+как «Прервано» и продолжается кнопкой; виджет на домашнем экране показывает
+прогресс.
 
-### 6.5 `/downloads` виден движку
+## Диагностика
+
+### 404 при установке или обновлении
+
+404 (или `manifest unknown` / `denied`) означает, что Umbrel не может скачать
+образ. Проверяйте по порядку:
 
 ```sh
-sudo docker exec $(sudo docker ps -q --filter name=cloudferry-migrator_rclone_1) \
-  rclone lsf /downloads --max-depth 1
+# 1. пакет публичный? анонимный pull должен вернуть 200
+curl -s -o /dev/null -w '%{http_code}\n' \
+  -H 'Accept: application/vnd.oci.image.index.v1+json' \
+  "https://ghcr.io/v2/chikurov/cloud-ferry/manifests/0.3.1"
+
+# 2. такой образ существует и это индекс с двумя архитектурами?
+docker buildx imagetools inspect ghcr.io/chikurov/cloud-ferry:0.3.1
+
+# 3. пин в compose — реальный digest из шага 1, не нулевой?
+make check-version
 ```
 
-Папка должна читаться (пустой список — тоже норма, если файлов ещё нет).
-Если команда падает — папка не смонтирована в `rclone`.
+`200` — пакет публичный, `401`/`403` — приватный или такого образа нет.
 
-### 6.6 Подключение облака
+Частые причины: пакет приватный (**Package settings → Change visibility →
+Public**); в compose нулевой digest или digest другой сборки; версия в
+манифесте выше, чем опубликованный образ (обновили манифест, но не собрали);
+владелец в compose не совпадает с репозиторием.
 
-- «Подключить облако» → пароль приложения (Яндекс 360) или своё
-  OAuth-приложение / вход по коду.
-- «Проверить подключение» в меню аккаунта: должны прийти занятое/всего место
-  в облаке и список папок.
-- В логах api не должно быть токенов и паролей.
+### Приложение не обновляется
 
-### 6.7 Тестовая папка
+Umbrel видит обновление только при смене `version` в `umbrel-app.yml`. Если
+версия не изменилась, пользователь останется на старом образе — поэтому откат
+оформляется новой версией.
 
-Создайте в облаке папку `cloudferry-smoke` с 2–3 небольшими файлами, запустите
-скачивание в `/downloads/cloudferry-smoke`. Проверьте:
-
-- файлы появились через Umbrel **Files → Downloads → cloudferry-smoke**;
-- прогресс, скорость и оставшееся время обновляются;
-- по завершении статус «Готово», ошибок нет.
-
-### 6.8 Пауза и продолжение
-
-- Поставьте скачивание на паузу в середине, затем «Продолжить»: уже
-  скачанные файлы не перекачиваются, недокачанный файл начинается заново
-  (ограничение rclone, см. README).
-- Остановите и запустите снова — задача не должна «зависнуть» в работе.
-
-### 6.9 Вторая папка `/destination`
-
-- В настройках приложения выберите второй слот папки, в интерфейсе укажите
-  `/destination`.
-- Скачайте тестовую папку туда: файлы видны в Files в выбранной папке, в
-  `/downloads` их нет.
-- Проверьте, что свободное место в интерфейсе соответствует этой папке.
-
-### 6.10 Перезагрузка Umbrel
+### Контейнеры не поднимаются
 
 ```sh
-sudo reboot
+sudo docker ps --filter name=cloudferry
+sudo docker logs --tail=100 <api|rclone>
 ```
 
-После загрузки: приложение запустилось само, оба контейнера `healthy`,
-`/api/readyz` = 200, состояние и история скачиваний на месте, незавершённая
-задача показана как «Прервано» и продолжается кнопкой.
+`permission denied` на томах — каталоги должны принадлежать uid 1000;
+`rclone не отвечает` — проверьте `*.sock` в `<app-data>/data/run` (stale-сокет
+удаляет `hooks/pre-start`); `api` в `unhealthy` при живом rclone — запустите
+`/usr/local/bin/cloudferry -healthcheck` вручную.
 
-### 6.11 Грязная остановка (главная проверка stale-сокета)
+## Что не проверено в этой среде
 
-1. `sudo docker kill $(sudo docker ps -q --filter name=cloudferry-migrator_rclone_1)`
-   — остаётся файл сокета.
-2. Перезапустите приложение в Umbrel (или `sudo docker start` контейнеров).
-3. Ожидаемо: `hooks/pre-start` удалил `*.sock`, rclone поднялся, в логах нет
-   `address already in use`, оба контейнера `healthy`.
+Docker и Umbrel здесь недоступны, поэтому не проверялись вживую:
 
-### 6.12 Виджет
+- multi-arch сборка `docker buildx` и шаг `HEALTHCHECK` в образе;
+- `make check-image` и `make release-tag` с проверками реестра (нет Docker);
+  digest, архитектуры и публичность `0.3.1` сверены напрямую через Registry API
+  GHCR: `sha256:70cbd481…347d`, `linux/amd64` + `linux/arm64`, анонимный pull
+  отдаёт 200;
+- сам workflow на GitHub Actions (локально проверены только YAML и shell-шаги);
+- официальный линтер Umbrel (`make lint`);
+- `hooks/pre-start` и виджет на устройстве.
 
-- Umbrel home screen → добавить виджет **Cloud Ferry**.
-- Запустите скачивание: виджет показывает «N из M ГБ · скорость» и прогресс;
-  без активных задач — «Нет активных скачиваний».
-- Виджет ходит на `api:3000/api/widget` без cookies; в Umbrel-режиме у API нет
-  собственной авторизации, поэтому запрос проходит.
+## Чего не делать
 
-## 7. Откат
-
-### Быстрый откат образа
-
-1. Верните предыдущий digest в `cloudferry-migrator/docker-compose.yml`
-   (`git revert` коммита пиннинга или `make pin-digest TAG=<old> DIGEST=<old>`).
-2. Umbrel обновляет приложение только при смене `version` в манифесте. Поэтому
-   для отката поднимите версию (например, `0.1.1` при откате образа `0.1.0`)
-   и закоммитьте манифест: пользователь получит «обновление» с прежним кодом.
-   Вариант без смены версии — удалить и установить приложение заново, но это
-   удалит данные приложения.
-3. `make check-version` перед пушем ветки.
-
-### Откат данных
-
-- `state.json` пишется атомарно, рядом лежит `state.json.bak`; при
-  повреждении основной файл подменяется бэкапом.
-- `rclone.conf` **не** попадает в бэкапы Umbrel (`backupIgnore`): после
-  восстановления устройства облако нужно подключить заново. Это осознанное
-  решение — токены не уходят в бэкап.
-- Перед откатом сделайте копию `<app-data>/data/` (без `rclone.conf`, если
-  копия уедет с устройства).
-
-### Убрать store
-
-App Store → ⋮ → Community App Stores → удалить магазин. Уже установленное
-приложение при этом не удаляется; удаляется само приложение через его карточку.
-
-## 8. Что осталось проверить на устройстве
-
-В среде подготовки не было Docker и Umbrel, поэтому не проверено вживую:
-
-- сборка образа и multi-arch (`docker buildx`), в том числе шаг
-  `HEALTHCHECK` в Dockerfile;
-- `rclone rc --unix-socket` в образе 1.76.0 — синтаксис сверен с
-  документацией rclone v1.76.0, но не запускался;
-- официальный линтер Umbrel: `make lint` не запускался (нужен клон
-  `getumbrel/umbrel-apps` с `npm ci`); правила сверены с исходником
-  `.tools/lint-apps.mjs` вручную;
-- передача `OWNER` из `exports.sh` в подстановку compose в umbrelOS 2.0;
-- срабатывание `hooks/pre-start` (удаление stale-сокета) до старта compose;
-- `installSize` — отображается ли он для community store и в каких единицах;
-- отрисовка PNG-иконки в карточке store;
-- публичная видимость пакета GHCR после первого push;
-- свободен ли порт `8741` на конкретном устройстве;
-- виджет на домашнем экране Umbrel (endpoint и формат ответа).
-
-## 9. Чего не делать
-
-- Не коммитить токены `GHCR_TOKEN`, пароли приложений и `rclone.conf`:
-  секреты хранятся только в окружении/на устройстве.
-- Не публиковать образ с тегом `latest` и не подставлять дайджест отдельной
+- Не ставить тег до того, как пин закоммичен, и не переставлять уже
+  опубликованный тег.
+- Не публиковать повторно существующую версию: меняйте версию, иначе у
+  пользователей останется старый digest.
+- Не подставлять `${OWNER}` в compose и не возвращать `export OWNER=` в
+  `exports.sh`.
+- Не публиковать образ с тегом `latest` и не пинить digest отдельной
   архитектуры.
+- Не коммитить токены `GHCR_TOKEN`, пароли приложений и `rclone.conf`.
 - Не использовать `client_id` самого rclone для Яндекса — права отозваны,
-  запросы возвращают `410 GoneError` (см. README).
-- Не запускать `git commit`/`git push` без отдельного согласования: этот
-  документ описывает подготовку, а не публикацию.
+  запросы возвращают `410 GoneError`.
+- Не запускать `git commit`, `git push` и `git tag` без отдельного
+  согласования: документ описывает подготовку, а не публикацию.

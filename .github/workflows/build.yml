@@ -5,10 +5,18 @@ on:
     branches: [main]
     tags: ["v*"]
   pull_request:
+  # Phase 1 of the release: build and publish the image before the release tag
+  # exists, so its digest can be pinned into the compose file. The version must
+  # already be declared in the manifest (`make set-version VERSION=x.y.z`).
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish, without the leading v (for example 0.3.2)"
+        required: true
+        type: string
 
-# No workflow-level write permissions: the image job asks for packages: write
-# only when it actually publishes, and everything else runs read-only.
+# No workflow-level write permissions. Only `publish` asks for packages: write,
+# because only it pushes; `test` and `image` stay read-only.
 permissions:
   contents: read
 
@@ -26,9 +34,16 @@ jobs:
       - run: go build ./...
       - run: go vet ./...
       - run: go test ./...
+      # The store must be installable at every commit: the compose pin is a
+      # real published digest, the versions agree and the owner is consistent.
+      # A zero digest here means an install would 404, so it fails the build.
+      - run: make check-version
 
-  image:
-    if: startsWith(github.ref, 'refs/tags/v')
+  # Phase 1. Publishes ghcr.io/<owner>/cloud-ferry:<version> for linux/amd64 +
+  # linux/arm64 and prints the manifest-list digest that phase 2 must pin.
+  publish:
+    if: github.event_name == 'workflow_dispatch'
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -36,47 +51,47 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # One tag format everywhere: git tag v0.1.0 -> image tag 0.1.0 ->
-      # umbrel-app.yml version "0.1.0". The leading "v" never reaches the
-      # image, because cloudferry-migrator/docker-compose.yml references 0.1.0.
-      - name: Resolve image version
+      # One tag format everywhere: git tag v0.3.2 -> image tag 0.3.2 ->
+      # umbrel-app.yml version "0.3.2" -> compose cloud-ferry:0.3.2@sha256:...
+      # The leading "v" never reaches the image or the container registry.
+      # This job publishes before the manifest is bumped: main keeps serving
+      # the old version with its real digest while the new image is built, and
+      # the bumped version is committed together with the pin afterwards.
+      - name: Resolve version and check the image owner
         id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
-          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "Tag ${GITHUB_REF_NAME} must look like v1.2.3" >&2
+          if [ "${GITHUB_REF}" != "refs/heads/${DEFAULT_BRANCH}" ]; then
+            echo "::error::publish the release from ${DEFAULT_BRANCH}, not from ${GITHUB_REF}: the store reads the manifest from the default branch"
             exit 1
           fi
-          # GHCR image names are lowercase; GitHub logins are not.
+          version="${INPUT_VERSION#v}"
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::version '$version' must look like 0.3.2, without the leading v"
+            exit 1
+          fi
+          # GHCR paths are lowercase; GitHub logins are not.
           owner="$(printf '%s' "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
-          image="ghcr.io/${owner}/${IMAGE_NAME}"
+          compose_owner="$(make -s owner)"
+          if [ "$owner" != "$compose_owner" ]; then
+            echo "::error::cloudferry-migrator/docker-compose.yml references ghcr.io/${compose_owner}/cloud-ferry but this repository is ${owner}/cloud-ferry; run make set-owner OWNER=${owner} and commit it"
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/v${version}" >/dev/null; then
+            echo "::error::tag v${version} already exists; a published version is never replaced, bump it with make set-version VERSION=x.y.z"
+            exit 1
+          fi
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "owner=${owner}" >> "$GITHUB_OUTPUT"
-          echo "image=${image}" >> "$GITHUB_OUTPUT"
-
-      # Guard the contract the package actually installs: the manifest version
-      # and the compose image tag must match the git tag, otherwise Umbrel never
-      # offers the update or pulls a tag that was never built. The digest itself
-      # is pinned after this job publishes the image (see INSTALL.md), so the
-      # placeholder only warns here.
-      - name: Check manifest and compose match the tag
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          grep -Eq "^version: \"?${VERSION}\"?$" cloudferry-migrator/umbrel-app.yml \
-            || { echo "cloudferry-migrator/umbrel-app.yml version must be ${VERSION}" >&2; exit 1; }
-          grep -Eq "cloud-ferry:${VERSION}@sha256:[0-9a-f]{64}" cloudferry-migrator/docker-compose.yml \
-            || { echo "cloudferry-migrator/docker-compose.yml must reference cloud-ferry:${VERSION}@sha256:<digest>" >&2; exit 1; }
-          if grep -Eq "cloud-ferry:${VERSION}@sha256:0{64}" cloudferry-migrator/docker-compose.yml; then
-            echo "::warning::compose still has the zero digest placeholder; run make pin-digest with the digest printed below before publishing this commit to the community store"
-          fi
+          echo "image=ghcr.io/${owner}/${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
-      - name: Verify pinned rclone image
+      - name: Verify the pinned rclone image
         run: docker buildx imagetools inspect rclone/rclone:1.76.0@sha256:7cbeec24a44f206067597c0368be4de90ae19a64d5113c7d1938bd737a81e466
 
       - uses: docker/login-action@v3
@@ -84,6 +99,17 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Refuse to replace an already published version
+        env:
+          IMAGE: ${{ steps.version.outputs.image }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if docker buildx imagetools inspect "${IMAGE}:${VERSION}" >/dev/null 2>&1; then
+            echo "::error::${IMAGE}:${VERSION} is already published; bump the version with make set-version VERSION=x.y.z instead of replacing an image users may already have"
+            exit 1
+          fi
 
       - name: Build and push linux/amd64 + linux/arm64
         id: build
@@ -93,16 +119,19 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           # Keep the index to the two real platforms: the digest printed below
-          # is the value cloudferry-migrator/docker-compose.yml must be pinned to.
+          # is the value cloudferry-migrator/docker-compose.yml must pin.
           provenance: false
+          # VERSION without the leading v; the Dockerfile refuses an empty or
+          # malformed value instead of falling back to a stale default.
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
+            REVISION=${{ github.sha }}
           tags: ${{ steps.version.outputs.image }}:${{ steps.version.outputs.version }}
 
-      # build-push-action exposes the manifest-list digest directly; the
-      # imagetools output is printed as a second, human-readable confirmation
-      # and proves both architectures are present.
-      - name: Report manifest-list digest
+      # The digest that users will pull is the digest of the index this run just
+      # pushed, so compare the build output with what the registry serves and
+      # prove both architectures are in it.
+      - name: Verify the published index
         env:
           IMAGE: ${{ steps.version.outputs.image }}
           VERSION: ${{ steps.version.outputs.version }}
@@ -110,20 +139,112 @@ jobs:
         run: |
           set -euo pipefail
           docker buildx imagetools inspect "${IMAGE}:${VERSION}" | tee /tmp/imagetools.txt
-          if ! grep -q 'linux/amd64' /tmp/imagetools.txt || ! grep -q 'linux/arm64' /tmp/imagetools.txt; then
-            echo "published image is missing linux/amd64 or linux/arm64" >&2
+          grep -q 'linux/amd64' /tmp/imagetools.txt || { echo "::error::${IMAGE}:${VERSION} is missing linux/amd64"; exit 1; }
+          grep -q 'linux/arm64' /tmp/imagetools.txt || { echo "::error::${IMAGE}:${VERSION} is missing linux/arm64"; exit 1; }
+          published="$(sed -n 's/^Digest:[[:space:]]*//p' /tmp/imagetools.txt | head -n 1)"
+          if [ "$published" != "$DIGEST" ]; then
+            echo "::error::registry reports $published but this run built $DIGEST"
             exit 1
           fi
           {
-            echo "## Cloud Ferry ${VERSION}"
+            echo "## Cloud Ferry ${VERSION} published"
             echo
             echo "Manifest-list digest: \`${DIGEST}\`"
             echo
-            echo "Pin it into cloudferry-migrator/docker-compose.yml on the release"
-            echo "branch, then bump the App Store manifest version when the package changes:"
+            echo "Next, in the repository (one commit, only after review):"
             echo
             echo '```sh'
+            echo "make set-version VERSION=${VERSION}"
             echo "make pin-digest TAG=${VERSION} DIGEST=${DIGEST}"
+            echo "make check-version TAG=${VERSION}"
             echo '```'
+            echo
+            echo "Then make release-tag TAG=${VERSION} and push the tag:"
+            echo "the digest must be committed before the release tag exists."
           } >> "$GITHUB_STEP_SUMMARY"
           echo "DIGEST=${DIGEST}"
+
+  # Phase 2. Runs only on a release tag, after the digest has been pinned and
+  # committed. It never builds or pushes: a rebuild produces a different index
+  # digest for the same tag, so the only trustworthy check is that the pinned
+  # digest is exactly the published index that Umbrel will pull.
+  image:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version and check the image owner
+        id: version
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::tag ${GITHUB_REF_NAME} must look like v1.2.3"
+            exit 1
+          fi
+          owner="$(printf '%s' "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          compose_owner="$(make -s owner)"
+          if [ "$owner" != "$compose_owner" ]; then
+            echo "::error::cloudferry-migrator/docker-compose.yml references ghcr.io/${compose_owner}/cloud-ferry but this repository is ${owner}/cloud-ferry"
+            exit 1
+          fi
+          # A release tag must sit on the default branch: the store reads the
+          # manifest from there, so a tag on a side branch would ship a commit
+          # that main never had.
+          git fetch --no-tags -q origin "+refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
+          if ! git merge-base --is-ancestor HEAD "refs/remotes/origin/${DEFAULT_BRANCH}"; then
+            echo "::error::${GITHUB_REF_NAME} is not on ${DEFAULT_BRANCH}; release tags are created on the default branch only"
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${owner}/${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+
+      # The old workflow only warned here, and v0.3.1 shipped with
+      # sha256:000... in the compose file for a month. A zero digest means the
+      # pinned image does not exist, so the store install can only fail.
+      - name: Release tag must pin a real digest
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if grep -Eq "cloud-ferry:${VERSION}@sha256:0{64}" cloudferry-migrator/docker-compose.yml; then
+            echo "::error::cloudferry-migrator/docker-compose.yml still pins the zero digest for ${VERSION}; publish the image, run make pin-digest, commit the pin and only then create the tag"
+            exit 1
+          fi
+
+      - name: Offline release contract (versions, digest format, pins, owner)
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: make check-version TAG="${VERSION}"
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Registry contract: the pinned digest is the published index for this
+      # version, it contains linux/amd64 + linux/arm64, and the package is
+      # anonymously pullable (Umbrel installs without credentials).
+      - name: Registry contract (digest, architectures, public)
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: make check-image TAG="${VERSION}"
+
+      - name: Record the verified release
+        env:
+          IMAGE: ${{ steps.version.outputs.image }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          digest="$(docker buildx imagetools inspect "${IMAGE}:${VERSION}" | sed -n 's/^Digest:[[:space:]]*//p' | head -n 1)"
+          [ -n "$digest" ] || { echo "::error::cannot parse the index digest of ${IMAGE}:${VERSION}"; exit 1; }
+          {
+            echo "## Release ${VERSION} verified"
+            echo
+            echo "Pinned index digest: \`${digest}\` (linux/amd64 + linux/arm64, public)"
+            echo
+            echo "The store install pulls exactly this digest."
+          } >> "$GITHUB_STEP_SUMMARY"

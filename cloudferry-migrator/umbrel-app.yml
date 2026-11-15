@@ -76,15 +76,15 @@ releaseNotes: >-
 
 installSize: 103824896
 developer: Cloud Ferry contributors
-website: https://github.com/Chikurov/cloud-ferry
+website: https://github.com/chikurov/cloud-ferry
 dependencies: []
-repo: https://github.com/Chikurov/cloud-ferry
-support: https://github.com/Chikurov/cloud-ferry/issues
+repo: https://github.com/chikurov/cloud-ferry
+support: https://github.com/chikurov/cloud-ferry/issues
 
 port: 8741
 gallery: []
 path: ""
-icon: https://raw.githubusercontent.com/Chikurov/cloud-ferry/main/icon.png
+icon: https://raw.githubusercontent.com/chikurov/cloud-ferry/main/icon.png
 
 defaultUsername: ""
 defaultPassword: ""
@@ -115,4 +115,4 @@ submitter: Cloud Ferry contributors
 # Ссылка на PR, которым пакет подаётся в официальный getumbrel/umbrel-apps.
 # Community store это поле не использует; при подаче в официальный магазин
 # замените значение на реальный URL pull request.
-submission: "https://github.com/Chikurov/cloud-ferry/pulls"
+submission: "https://github.com/chikurov/cloud-ferry/pulls"

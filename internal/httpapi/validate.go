@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -48,13 +49,12 @@ func (e *validateFieldError) Error() string { return e.message }
 // validateFailure is one classified reason a check did not pass. The message is
 // user-facing: it never contains rclone internals, which only go to the log.
 type validateFailure struct {
-	status         int
-	code           string
-	message        string
-	field          string
-	retryAfterHint bool
-	stage          string
-	cause          error
+	status  int
+	code    string
+	message string
+	field   string
+	stage   string
+	cause   error
 }
 
 // handleValidateAccountMethodGuard keeps the check endpoint a pure POST: a GET
@@ -198,6 +198,9 @@ func validateAccountInput(req *createAccountRequest) *validateFieldError {
 		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
 			return &validateFieldError{"url", "Проверьте адрес сервера: нужен полный адрес вида https://webdav.yandex.ru."}
 		}
+		if isLocalHost(parsed.Hostname()) {
+			return &validateFieldError{"url", "Укажите публичный адрес сервера: адреса локальной сети и самого сервера не поддерживаются."}
+		}
 		if req.User == "" {
 			return &validateFieldError{"user", "Укажите логин от Яндекс Диска."}
 		}
@@ -232,6 +235,27 @@ func validateAccountInput(req *createAccountRequest) *validateFieldError {
 		return &validateFieldError{"provider", "Этот способ подключения пока не поддерживается."}
 	}
 	return nil
+}
+
+// isLocalHost reports whether a WebDAV host points at the machine itself, its
+// loopback or a local network. Cloud Ferry runs on a home server, so accepting
+// such an address would let the account form make the server reach its own
+// internal network (SSRF). The check deliberately looks only at literal IPs and
+// localhost names: resolving a name during validation would both slow the form
+// down and still be racy (DNS can answer differently when rclone connects
+// later), so a public-looking name that resolves to a private address remains a
+// residual risk. The account form targets public cloud providers, not LAN boxes.
+func isLocalHost(host string) bool {
+	host = strings.ToLower(strings.TrimSuffix(host, "."))
+	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+	return ip.IsLoopback() || ip.IsPrivate() || ip.IsUnspecified() ||
+		ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsMulticast()
 }
 
 // classifyValidateFailure turns an rclone error into the agreed HTTP answer.
@@ -294,10 +318,6 @@ func classifyValidateFailure(provider, stage string, err error) *validateFailure
 		} else {
 			failure.field = "password"
 		}
-		// A fresh app password may need a couple of hours to activate; Yandex
-		// answers 401 until it does. The UI shows a hint instead of a made-up
-		// waiting time.
-		failure.retryAfterHint = provider == "webdav" && isUnauthorized(message, apiStatus)
 		return failure
 	}
 
@@ -332,13 +352,6 @@ func isWebDAVUnavailable(message string, status int) bool {
 // without an HTTP 401, so they are not reported as an upstream outage.
 func isTokenRejected(message string) bool {
 	return containsAny(message, "invalid_grant", "invalid_token", "expired_token", "token expired")
-}
-
-// isUnauthorized distinguishes "wrong credentials" (401) from "access denied"
-// (403): only 401 may mean an app password that is not activated yet.
-func isUnauthorized(message string, status int) bool {
-	return status == http.StatusUnauthorized ||
-		containsAny(message, "401", "unauthorized")
 }
 
 func containsAny(haystack string, needles ...string) bool {
@@ -377,9 +390,6 @@ func writeValidateFailure(w http.ResponseWriter, failure *validateFailure) {
 	payload := map[string]any{"error": failure.message, "code": failure.code}
 	if failure.field != "" {
 		payload["field"] = failure.field
-	}
-	if failure.retryAfterHint {
-		payload["retryAfterHint"] = true
 	}
 	writeJSON(w, failure.status, payload)
 }

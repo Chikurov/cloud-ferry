@@ -1291,138 +1291,6 @@ input:focus, select:focus, textarea:focus {
   text-transform: uppercase;
 }
 .modal--review { width: min(480px, calc(100vw - 32px)); }
-/* Шаг 1: «Весь диск» переключателем, счётчик и чипы выбранных папок. */
-.flow-source {
-  display: grid;
-  flex: none;
-  gap: 12px;
-  padding: 0 16px 12px;
-}
-.switch-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 52px;
-  padding: 10px 12px;
-  border: 1px solid var(--border-control);
-  border-radius: var(--r-control);
-  background: #fff;
-  cursor: pointer;
-}
-.switch-copy { display: grid; gap: 2px; min-width: 0; }
-.switch-title { color: var(--ink); font-size: var(--text-md); font-weight: 600; line-height: 20px; }
-.switch-note { color: var(--muted); font-size: var(--text-xs); line-height: 18px; }
-.switch-control { position: relative; flex: none; width: 44px; height: 26px; }
-.switch-control input {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-.switch-track {
-  position: absolute;
-  inset: 0;
-  border-radius: var(--r-pill);
-  background: rgba(16, 24, 40, .2);
-  transition: background-color var(--duration);
-}
-.switch-track::after {
-  content: "";
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(16, 24, 40, .24);
-  transition: transform var(--duration) var(--ease);
-}
-.switch-control input:checked + .switch-track { background: var(--accent); }
-.switch-control input:checked + .switch-track::after { transform: translateX(18px); }
-.switch-control input:focus-visible + .switch-track { outline: 2px solid var(--focus); outline-offset: 2px; }
-/* Второй переключатель шага источника — тише «Весь диск»: это уточнение,
-   а не основной режим. */
-.switch-row--filter { min-height: 44px; padding: 8px 12px; background: var(--surface); }
-.switch-row--filter .switch-title { font-size: var(--text-sm); font-weight: 600; }
-/* До 20 чипов не должны выдавливать дерево и сообщение о лимите: список
-   выбранного прокручивается внутри своей области. */
-.flow-source-meta { display: grid; gap: 8px; min-width: 0; max-height: 96px; overflow-y: auto; }
-/* Мягкое объяснение, что фильтр не поддерживается старым сервером. */
-.folder-existing-note {
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--text-xs);
-  line-height: 18px;
-}
-/* Ошибка проверки не блокирует выбор: строка с «Повторить» над деревом. */
-.folder-existing-error {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--amber-border);
-  border-radius: var(--r-control);
-  background: var(--amber-tint);
-  color: var(--ink-soft);
-  font-size: var(--text-xs);
-  line-height: 18px;
-}
-.folder-existing-error-text { flex: 1 1 180px; min-width: 0; }
-.folder-existing-error .btn { flex: none; }
-.flow-count {
-  color: var(--ink-soft);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  line-height: 18px;
-  font-variant-numeric: tabular-nums;
-}
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  max-width: 100%;
-  min-height: 32px;
-  padding: 0 2px 0 10px;
-  border: 1px solid var(--border-control);
-  border-radius: var(--r-pill);
-  background: #fff;
-  color: var(--ink-soft);
-  font-size: var(--text-xs);
-  line-height: 18px;
-}
-.chip-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chip-remove {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-.chip-remove:hover { background: var(--surface-sunken); color: var(--ink); }
-.chip-remove:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
-.chip-remove .icon { width: 14px; height: 14px; }
 .modal-text { padding: 0 16px; color: var(--ink-soft); font-size: var(--text-sm); line-height: 20px; }
 .modal-actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
 .modal-actions--end { padding: 16px; }
@@ -1448,64 +1316,6 @@ input:focus, select:focus, textarea:focus {
 }
 .folder-create-field { flex: 1 1 180px; }
 .folder-create .btn { flex: none; }
-/* Шапка пикера сервера: текущий путь и кнопка «На уровень выше». */
-.folder-crumbs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 32px;
-  padding: 0 16px 12px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.folder-crumbs::-webkit-scrollbar { display: none; }
-.folder-location {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-width: 0;
-}
-.folder-up { flex: none; }
-.folder-path {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  color: var(--ink-soft);
-  font-size: var(--text-sm);
-  line-height: 18px;
-  font-variant-numeric: tabular-nums;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-/* Свободное место — рядом с путём назначения, а не отдельным экраном. */
-.folder-free {
-  flex: none;
-  color: var(--muted);
-  font-size: var(--text-xs);
-  line-height: 18px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-/* Шаг 1 (назначение) заметно отличается от шага 2 (источник): это одна
-   папка, а не дерево с чекбоксами, поэтому путь и место — отдельная панель. */
-#folder-dialog[data-step="1"] .folder-location {
-  padding: 8px 10px;
-  border: 1px solid var(--border-control);
-  border-radius: var(--r-control);
-  background: #fff;
-}
-#folder-dialog[data-step="1"] .folder-crumbs { padding-bottom: 8px; }
-.folder-all-note {
-  margin: 0 8px 8px;
-  padding: 10px 12px;
-  border-radius: var(--r-control);
-  background: var(--accent-soft);
-  color: var(--ink-soft);
-  font-size: var(--text-xs);
-  line-height: 18px;
-}
 .folder-body {
   flex: 1;
   min-height: 140px;
@@ -1513,404 +1323,10 @@ input:focus, select:focus, textarea:focus {
   padding: 0 12px 12px;
   overflow-y: auto;
 }
-.folder-list { display: grid; gap: 4px; }
-.folder-row {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) 16px;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 46px;
-  padding: 8px 12px;
-  border: 0;
-  border-radius: var(--r-control);
-  background: transparent;
-  color: var(--ink);
-  font-size: var(--text-md);
-  text-align: left;
-  cursor: pointer;
-}
-.folder-row:hover { background: var(--surface-sunken); }
-.folder-row .icon { color: var(--muted); }
-.folder-row > .icon:last-child { transform: rotate(-90deg); }
-.folder-row-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Название папки, подпись фильтра и размер одной строкой: «12 483 файла · 4,1 ГБ». */
-.folder-row-text { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-width: 0; }
-.folder-row-text .folder-row-name { flex: 0 1 auto; }
-/* Причина недоступности — текстом, а не только цветом. */
-.folder-tag {
-  flex: none;
-  max-width: 100%;
-  padding: 1px 8px;
-  border-radius: var(--r-pill);
-  font-size: var(--text-xs);
-  line-height: 18px;
-  white-space: nowrap;
-}
-.folder-tag--done { background: var(--ok-tint); color: var(--ok); }
-.folder-tag--empty { background: var(--surface-sunken); color: var(--muted); }
-.folder-tag--redo { background: var(--accent-soft); color: var(--accent); }
-.folder-tag--covered { background: var(--surface-sunken); color: var(--muted); }
-.folder-node-main.is-disabled { cursor: default; }
-.folder-node-main.is-disabled .folder-row-name { color: var(--muted); }
-.folder-node-main:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
-.folder-node-main.is-disabled:focus-visible { outline-color: var(--muted); }
-.folder-row-meta {
-  flex: none;
-  color: var(--muted);
-  font-size: var(--text-xs);
-  line-height: 18px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.folder-state {
-  display: grid;
-  justify-items: center;
-  gap: 12px;
-  padding: 24px 12px;
-  color: var(--muted);
-  font-size: var(--text-xs);
-  line-height: 18px;
-  text-align: center;
-}
 .folder-state--error { color: var(--ink-soft); }
 .folder-state--error .folder-detail { color: var(--muted); }
-.folder-state .btn { margin-top: 4px; }
 
-/* Cloud folder tree inside the picker dialog. Настоящие вложенные списки:
-   иерархия доступна скринридеру без ARIA-дерева. */
-.folder-tree,
-.folder-children {
-  display: grid;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.folder-children { grid-column: 1 / -1; padding-left: 20px; }
-.folder-node {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 4px;
-  list-style: none;
-}
-.folder-node-main {
-  position: relative;
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-  min-height: 44px;
-  padding: 4px 8px;
-  border-radius: var(--r-control);
-  cursor: pointer;
-}
-.folder-node-main:hover { background: var(--surface-sunken); }
-.folder-check {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  border: 0;
-  white-space: nowrap;
-  opacity: 0;
-}
-.folder-check-mark {
-  position: relative;
-  display: block;
-  width: 20px;
-  height: 20px;
-  border: 1.5px solid var(--border-check);
-  border-radius: var(--r-xs);
-  background: #fff;
-  transition: border-color var(--duration), background-color var(--duration);
-}
-.folder-check:checked + .folder-check-mark,
-.folder-check:indeterminate + .folder-check-mark {
-  border-color: var(--accent);
-  background: var(--accent);
-}
-.folder-check:checked + .folder-check-mark::after {
-  content: "";
-  position: absolute;
-  left: 6px;
-  top: 2px;
-  width: 5px;
-  height: 10px;
-  border: solid #fff;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-.folder-check:indeterminate + .folder-check-mark::after {
-  content: "";
-  position: absolute;
-  left: 4px;
-  top: 8px;
-  width: 10px;
-  height: 2px;
-  border-radius: 1px;
-  background: #fff;
-}
-.folder-check:disabled + .folder-check-mark {
-  border-color: var(--border-strong);
-  background: var(--surface-sunken);
-}
-.folder-check:disabled:checked + .folder-check-mark { background: var(--accent); opacity: .55; }
-.folder-check:focus-visible + .folder-check-mark { outline: 2px solid var(--focus); outline-offset: 2px; }
-.folder-check:disabled:focus-visible + .folder-check-mark { outline-color: var(--muted); }
-.folder-expand {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--r-sm);
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-.folder-expand:hover { background: var(--surface-sunken); color: var(--ink); }
-.folder-expand .icon { transform: rotate(-90deg); transition: transform var(--duration); }
-.folder-expand[aria-expanded="true"] .icon { transform: rotate(0deg); }
-.folder-expand:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-/* «Показать файлы» и шеврон — действия строки, справа от чекбокса. */
-.folder-row-actions { display: flex; align-items: center; gap: 2px; }
-.folder-files-toggle {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--r-sm);
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-.folder-files-toggle:hover { background: var(--surface-sunken); color: var(--ink); }
-.folder-files-toggle[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); }
-.folder-files-toggle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.folder-files-toggle .icon { width: 17px; height: 17px; }
-/* Инлайн-превью под строкой: панель на всю ширину строки, файлы — списком
-   «имя · размер · дата». Имя обрезается с title, размер — моноширинный. */
-.folder-files {
-  grid-column: 1 / -1;
-  min-width: 0;
-  margin: 2px 8px 8px;
-  padding: 10px 12px 12px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-control);
-  background: var(--surface-sunken);
-}
-.folder-files-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-width: 0;
-}
-.folder-files-title {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--ink-soft);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  line-height: 18px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.folder-files-hide { flex: none; height: 30px; min-width: 0; padding: 0 8px; }
-.folder-files-body {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding-top: 8px;
-}
-.folder-files-status {
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--text-xs);
-  line-height: 18px;
-}
-.folder-files-skeleton {
-  display: grid;
-  gap: 6px;
-  width: 100%;
-  padding: 2px 0 4px;
-}
-.folder-files-skeleton span {
-  height: 12px;
-  border-radius: var(--r-xs);
-  background: rgba(16, 24, 40, .08);
-  animation: skeleton-pulse 1.2s ease-in-out infinite;
-}
-.folder-files-skeleton span:nth-child(1) { width: 82%; }
-.folder-files-skeleton span:nth-child(2) { width: 64%; }
-.folder-files-skeleton span:nth-child(3) { width: 73%; }
-@keyframes skeleton-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .45; }
-}
-.folder-file-list {
-  display: grid;
-  gap: 2px;
-  width: 100%;
-  margin: 2px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.folder-file {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-  padding: 2px 0;
-  font-size: var(--text-xs);
-  line-height: 18px;
-}
-.folder-file-name {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--ink-soft);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.folder-file-size {
-  color: var(--muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.folder-file-date {
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.folder-files-note {
-  width: 100%;
-  margin: 6px 0 0;
-  color: var(--muted);
-  font-size: var(--text-xs);
-  line-height: 18px;
-}
-.folder-node-state {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 8px;
-  margin: 0;
-  padding: 4px 8px;
-  color: var(--muted);
-  font-size: var(--text-xs);
-  line-height: 18px;
-  list-style: none;
-}
-.folder-truncated {
-  padding: 8px 8px 0;
-  color: var(--muted);
-  font-size: var(--text-xs);
-  line-height: 18px;
-}
-.folder-limit {
-  flex-basis: 100%;
-  margin: 0;
-  color: var(--amber);
-  font-size: var(--text-xs);
-  line-height: 18px;
-}
 
-/* Шаг 3: сводка источника и назначения, объём и сравнение с местом. */
-.review-body {
-  display: grid;
-  flex: 1;
-  gap: 16px;
-  min-height: 0;
-  max-height: 52dvh;
-  padding: 0 16px 16px;
-  overflow-y: auto;
-}
-.review-list { display: grid; gap: 12px; margin: 0; }
-.review-row {
-  display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
-  min-width: 0;
-}
-.review-row dt {
-  color: var(--muted);
-  font-size: var(--text-xs);
-  line-height: 20px;
-}
-.review-row dd { display: grid; gap: 6px; min-width: 0; margin: 0; }
-.review-value {
-  color: var(--ink);
-  font-size: var(--text-md);
-  font-weight: 600;
-  line-height: 20px;
-  overflow-wrap: anywhere;
-}
-.review-path {
-  color: var(--ink);
-  font-size: var(--text-md);
-  line-height: 20px;
-  overflow-wrap: anywhere;
-}
-.review-sub {
-  color: var(--muted);
-  font-size: var(--text-xs);
-  line-height: 18px;
-  overflow-wrap: anywhere;
-}
-.review-paths { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
-.review-path-chip {
-  display: inline-block;
-  max-width: 100%;
-  padding: 3px 8px;
-  overflow: hidden;
-  border-radius: var(--r-pill);
-  background: var(--surface-sunken);
-  color: var(--ink-soft);
-  font-size: var(--text-xs);
-  line-height: 18px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.review-estimate-box {
-  display: grid;
-  gap: 6px;
-  padding: 12px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-control);
-  background: var(--surface-sunken);
-}
-.review-label {
-  color: var(--muted);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  line-height: 18px;
-  letter-spacing: .02em;
-}
-.review-ok { color: var(--ok); font-size: var(--text-xs); line-height: 18px; }
-.review-warning {
-  padding: 8px 10px;
-  border: 1px solid var(--amber-border);
-  border-radius: var(--r-sm);
-  background: var(--amber-tint);
-  color: var(--amber);
-  font-size: var(--text-xs);
-  line-height: 18px;
-}
-.review-note { color: var(--muted); font-size: var(--text-xs); line-height: 18px; }
-.modal--review .modal-actions { flex-wrap: wrap; margin-left: auto; }
 
 /* ── 16. Toasts ─────────────────────────────────────────────────────────── */
 
@@ -2097,13 +1513,9 @@ body:has(dialog[open]) { overflow: hidden; }
   .modal-foot { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
   .folder-body { flex: 1; min-height: 0; max-height: none; }
   .review-body { flex: 1; max-height: none; }
-  .flow-source { padding-bottom: 10px; }
-  .folder-location { align-items: flex-start; }
-  .folder-free { flex-basis: 100%; padding-left: 2px; }
   .modal-foot .modal-actions { flex: 1 1 100%; margin-left: 0; }
   .modal-foot .modal-actions .btn { flex: 1 1 0; min-width: 0; }
   .btn--sm { height: 44px; }
-  .chip-remove { width: 44px; height: 44px; }
   .folder-expand { min-width: 44px; min-height: 44px; }
   .folder-files-toggle { min-width: 44px; min-height: 44px; }
 }
@@ -2538,17 +1950,6 @@ body:has(dialog[open]) { overflow: hidden; }
 .flow-foot-note .icon { flex: none; width: 16px; height: 16px; margin-top: 0; color: var(--orange); }
 
 /* --- шаг 1 --- */
-.dest-path {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 0 8px 0 12px;
-  border: 1px solid var(--border-control);
-  border-radius: var(--r-control);
-  background: #fff;
-}
-.dest-path-icon { flex: none; color: var(--muted); }
 .dest-path-value {
   flex: 1 1 auto;
   min-width: 0;
@@ -2574,21 +1975,6 @@ body:has(dialog[open]) { overflow: hidden; }
 }
 .dest-up[aria-disabled="true"] { opacity: .5; pointer-events: none; }
 .dest-up .icon { width: 16px; height: 16px; }
-.flow-hint { margin-top: 8px; color: var(--muted); font-size: var(--text-xs); line-height: 16px; }
-.folder-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 36px;
-  margin-top: 16px;
-}
-.folder-toolbar-label {
-  color: var(--muted);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  line-height: 16px;
-}
 .folder-new {
   height: 36px;
   min-width: 0;
@@ -2686,24 +2072,6 @@ body:has(dialog[open]) { overflow: hidden; }
 }
 
 /* --- шаг 2 --- */
-.mode-switch,
-.filter-switch {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 52px;
-  padding: 8px 12px;
-  border-radius: var(--r-control);
-  cursor: pointer;
-}
-.mode-switch { border: 1px solid var(--border-control); background: #fff; }
-.filter-switch { border: 1px solid transparent; background: transparent; margin-top: 0; }
-.mode-copy { display: grid; gap: 2px; min-width: 0; }
-.mode-title { color: var(--ink); font-size: var(--text-md); font-weight: 600; line-height: 20px; }
-.filter-switch .mode-title { font-size: var(--text-sm); font-weight: 500; line-height: 18px; }
-.mode-note { color: var(--muted); font-size: var(--text-xs); line-height: 16px; }
-.mode-note--narrow { display: none; }
 .switch-control { position: relative; flex: none; width: 44px; height: 26px; }
 .switch-control input {
   position: absolute;
@@ -2801,6 +2169,7 @@ body:has(dialog[open]) { overflow: hidden; }
 .folder-node-main.is-disabled { cursor: default; }
 .folder-node-main.is-disabled .folder-row-name { color: var(--muted); font-weight: 400; }
 .folder-node-main.is-disabled .folder-icon { color: #c7cbd1; }
+.folder-node-main.is-disabled:focus-visible { outline-color: var(--muted); }
 .folder-icon { display: grid; place-items: center; color: var(--muted); }
 .folder-icon .icon { width: 16px; height: 16px; }
 .folder-row-text { display: grid; gap: 1px; min-width: 0; }
@@ -2818,18 +2187,20 @@ body:has(dialog[open]) { overflow: hidden; }
 }
 /* Теги причин: высота 20, текст обязателен (цвет — не единственный носитель). */
 .folder-tag {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
   max-width: 100%;
   height: 20px;
   padding: 0 8px;
+  overflow: hidden;
   border-radius: 10px;
   font-size: var(--text-xs);
   font-weight: 500;
   line-height: 20px;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .folder-tag--done { background: var(--ok-tint); color: var(--ok); }
-.folder-tag--redo { background: var(--accent-soft); color: var(--accent); }
 .folder-tag--empty { background: var(--surface-sunken); color: var(--muted); }
 .folder-tag--covered { background: var(--surface-sunken); color: var(--muted); }
 
@@ -2903,6 +2274,8 @@ body:has(dialog[open]) { overflow: hidden; }
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
+.folder-check:disabled:focus-visible + .folder-check-mark,
+.file-check:disabled:focus-visible + .folder-check-mark { outline-color: var(--muted); }
 .folder-node-row.is-selected .folder-check + .folder-check-mark { background: var(--accent); border-color: var(--accent); }
 .folder-node-row.is-selected .folder-check + .folder-check-mark::after {
   content: "";
@@ -3026,29 +2399,6 @@ body:has(dialog[open]) { overflow: hidden; }
 .files-choose { margin-top: 4px; height: 36px; min-width: 0; padding: 0 8px; color: var(--accent); }
 
 /* --- шаг 3 --- */
-.flow-content .review-body {
-  display: grid;
-  flex: none;
-  gap: 16px;
-  max-height: none;
-  padding: 0;
-  overflow: visible;
-}
-.review-list { display: grid; gap: 12px; margin: 0; }
-.review-row {
-  display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
-  min-width: 0;
-}
-.review-row dt {
-  color: var(--muted);
-  font-size: var(--text-xs);
-  line-height: 20px;
-}
-.review-row dd { display: grid; gap: 6px; min-width: 0; margin: 0; }
-.review-source-value { color: var(--ink); font-size: var(--text-lg); font-weight: 600; line-height: 22px; }
 .review-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .review-chip {
   display: inline-flex;
@@ -3069,56 +2419,6 @@ body:has(dialog[open]) { overflow: hidden; }
 .review-chip .icon { width: 14px; height: 14px; flex: none; }
 .review-chip--file { padding-left: 6px; }
 .review-chip-more .btn { height: 24px; min-width: 0; padding: 0 8px; font-size: var(--text-xs); color: var(--muted); }
-.review-dest { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--ink); font-size: var(--text-md); line-height: 20px; }
-.review-dest .icon { flex: none; color: var(--muted); }
-.review-dest span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.review-value { color: var(--ink); font-size: var(--text-md); font-weight: 600; line-height: 20px; }
-.review-sub { color: var(--muted); font-size: var(--text-xs); line-height: 16px; }
-.estimate-box {
-  padding: 16px;
-  border-radius: 12px;
-  background: var(--surface-sunken);
-}
-.estimate-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.estimate-title { color: var(--muted); font-size: var(--text-xs); font-weight: 600; line-height: 16px; outline: none; }
-.estimate-title:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-xs); }
-.estimate-refresh { flex: none; width: 36px; min-width: 36px; height: 36px; color: var(--muted); }
-.estimate-refresh .icon { width: 16px; height: 16px; }
-.estimate-body { margin-top: 8px; }
-.estimate-value {
-  color: var(--ink);
-  font-family: var(--font-display);
-  font-size: var(--text-xl);
-  font-weight: 600;
-  line-height: 26px;
-  letter-spacing: -.02em;
-  font-variant-numeric: tabular-nums;
-}
-.estimate-fit { margin-top: 4px; color: var(--ok); font-size: var(--text-sm); line-height: 18px; }
-.estimate-note { margin-top: 4px; color: var(--muted); font-size: var(--text-xs); line-height: 16px; }
-.estimate-warning {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-  padding: 8px 10px;
-  border: 1px solid var(--amber-border);
-  border-radius: var(--r-sm);
-  background: var(--amber-tint);
-  color: var(--amber);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  line-height: 16px;
-}
-.estimate-warning .icon { flex: none; width: 16px; height: 16px; color: var(--orange); margin-top: 0; }
-.estimate-warning p + p { margin-top: 2px; font-weight: 400; }
-.estimate-loading { display: grid; gap: 6px; }
-.skeleton-lines--estimate span:nth-child(1) { width: 40%; height: 24px; }
-.skeleton-lines--estimate span:nth-child(2) { width: 60%; height: 14px; }
-.estimate-loading-text { color: var(--ink-soft); font-size: var(--text-sm); line-height: 18px; }
-.estimate-loading-note { color: var(--muted); font-size: var(--text-xs); line-height: 16px; }
-.estimate-error-title { color: var(--ink-soft); font-size: var(--text-sm); font-weight: 600; line-height: 18px; }
-.estimate-error-note { margin-top: 2px; color: var(--muted); font-size: var(--text-xs); line-height: 16px; }
-.review-footnote { color: var(--muted); font-size: var(--text-xs); line-height: 16px; }
 .flow-inline-error { margin: 12px 0 0; }
 
 /* Тост внутри диалога: #toasts снаружи inert. */
@@ -3157,19 +2457,13 @@ body:has(dialog[open]) { overflow: hidden; }
   .folder-files-toggle,
   .folder-expand { width: 44px; height: 44px; }
   .folder-new { height: 44px; }
-  .folder-toolbar { min-height: 44px; }
-  .mode-switch,
   .filter-switch { min-height: 56px; }
-  .mode-note--wide { display: none; }
-  .mode-note--narrow { display: block; }
   .file-main { min-height: 44px; grid-template-columns: 20px minmax(0, 1fr) 56px; }
   .file-date { display: none; }
   .files-panel { margin-left: 28px; }
   .flow-foot-row .flow-back { height: 44px; }
   .flow-foot-row .flow-primary { height: 44px; }
-  .estimate-refresh { width: 44px; min-width: 44px; height: 44px; }
   .dest-up { width: 44px; min-width: 44px; padding: 0; }
-  .dest-up-text { display: none; }
   .flow-close { top: max(6px, calc(env(safe-area-inset-top) - 4px)); right: 10px; }
 }
 @media (max-width: 480px) {
@@ -3410,12 +2704,14 @@ body:has(dialog[open]) { overflow: hidden; }
 .review-note { margin-top: 12px; color: var(--muted); font-size: var(--text-xs); line-height: 16px; }
 
 /* --- футер: зарезервированная зона сообщения --- */
-.flow-foot[data-context="flow-source"] .flow-foot-note {
+.flow-foot[data-context="flow-source"] .flow-foot-note,
+.flow-foot[data-context="flow-review"] .flow-foot-note {
   display: flex;
   min-height: 32px;
   margin-bottom: 8px;
 }
-.flow-foot[data-context="flow-source"] .flow-foot-note[data-empty="true"] { visibility: hidden; }
+.flow-foot[data-context="flow-source"] .flow-foot-note[data-empty="true"],
+.flow-foot[data-context="flow-review"] .flow-foot-note[data-empty="true"] { visibility: hidden; }
 .flow-foot-note--status { color: var(--muted); font-weight: 400; }
 .flow-foot-note--status .icon { display: none; }
 
@@ -3426,7 +2722,12 @@ body:has(dialog[open]) { overflow: hidden; }
 }
 @media (max-width: 640px) {
   .flow-step-title { font-size: var(--text-xl); }
-  .flow-foot[data-context="flow-source"] .flow-foot-note { min-height: 32px; }
+  .flow-foot[data-context="flow-source"] .flow-foot-note,
+  .flow-foot[data-context="flow-review"] .flow-foot-note { min-height: 32px; }
+  /* На узком экране тег уходит под имя: иначе от названия папки остаётся
+     «Фотогр…», и папку нельзя узнать. */
+  .folder-row-title { flex-wrap: wrap; row-gap: 2px; }
+  .folder-row-title .folder-row-name { flex: 1 1 100%; }
 }
 @media (max-width: 520px) {
   .dest-nav { flex-wrap: wrap; padding-bottom: 4px; }
