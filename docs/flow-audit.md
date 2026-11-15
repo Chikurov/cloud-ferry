@@ -16,7 +16,7 @@ Go/API, деплой и CI не изменялись.
 - Viewport: 1000×780, 500×780, 390×844. Проверялись `scrollWidth == innerWidth`,
   попадание меню/диалога в viewport, клавиатурный порядок и фокус-трап.
 - Итог: **244 автоматические проверки, 244 пройдено, 0 провалено**.
-  Машинный отчёт: [audit-report.json](final4/audit-report.json).
+  Машинный отчёт: audit-report.json.
 
 Статусы в таблице: **ок** — работало и проверено; **исправлено** — поведение
 изменено в web-файлах; **требует backend** — без изменения API/модели данных
@@ -181,29 +181,29 @@ Go/API, деплой и CI не изменялись.
 | Фокус-трап диалогов, Tab-порядок, Enter/Space, Escape | OK |
 | Неразмеченные кнопки/поля (ARIA-сканирование) | не найдено |
 
-Машинный отчёт: [audit-report.json](final4/audit-report.json).
+Машинный отчёт: audit-report.json.
 
 ## Скриншоты
 
-Основной экран: [home](final4/home.png), [home-active](final4/home-active.png),
-[home 500](final4/home-500.png), [home 390](final4/home-390.png),
-[home empty](final4/home-empty.png), [home idle](final4/home-idle.png),
-[home error](final4/home-error.png), [home auth](final4/home-auth.png),
-[home paused](final4/home-paused.png), [home done](final4/home-done.png),
-[home queued](final4/home-queued.png), [home verifying](final4/home-verifying.png),
-[home unknown](final4/home-unknown.png).
+Основной экран: home, home-active,
+home 500, home 390,
+home empty, home idle,
+home error, home auth,
+home paused, home done,
+home queued, home verifying,
+home unknown.
 
-Меню: [menu](final4/menu.png), [menu 500](final4/menu-500.png),
-[menu 390](final4/menu-390.png).
+Меню: menu, menu 500,
+menu 390.
 
-Мастер: [WebDAV](final4/setup-webdav.png), [OAuth](final4/setup-oauth.png),
-[токен](final4/setup-token.png), [device flow](final4/setup-device.png),
-[шаг 2](final4/setup-step1.png), [шаг 3](final4/setup-step2.png),
-[390](final4/setup-390.png), [500](final4/setup-500.png).
+Мастер: WebDAV, OAuth,
+токен, device flow,
+шаг 2, шаг 3,
+390, 500.
 
-Папки: [облако](final4/dialog.png), [ошибка](final4/dialog-error.png),
-[пусто](final4/dialog-empty.png), [лимит 20](final4/dialog-limit.png),
-[серверный пикер](final4/server-picker.png).
+Папки: облако, ошибка,
+пусто, лимит 20,
+серверный пикер.
 
-Прочее: [выход](final4/exit-dialog.png), [ошибка выхода](final4/exit-error.png),
-[офлайн-старт](final4/offline-start.png), [офлайн после старта](final4/offline-after.png).
+Прочее: выход, ошибка выхода,
+офлайн-старт, офлайн после старта.

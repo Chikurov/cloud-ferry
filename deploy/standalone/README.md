@@ -26,7 +26,7 @@ nano .env          # задайте CF_BASIC_PASS и RC_PASS (openssl rand -hex 
 
 Необязательно: `CF_YANDEX_CLIENT_ID` и `CF_YANDEX_CLIENT_SECRET` включают вход
 по коду через своё OAuth-приложение — пользователю не нужно вводить ID и
-секрет. Подробности — в [основном README](../../README.md#вход-через-яндекс).
+секрет. Подробности — в основном README.
 
 Проверьте путь `CF_DEST`: если домашняя папка Umbrel отличается, посмотрите её
 через `ls ~/umbrel`.

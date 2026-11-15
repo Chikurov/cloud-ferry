@@ -447,25 +447,7 @@ nofit — «Скачать всё равно». При запуске — спи
   404 размеров): `1000×780` и `390×844`; `scrollWidth == innerWidth`
   (`1000/1000`, `390/390`), диалоги помещаются в viewport, ошибок в консоли 0,
   JS-исключений 0, неожиданных сетевых ошибок 0 (ожидаемый 404 размеров
-  учтён). Скриншоты и машинный отчёт: `docs/final7/` (`audit-report.json`).
-- Скриншоты: [первый экран 1000](final7/home-first-1000.png),
-  [первый экран 390](final7/home-first-390.png),
-  [авторизация 1000](final7/setup-auth-1000.png),
-  [авторизация 390](final7/setup-auth-390.png),
-  [токен и инструкция 1000](final7/setup-token-help-1000.png),
-  [токен и инструкция 390](final7/setup-token-help-390.png),
-  [пикер сервера 1000](final7/setup-server-picker-1000.png),
-  [пикер сервера 390](final7/setup-server-picker-390.png),
-  [успех 1000](final7/setup-done-1000.png),
-  [успех 390](final7/setup-done-390.png),
-  [главный экран 1000](final7/home-empty-1000.png),
-  [главный экран 390](final7/home-empty-390.png),
-  [скачивание в работе](final7/home-running-1000.png),
-  [выбор папок](final7/cloud-picker-selected-1000.png),
-  [лимит 20](final7/cloud-picker-limit-1000.png),
-  [без размеров](final7/cloud-picker-nosizes-1000.png),
-  [выбор папок 390](final7/cloud-picker-390.png),
-  [меню 1000](final7/menu-1000.png), [меню 390](final7/menu-390.png).
+  учтён). Скриншоты и машинный отчёт того этапа удалены при уборке репозитория; актуальные — `docs/final10/`.
 - Рендер в Chromium, проход входа через Яндекс (final8): **86 автопроверок**
   на том же детерминированном mock API — `available:true/false`,
   `pending → done`, `error`, `404`, `429` на старте и в опросе, истечение
@@ -473,17 +455,8 @@ nofit — «Скачать всё равно». При запуске — спи
   `DELETE`; `1000×780` и `390×844`; `scrollWidth == innerWidth` во всех
   состояниях, ошибок в консоли 0,
   JS-исключений 0; после `done` второй `POST /api/accounts` не отправляется,
-  а опрос прекращается. Скриншоты и машинный отчёт: `docs/final8/`
+  а опрос прекращается. Скриншоты того этапа удалены при уборке репозитория
   (`audit-report.json`, `audit.log`).
-- Скриншоты входа через Яндекс:
-  [три способа 1000](final8/setup-methods-1000.png),
-  [три способа 390](final8/setup-methods-390.png),
-  [код 1000](final8/setup-yandex-code-1000.png),
-  [код 390](final8/setup-yandex-code-390.png),
-  [ошибка 1000](final8/setup-yandex-error-1000.png),
-  [ошибка 390](final8/setup-yandex-error-390.png),
-  [код истёк 1000](final8/setup-yandex-expired-1000.png),
-  [код истёк 390](final8/setup-yandex-expired-390.png).
 - Проверено автоматически: оба способа входа видны сразу и переключаются без
   потери ввода; автозаполнение и настоящие формы; подсказки без технических
   пояснений; инструкция токена с командой и копированием; пикер сервера с
@@ -514,17 +487,17 @@ nofit — «Скачать всё равно». При запуске — спи
   клавиатура, `prefers-reduced-motion`. Машинный отчёт и скриншоты:
   `docs/final10/` (`audit-report.json`, `audit.log`).
 - Скриншоты флоу: [шаг 1 · 1000](final10/step1-dest-1000.png),
-  [шаг 2 · выбор](final10/step2-selected-1000.png),
+  [шаг 2 · выбранные папки](final10/step2-filter-selected-1000.png),
   [шаг 2 · файлы](final10/step2-files-1000.png),
   [шаг 2 · лимит 20](final10/step2-limit-1000.png),
-  [шаг 2 · уже скачанные](final10/step2-existing-1000.png),
+  [шаг 2 · фильтр «уже скачанные»](final10/step2-filter-on-1000.png),
   [шаг 3 · проверка](final10/step3-review-1000.png),
   [шаг 3 · считаем](final10/step3-loading-1000.png),
   [шаг 3 · не помещается](final10/step3-nofit-1000.png),
   [шаг 3 · ошибка оценки](final10/step3-error-1000.png),
   [шаг 1 · 390](final10/step1-dest-390.png),
-  [шаг 2 · 390](final10/step2-selected-390.png),
-  [шаг 2 · файлы 390](final10/step2-files-390.png),
+  [шаг 2 · 390](final10/step2-source-390.png),
+  [шаг 2 · лимит 390](final10/step2-limit-390.png),
   [шаг 3 · 390](final10/step3-review-390.png).
 - Go после правок: `go build ./...`, `go test -race -count=1 ./...`,
   `go vet ./...` — без ошибок (пакеты `cmd/cloudferry`, `internal/...`).
