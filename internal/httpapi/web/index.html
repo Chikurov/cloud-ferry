@@ -3,10 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light">
-  <meta name="theme-color" content="#f3f5f9">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f4f6f9">
   <title>Cloud Ferry</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='7' fill='%230066d6'/%3E%3Cpath d='M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <!-- Тема выставляется до первого кадра и до style.css: иначе видна вспышка
+       противоположного оформления. Явный выбор перекрывает системную тему. -->
+  <script>
+    (function () {
+      var theme = 'light';
+      try {
+        var stored = window.localStorage.getItem('cloudferry-theme');
+        if (stored === 'light' || stored === 'dark') theme = stored;
+        else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) theme = 'dark';
+      } catch (error) { /* приватный режим: остаётся светлая тема */ }
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -40,13 +53,9 @@
     </div>
 
     <div class="dashboard dashboard--boot" aria-hidden="true">
-      <section class="cell cell--now skeleton-cell">
-        <div class="skeleton-cell-head"><span class="skeleton skeleton--dot"></span><span class="skeleton skeleton--line skeleton--w30"></span></div>
-        <div class="skeleton-cell-body"><span class="skeleton skeleton--line skeleton--w80"></span><span class="skeleton skeleton--line skeleton--w60"></span><span class="skeleton skeleton--line skeleton--w40"></span></div>
-      </section>
-      <section class="cell cell--start skeleton-cell">
+      <section class="cell cell--downloads skeleton-cell">
         <div class="skeleton-cell-head"><span class="skeleton skeleton--dot"></span><span class="skeleton skeleton--line skeleton--w25"></span></div>
-        <div class="skeleton-cell-body"><span class="skeleton skeleton--line skeleton--w70"></span><span class="skeleton skeleton--line skeleton--w45"></span><span class="skeleton skeleton--pill"></span></div>
+        <div class="skeleton-cell-body"><span class="skeleton skeleton--line skeleton--w80"></span><span class="skeleton skeleton--line skeleton--w60"></span><span class="skeleton skeleton--pill"></span></div>
       </section>
       <section class="cell cell--account skeleton-cell">
         <div class="skeleton-cell-head"><span class="skeleton skeleton--dot"></span><span class="skeleton skeleton--line skeleton--w30"></span></div>
@@ -56,31 +65,41 @@
     <p class="sr-only" role="status">Загрузка данных</p>
   </div>
 
-  <section id="setup-view" class="setup" hidden>
+  <!-- Подключение: одна поверхность с заголовком и двумя способами до ввода.
+       Шагов и экрана «Готово» нет — после успеха сразу главный экран. -->
+  <section id="setup-view" class="shell setup" hidden>
+    <header class="shell-head">
+      <span class="brand">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z"/></svg>
+        </span>
+        <span class="brand-name">Cloud Ferry</span>
+      </span>
+      <div class="shell-actions">
+        <button class="btn btn--ghost btn--icon theme-toggle" type="button" data-theme-toggle aria-label="Тёмная тема" title="Тёмная тема">
+          <svg class="icon theme-icon theme-icon--sun" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/></svg>
+          <svg class="icon theme-icon theme-icon--moon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.2 8.2 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/></svg>
+        </button>
+      </div>
+    </header>
+
     <div class="offline-bar" data-offline-bar hidden>
       <svg class="offline-bar-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.4 5.4 3.6 17.2A1.9 1.9 0 0 0 5.25 20h13.5a1.9 1.9 0 0 0 1.65-2.8L13.6 5.4a1.85 1.85 0 0 0-3.2 0Z"/><path d="M12 9.6v4M12 16.6h.01"/></svg>
       <p class="offline-bar-text"><span role="status" aria-live="polite">Нет связи с сервером</span><span class="offline-bar-note">Проверьте, что приложение запущено</span></p>
       <button class="btn btn--secondary btn--sm js-offline-retry" type="button">Повторить</button>
     </div>
 
-    <div class="setup-brand">
-      <span class="logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z"/></svg>
-      </span>
-      <span>Cloud Ferry</span>
-    </div>
-
-    <div class="setup-card">
-      <p class="sr-only" id="setup-step-text"></p>
-      <div class="setup-steps" id="setup-steps" aria-hidden="true"></div>
-      <div id="setup-body"></div>
-      <p class="setup-hint" id="setup-error" role="alert"></p>
-      <div class="setup-actions" id="setup-actions">
-        <button class="btn btn--secondary" id="setup-back" type="button">Отмена</button>
-        <p class="setup-status" id="setup-status" role="status" aria-live="polite"></p>
-        <button class="btn btn--primary" id="setup-next" type="button">Подключиться</button>
+    <main class="setup-main">
+      <div class="setup-card">
+        <div id="setup-body"></div>
+        <p class="setup-hint" id="setup-error" role="alert"></p>
+        <div class="setup-actions">
+          <button class="btn btn--secondary" id="setup-back" type="button">Отмена</button>
+          <p class="setup-status" id="setup-status" role="status" aria-live="polite"></p>
+          <button class="btn btn--primary" id="setup-next" type="button">Подключиться</button>
+        </div>
       </div>
-    </div>
+    </main>
   </section>
 
   <div id="app-view" class="shell" hidden>
@@ -89,10 +108,14 @@
         <span class="logo" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z"/></svg>
         </span>
-        <h1 class="brand-name">Cloud Ferry</h1>
+        <span class="brand-name">Cloud Ferry</span>
       </a>
       <div class="shell-actions">
-        <span id="offline-dot" class="offline-dot" title="Нет связи с сервером" hidden><span class="sr-only">Нет связи с сервером</span></span>
+        <span class="offline-dot" data-offline-dot title="Нет связи с сервером" hidden><span class="sr-only">Нет связи с сервером</span></span>
+        <button class="btn btn--ghost btn--icon theme-toggle" type="button" data-theme-toggle aria-label="Тёмная тема" title="Тёмная тема">
+          <svg class="icon theme-icon theme-icon--sun" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/></svg>
+          <svg class="icon theme-icon theme-icon--moon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.2 8.2 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/></svg>
+        </button>
         <div class="account" id="account-wrap" hidden>
           <button class="account-chip" id="account-chip" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="account-dialog">
             <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z"/></svg>
@@ -112,11 +135,13 @@
     <main id="home-view" class="dashboard"></main>
   </div>
 
-  <!-- Один диалог на все три шага «Нового скачивания»: шапка и футер —
-       строки flex-каркаса, прокручивается только тело (flow v3). -->
+  <!-- Сценарий «Скачать»: «Что скачать» → «Проверьте выбор». Папка на сервере
+       выбирается вложенным просмотром из строки «Сохранить в»: переход внутрь
+       назначение не меняет, сохраняет только «Выбрать эту папку». Шапка и футер —
+       строки flex-каркаса, прокручивается только тело. -->
   <dialog id="folder-dialog" class="modal modal--flow" aria-labelledby="flow-title">
     <div class="flow-head" id="flow-head">
-      <h2 class="modal-title" id="flow-title" tabindex="-1">Новое скачивание</h2>
+      <h2 class="modal-title" id="flow-title" tabindex="-1">Скачивание</h2>
       <button class="btn btn--ghost btn--icon flow-close" type="button" data-dialog-close aria-label="Закрыть">
         <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11m0-11-11 11"/></svg>
       </button>
@@ -124,11 +149,36 @@
 
     <div class="flow-content" id="flow-content">
       <div class="flow-step-head" id="flow-step-head">
-        <h3 class="flow-step-title" id="flow-step-title" tabindex="-1">Куда сохранить</h3>
+        <h3 class="flow-step-title" id="flow-step-title" tabindex="-1">Что скачать</h3>
         <span class="flow-step-pos" id="flow-step-pos" hidden></span>
+        <div class="flow-step-tools" id="flow-step-tools" hidden>
+          <button class="btn btn--quiet btn--sm flow-step-action" type="button" id="flow-select-manual" hidden>Выбрать отдельно</button>
+          <div class="source-menu" id="source-menu-wrap">
+            <button class="btn btn--quiet btn--sm source-menu-btn" type="button" id="folder-more" aria-haspopup="menu" aria-expanded="false" aria-controls="folder-menu">
+              <span id="folder-more-label">Ещё</span>
+              <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+            </button>
+            <div class="menu menu--source" id="folder-menu" role="menu" aria-labelledby="folder-more" hidden>
+              <button class="menu-item" id="folder-menu-action" type="button" role="menuitem">Выбрать весь диск</button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <section class="flow-step" id="flow-step-1" data-flow-step="1" aria-labelledby="flow-step-title">
+      <section class="flow-step" id="flow-step-source" data-flow-step="source" aria-labelledby="flow-step-title">
+        <div class="dest-summary" id="flow-dest-summary">
+          <span class="dest-summary-label">Сохранить в</span>
+          <span class="dest-summary-path" id="flow-dest-path">—</span>
+          <button class="dest-summary-edit" type="button" id="flow-dest-edit">Изменить</button>
+        </div>
+        <div class="folder-existing-error" id="folder-existing-error" hidden>
+          <span class="folder-existing-error-text" id="folder-existing-error-text" title=""></span>
+          <button class="btn btn--secondary btn--sm" type="button" id="folder-existing-retry">Повторить</button>
+        </div>
+        <div class="source-tree" id="flow-source-tree" role="group" aria-label="Папки облака"></div>
+      </section>
+
+      <section class="flow-step" id="flow-step-dest" data-flow-step="dest" aria-labelledby="flow-step-title" hidden>
         <div class="dest-nav" id="flow-dest-nav">
           <button class="btn btn--quiet btn--icon dest-up" type="button" id="folder-up" aria-label="На уровень выше" title="На уровень выше">
             <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>
@@ -152,34 +202,7 @@
         <div class="folder-body" id="flow-dest-body"></div>
       </section>
 
-      <section class="flow-step" id="flow-step-2" data-flow-step="2" aria-labelledby="flow-step-title" hidden>
-        <div class="source-bar">
-          <label class="filter-toggle" for="folder-show-existing" id="folder-show-existing-row">
-            <span class="filter-title">Показать папки, которые уже есть на сервере</span>
-            <span class="switch-control">
-              <input id="folder-show-existing" type="checkbox" role="switch" checked>
-              <span class="switch-track" aria-hidden="true"></span>
-            </span>
-          </label>
-          <div class="source-menu" id="source-menu-wrap">
-            <button class="btn btn--quiet source-menu-btn" type="button" id="folder-more" aria-haspopup="menu" aria-expanded="false" aria-controls="folder-menu">
-              <span id="folder-more-label">Ещё</span>
-              <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
-            </button>
-            <div class="menu menu--source" id="folder-menu" role="menu" aria-labelledby="folder-more" hidden>
-              <button class="menu-item" id="folder-menu-action" type="button" role="menuitem">Выбрать весь диск</button>
-            </div>
-          </div>
-        </div>
-        <p class="folder-existing-note" id="folder-existing-note" role="status" hidden></p>
-        <div class="folder-existing-error" id="folder-existing-error" hidden>
-          <span class="folder-existing-error-text" id="folder-existing-error-text" title=""></span>
-          <button class="btn btn--secondary btn--sm" type="button" id="folder-existing-retry">Повторить</button>
-        </div>
-        <div class="source-tree" id="flow-source-tree" role="group" aria-label="Папки облака"></div>
-      </section>
-
-      <section class="flow-step" id="flow-step-3" data-flow-step="3" aria-labelledby="flow-step-title" hidden>
+      <section class="flow-step" id="flow-step-review" data-flow-step="review" aria-labelledby="flow-step-title" hidden>
         <div class="review-body" id="review-body"></div>
         <p class="form-error flow-inline-error" id="review-error" role="alert" tabindex="-1" hidden></p>
       </section>
@@ -195,16 +218,16 @@
       </p>
       <div class="flow-foot-row">
         <button class="btn btn--secondary flow-back" type="button" id="folder-back" hidden>Назад</button>
-        <button class="btn btn--primary flow-primary" type="button" id="folder-choose">Выбрать эту папку</button>
+        <button class="btn btn--primary flow-primary" type="button" id="folder-choose">Проверить выбор</button>
       </div>
     </div>
   </dialog>
 
   <dialog id="exit-dialog" class="modal modal--confirm" aria-labelledby="exit-title" aria-describedby="exit-text">
     <div class="modal-head">
-      <h2 class="modal-title" id="exit-title" tabindex="-1">Выйти из Яндекс Диска?</h2>
+      <h2 class="modal-title" id="exit-title" tabindex="-1">Выйти из аккаунта?</h2>
     </div>
-    <p class="modal-text" id="exit-text">Активное скачивание остановится. Уже скачанные файлы останутся на сервере.</p>
+    <p class="modal-text" id="exit-text"></p>
     <p class="form-error modal-error" id="exit-error" role="alert" hidden></p>
     <div class="modal-actions modal-actions--end">
       <button class="btn btn--secondary" type="button" data-dialog-close>Остаться</button>
@@ -212,16 +235,11 @@
     </div>
   </dialog>
 
-  <!-- П3 «Аккаунт и место»: панель, а не отдельный экран. Логин, способ входа,
-       доступ, занятое на Диске и свободное на сервере — в одном месте.
-       Опасный «Выйти» отделён внизу и подтверждается отдельным диалогом. -->
-  <dialog id="account-dialog" class="modal modal--account" role="dialog" aria-modal="true" aria-labelledby="account-title" aria-describedby="account-note">
+  <!-- Аккаунт, П3: логин и занятая облачная ёмкость. Способ входа, статус,
+       папка и место сервера сюда не входят. Опасный «Выйти» — внизу. -->
+  <dialog id="account-dialog" class="modal modal--account" role="dialog" aria-modal="true" aria-labelledby="account-title">
     <div class="modal-head">
-      <div class="modal-heading">
-        <p class="modal-kicker">Аккаунт</p>
-        <h2 class="modal-title" id="account-title" tabindex="-1">Яндекс Диск</h2>
-        <p class="modal-note" id="account-note">Доступ, занятое место и действия с подключением.</p>
-      </div>
+      <h2 class="modal-title" id="account-title" tabindex="-1">Аккаунт</h2>
       <button class="btn btn--ghost btn--icon" type="button" data-dialog-close aria-label="Закрыть">
         <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11m0-11-11 11"/></svg>
       </button>
@@ -234,54 +252,18 @@
           <dd id="account-login">—</dd>
         </div>
         <div class="account-fact">
-          <dt>Способ входа</dt>
-          <dd id="account-method">—</dd>
-        </div>
-        <div class="account-fact">
-          <dt>Доступ</dt>
-          <dd class="account-access">
-            <span id="account-status"></span>
-            <span class="account-checked" id="account-checked">не проверялось</span>
-          </dd>
+          <dt>Занято</dt>
+          <dd id="account-capacity">—</dd>
         </div>
       </dl>
-
-      <section class="account-meter" aria-labelledby="account-disk-title">
-        <div class="account-meter-head">
-          <h3 class="account-meter-title" id="account-disk-title">Занято на Яндекс Диске</h3>
-          <span class="account-meter-value" id="account-disk-value">—</span>
-        </div>
-        <span class="meter-bar" aria-hidden="true"><i id="account-disk-bar"></i></span>
-        <p class="account-meter-note" id="account-disk-note" hidden></p>
-      </section>
-
-      <section class="account-server" aria-labelledby="account-server-title">
-        <div class="account-server-head">
-          <h3 class="account-server-title" id="account-server-title">Свободно на сервере</h3>
-          <span class="account-server-value" id="account-server-value">—</span>
-        </div>
-        <p class="account-server-note" id="account-server-note">Куда сохраняются файлы: /downloads</p>
-      </section>
-
-      <div class="account-actions">
-        <button class="btn btn--primary" type="button" id="account-probe">Проверить</button>
-        <button class="btn btn--secondary" type="button" id="account-reconnect">Войти заново</button>
-      </div>
-      <p class="account-probe-result" id="account-probe-result" role="status" aria-live="polite" hidden></p>
     </div>
 
     <div class="account-danger">
       <div class="account-danger-copy">
-        <p class="account-danger-title">Выйти из Яндекс Диска</p>
-        <p class="account-danger-note">Активное скачивание остановится. Уже скачанные файлы останутся на сервере.</p>
+        <p class="account-danger-title">Выйти из аккаунта</p>
+        <p class="account-danger-note" id="account-logout-note" hidden>Активное скачивание остановится</p>
       </div>
       <button class="btn btn--danger" type="button" id="account-logout">Выйти</button>
-    </div>
-
-    <div class="modal-foot">
-      <div class="modal-actions modal-actions--end">
-        <button class="btn btn--secondary" type="button" data-dialog-close>Закрыть</button>
-      </div>
     </div>
   </dialog>
 
