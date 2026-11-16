@@ -43,12 +43,13 @@
   --r-control: 10px;
   --r-sm: 8px;
   --r-xs: 4px;
+  --r-inner: 6px; /* вложенный радиус: внешний 10 − отступ 4 = 6, углы концентричны */
   --r-pill: 999px;
   --control-h: 40px;
   --tap: 44px;
   --icon: 16px;
   --icon-lg: 20px;
-  --duration: .16s;
+  --duration: .15s;
   --ease: cubic-bezier(.2, .8, .2, 1);
 
   /* Светлая тема. Палитра из ТЗ §4.3; вторичные оттенки выведены из неё. */
@@ -102,6 +103,10 @@
   --checkbox-disabled-on: #8FA9DE;
   --shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 14px 32px -26px rgba(16, 24, 40, .22);
   --shadow-raised: 0 2px 6px rgba(16, 24, 40, .05), 0 24px 48px -28px rgba(16, 24, 40, .28);
+  /* Контур декоративных поверхностей — тень, а не рамка: та же линия 1 px,
+     но не участвует в раскладке и не спорит с фоном под карточкой.
+     Рамки остаются только структурные (разделители, поля) и у состояний. */
+  --ring: inset 0 0 0 1px var(--border);
 }
 
 /* Явный светлый набор: страховка, если data-theme выставлен до загрузки стилей. */
@@ -168,7 +173,13 @@
 *::before,
 *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html { -webkit-text-size-adjust: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+  /* macOS рендерит текст тяжелее нужного: тонкое сглаживание задаётся на корне,
+     чтобы заголовки и тело выглядели одинаково. Другие ОС свойства игнорируют. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 body {
   margin: 0;
   min-height: 100vh;
@@ -177,9 +188,13 @@ body {
   color: var(--text);
   background: var(--bg);
   font: 400 var(--text-md)/1.5 var(--font);
-  -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3, p { margin: 0; }
+/* Заголовки распределяют строки равномерно, короткий текст не оставляет сирот. */
+h1, h2, h3 { text-wrap: balance; }
+p, li, dd, figcaption { text-wrap: pretty; }
+.now-note, .now-error, .review-sub, .folder-detail, .files-note,
+.account-danger-note, .toast-message, .now-failure-list li { text-wrap: pretty; }
 button { font: inherit; color: inherit; }
 ul, dl, dd { margin: 0; padding: 0; }
 a { color: var(--accent); }
@@ -262,10 +277,10 @@ a { color: var(--accent); }
   gap: var(--space-3);
   height: 52px;
   padding: 0 var(--space-3);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: var(--r-surface);
   background: var(--surface-raised);
-  box-shadow: var(--shadow);
+  box-shadow: var(--ring), var(--shadow);
 }
 .brand {
   display: inline-flex;
@@ -336,9 +351,10 @@ a { color: var(--accent); }
   font-weight: 500;
   line-height: var(--space-5);
   cursor: pointer;
-  transition: background-color var(--duration), border-color var(--duration);
+  transition: background-color var(--duration), border-color var(--duration), scale var(--duration) var(--ease);
 }
 .account-chip:hover { border-color: var(--border-control-hover); background: var(--surface-2); }
+.account-chip:active { scale: .96; }
 .account-chip > .icon { color: var(--accent); }
 .account-chip-name {
   min-width: 0;
@@ -368,10 +384,10 @@ a { color: var(--accent); }
   flex-direction: column;
   min-width: 0;
   padding: var(--space-5);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: var(--r-surface);
   background: var(--surface);
-  box-shadow: var(--shadow);
+  box-shadow: var(--ring), var(--shadow);
 }
 .cell--downloads { align-self: start; }
 .cell--account { align-self: start; gap: var(--space-2); }
@@ -691,9 +707,10 @@ a { color: var(--accent); }
   line-height: var(--space-5);
   text-align: left;
   cursor: pointer;
-  transition: background-color var(--duration);
+  transition: background-color var(--duration), scale var(--duration) var(--ease);
 }
 .connect-row:hover { background: var(--surface-2); }
+.connect-row:active { scale: .96; }
 .connect-row-icon {
   display: grid;
   place-items: center;
@@ -778,6 +795,7 @@ a { color: var(--accent); }
   font-size: var(--text-md);
   font-weight: 500;
   line-height: var(--space-5);
+  font-variant-numeric: tabular-nums;
   text-align: right;
   overflow-wrap: anywhere;
 }
@@ -817,10 +835,10 @@ a { color: var(--accent); }
   width: 100%;
   max-width: 440px;
   padding: var(--space-6);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: var(--r-surface);
   background: var(--surface);
-  box-shadow: var(--shadow-raised);
+  box-shadow: var(--ring), var(--shadow-raised);
 }
 #setup-body { display: grid; gap: var(--space-3); }
 .setup-title {
@@ -850,7 +868,7 @@ a { color: var(--accent); }
   min-height: var(--control-h);
   padding: var(--space-1) var(--space-3);
   border: 1px solid transparent;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-inner);
   background: transparent;
   color: var(--text-2);
   font-size: var(--text-md);
@@ -858,9 +876,10 @@ a { color: var(--accent); }
   line-height: 18px;
   text-align: center;
   cursor: pointer;
-  transition: color var(--duration), background-color var(--duration), border-color var(--duration);
+  transition: color var(--duration), background-color var(--duration), border-color var(--duration), scale var(--duration) var(--ease);
 }
 .method-option:hover { color: var(--text); }
+.method-option:active { scale: .96; }
 .method-option[aria-checked="true"] {
   border-color: var(--accent);
   background: var(--surface-raised);
@@ -1154,7 +1173,7 @@ select:-webkit-autofill:focus {
   line-height: var(--space-5);
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color var(--duration), border-color var(--duration), color var(--duration);
+  transition: background-color var(--duration), border-color var(--duration), color var(--duration), scale var(--duration) var(--ease);
 }
 .btn .icon { width: var(--icon); height: var(--icon); }
 .btn--primary { --spin: var(--on-accent); border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
@@ -1175,6 +1194,9 @@ select:-webkit-autofill:focus {
 .btn--sm { height: 36px; min-width: 72px; padding: 0 var(--space-3); font-size: var(--text-sm); }
 .btn--start { min-width: 128px; }
 .btn--block { width: 100%; }
+/* Нажатие: мягкий отклик 0.96. Это переход состояния, а не keyframes, —
+   отпускание посреди нажатия плавно возвращает кнопку. */
+.btn:active:not(:disabled):not([aria-disabled="true"]):not([aria-busy="true"]) { scale: .96; }
 .btn:disabled { cursor: default; opacity: .64; }
 .btn--primary:disabled { opacity: .72; }
 /* busy/заблокированная кнопка без disabled: фокус остаётся на месте. */
@@ -1199,6 +1221,76 @@ select:-webkit-autofill:focus {
 }
 .btn[aria-busy="true"] .icon { visibility: hidden; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── 12a. Минимальная площадь нажатия ───────────────────────────────────── */
+
+/* Визуально мелкие контролы (28–36 px) расширяются псевдоэлементом до 40×40
+   на десктопе; на тач-устройствах высота уже поднимается до 44 px в разделе
+   Touch. Псевдоэлемент не меняет макет и не пересекает соседние цели. */
+.dest-summary-edit,
+.review-change,
+.review-retry,
+.token-help-toggle,
+.files-hide,
+.folder-new,
+.source-menu-btn,
+.flow-step-action,
+.toast-close,
+.file-select-all { position: relative; }
+/* Компактные кнопки 36 px получают высоту нажатия 40 px. Когда кнопка busy,
+   её ::after занят спиннером — там указатель всё равно отключён. */
+.btn--sm::after {
+  content: "";
+  position: absolute;
+  inset-block: -3px;
+  inset-inline: 0;
+}
+.dest-summary-edit::after,
+.review-change::after,
+.token-help-toggle::after {
+  content: "";
+  position: absolute;
+  inset-block: -6px;
+  inset-inline: 0;
+}
+/* У кнопок 1 px прозрачная рамка: псевдоэлемент считается от padding-box,
+   поэтому к отступу добавляется ещё 1 px с каждой стороны. */
+.review-retry::after {
+  content: "";
+  position: absolute;
+  inset-block: -7px;
+  inset-inline: 0;
+}
+.files-hide::after,
+.flow-step-action::after {
+  content: "";
+  position: absolute;
+  inset-block: -5px;
+  inset-inline: 0;
+}
+.file-select-all::after {
+  content: "";
+  position: absolute;
+  inset-block: -4px;
+  inset-inline: 0;
+}
+.folder-new::after,
+.source-menu-btn::after {
+  content: "";
+  position: absolute;
+  inset-block: -3px;
+  inset-inline: 0;
+}
+.toast-close::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
+.field-action::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+}
 
 /* ── 13. Скелетоны загрузки ─────────────────────────────────────────────── */
 
@@ -1283,12 +1375,12 @@ select:-webkit-autofill:focus {
   margin: auto;
   padding: 0;
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: var(--r-surface);
   outline: none;
   background: var(--surface-raised);
   color: var(--text);
-  box-shadow: var(--shadow-raised);
+  box-shadow: var(--ring), var(--shadow-raised);
 }
 .modal[open] { display: flex; flex-direction: column; }
 /* Шапка и футер не сжимаются: прокручивается только тело диалога. */
@@ -1646,6 +1738,10 @@ body:has(dialog[open]) { overflow: hidden; }
 .folder-node-main.is-disabled:focus-visible { outline-color: var(--text-2); }
 .folder-icon { display: grid; place-items: center; color: var(--text-2); }
 .folder-icon .icon { width: 16px; height: 16px; }
+/* Активное состояние — заливка той же иконки: outline по умолчанию,
+   заливка только у выбранной папки, без отдельного SVG. */
+.folder-node-row.is-selected .folder-icon { color: var(--accent); }
+.folder-node-row.is-selected .folder-icon .icon { fill: var(--accent); }
 .folder-row-text { display: grid; gap: 1px; min-width: 0; }
 .folder-row-title { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
 .folder-row-title .folder-row-name { flex: 0 1 auto; }
@@ -1692,7 +1788,7 @@ body:has(dialog[open]) { overflow: hidden; }
   border: 1.5px solid var(--checkbox-border);
   border-radius: var(--r-xs);
   background: var(--checkbox-off);
-  transition: border-color 160ms var(--ease), background-color 160ms var(--ease);
+  transition: border-color var(--duration) var(--ease), background-color var(--duration) var(--ease);
 }
 .folder-check:checked + .folder-check-mark,
 .folder-check:indeterminate + .folder-check-mark,
@@ -1768,7 +1864,7 @@ body:has(dialog[open]) { overflow: hidden; }
 .folder-files-toggle:hover,
 .folder-expand:hover { background: var(--surface-2); color: var(--text); }
 .folder-files-toggle[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); }
-.folder-expand .icon { width: 16px; height: 16px; transition: transform 160ms var(--ease); transform: rotate(-90deg); }
+.folder-expand .icon { width: 16px; height: 16px; transition: transform var(--duration) var(--ease); transform: rotate(-90deg); }
 .folder-files-toggle .icon { width: 16px; height: 16px; }
 .folder-expand[aria-expanded="true"] .icon { transform: rotate(0deg); }
 .folder-files-toggle:focus-visible,
@@ -1937,6 +2033,7 @@ body:has(dialog[open]) { overflow: hidden; }
   font-size: var(--text-md);
   font-weight: 500;
   line-height: var(--space-5);
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 .review-value--source,
@@ -2014,12 +2111,12 @@ body:has(dialog[open]) { overflow: hidden; }
   gap: var(--space-1);
   width: 216px;
   max-width: calc(100vw - 24px);
-  padding: var(--space-2);
-  border: 1px solid var(--border);
+  padding: var(--space-1);
+  border: 1px solid transparent;
   border-radius: var(--r-control);
   background: var(--surface-raised);
   color: var(--text);
-  box-shadow: var(--shadow-raised);
+  box-shadow: var(--ring), var(--shadow-raised);
 }
 .menu-item {
   display: flex;
@@ -2029,15 +2126,17 @@ body:has(dialog[open]) { overflow: hidden; }
   height: var(--control-h);
   padding: 0 var(--space-3);
   border: 0;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-inner);
   background: transparent;
   color: var(--text);
   font-size: var(--text-md);
   font-weight: 500;
   text-align: left;
   cursor: pointer;
+  transition: background-color var(--duration), scale var(--duration) var(--ease);
 }
 .menu-item:hover { background: var(--surface-2); }
+.menu-item:active { scale: .96; }
 .menu-item:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 
 /* Футер флоу: максимум два действия + зарезервированная строка сообщения. */
@@ -2112,13 +2211,13 @@ body:has(dialog[open]) { overflow: hidden; }
   align-items: start;
   gap: var(--space-3);
   padding: var(--space-3);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: var(--r-surface);
   background: var(--surface-raised);
   color: var(--text);
-  box-shadow: var(--shadow-raised);
+  box-shadow: var(--ring), var(--shadow-raised);
   pointer-events: auto;
-  animation: toast-in .2s var(--ease);
+  animation: toast-in .15s var(--ease);
 }
 @keyframes toast-in {
   from { opacity: 0; transform: translateY(10px) scale(.99); }
@@ -2207,6 +2306,7 @@ body:has(dialog[open]) { overflow: hidden; }
     margin: 0;
     border: 0;
     border-radius: 0;
+    box-shadow: none;
   }
   .modal-head { padding-top: max(16px, env(safe-area-inset-top)); }
   .modal-foot { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
@@ -2300,9 +2400,25 @@ body:has(dialog[open]) { overflow: hidden; }
   .field-action { width: 40px; height: 40px; }
   .review-change,
   .dest-summary-edit,
-  .flow-step-action { min-height: var(--tap); }
+  .flow-step-action,
+  .token-help-toggle,
+  .file-select-all { min-height: var(--tap); }
   .folder-files-toggle,
   .folder-expand { min-width: var(--tap); min-height: var(--tap); }
+  /* Высота целей уже 44: псевдоэлементы не растягиваем, иначе соседние
+     области нажатия пересекутся. */
+  .dest-summary-edit::after,
+  .review-change::after,
+  .review-retry::after,
+  .token-help-toggle::after,
+  .files-hide::after,
+  .folder-new::after,
+  .source-menu-btn::after,
+  .flow-step-action::after,
+  .file-select-all::after,
+  .btn--sm:not([aria-busy="true"])::after { inset-block: 0; inset-inline: 0; }
+  .toast-close::after,
+  .field-action::after { inset: 0; }
 }
 
 /* ── 21. Reduced motion ─────────────────────────────────────────────────── */

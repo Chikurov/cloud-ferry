@@ -75,6 +75,9 @@ class H(BaseHTTPRequestHandler):
         if p == '/app.js':
             return self._file('app.js', 'application/javascript')
         if p == '/api/state':
+            if os.environ.get('MOCK_EMPTY') == '1':
+                empty = dict(STATE); empty['accounts'] = []; empty['jobs'] = []
+                return self._send(200, empty)
             return self._send(200, STATE)
         if p == '/api/system':
             return self._send(200, SYSTEM)
@@ -85,7 +88,7 @@ class H(BaseHTTPRequestHandler):
         if p == '/api/widget':
             return self._send(200, {'type': 'text-with-progress', 'title': 'Cloud Ferry',
                                     'text': '12,3 ГБ из 29 ГБ', 'progress': 0.42})
-        if p == '/api/fs/folders':
+        if p in ('/api/fs/folders', '/api/fs/dirs'):
             path = (q.get('path') or ['/downloads'])[0]
             items = SERVER.get(path)
             if items is None:
@@ -120,6 +123,9 @@ class H(BaseHTTPRequestHandler):
                     exists = True
                 items.append({'path': src, 'exists': exists, 'entries': 12 if exists else 0})
             return self._send(200, {'dest': dest, 'items': items})
+        if u.path == '/api/cloud/sizes':
+            paths = body.get('paths') or []
+            return self._send(200, {'entries': [{'path': x, 'bytes': 524288000, 'files': 120} for x in paths], 'partial': False})
         if u.path.startswith('/api/preflight'):
             return self._send(200, {'files': 12483, 'bytes': 954800000, 'free': 1000204886016, 'fits': True})
         if u.path == '/api/jobs':
@@ -133,4 +139,4 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, {'ok': True})
         return self._send(200, {'ok': True})
 
-ThreadingHTTPServer(('127.0.0.1', 8899), H).serve_forever()
+ThreadingHTTPServer(('127.0.0.1', int(os.environ.get('MOCK_PORT', '8899'))), H).serve_forever()
