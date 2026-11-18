@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -202,6 +203,9 @@ func validateAccountInput(req *createAccountRequest) *validateFieldError {
 		if isLocalHost(parsed.Hostname()) {
 			return &validateFieldError{"url", "Укажите публичный адрес сервера: адреса локальной сети и самого сервера не поддерживаются."}
 		}
+		if !allowedWebDAVHost(parsed.Hostname()) {
+			return &validateFieldError{"url", "Этот сервер WebDAV не поддерживается. Укажите адрес Яндекс Диска."}
+		}
 		if req.User == "" {
 			return &validateFieldError{"user", "Укажите логин от Яндекс Диска."}
 		}
@@ -246,6 +250,33 @@ func validateAccountInput(req *createAccountRequest) *validateFieldError {
 // down and still be racy (DNS can answer differently when rclone connects
 // later), so a public-looking name that resolves to a private address remains a
 // residual risk. The account form targets public cloud providers, not LAN boxes.
+// defaultWebDAVHosts is the allowlist of WebDAV servers Cloud Ferry talks to.
+// The address is fixed in the UI, so the list only needs extending when Yandex
+// changes its endpoint or a custom server is enabled on purpose.
+var defaultWebDAVHosts = []string{"webdav.yandex.ru"}
+
+// allowedWebDAVHost checks the host against the built-in list plus the optional
+// CF_WEBDAV_HOSTS override (comma-separated), so a new endpoint does not
+// require a rebuild.
+func allowedWebDAVHost(host string) bool {
+	host = strings.ToLower(strings.TrimSuffix(host, "."))
+	if host == "" {
+		return false
+	}
+	for _, allowed := range defaultWebDAVHosts {
+		if host == allowed {
+			return true
+		}
+	}
+	for _, extra := range strings.Split(os.Getenv("CF_WEBDAV_HOSTS"), ",") {
+		extra = strings.ToLower(strings.TrimSpace(strings.TrimSuffix(extra, ".")))
+		if extra != "" && host == extra {
+			return true
+		}
+	}
+	return false
+}
+
 func isLocalHost(host string) bool {
 	host = strings.ToLower(strings.TrimSuffix(host, "."))
 	if host == "localhost" || strings.HasSuffix(host, ".localhost") {

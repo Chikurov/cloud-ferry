@@ -582,3 +582,45 @@ func TestCreateAccountRejectsZoneLinkLocal(t *testing.T) {
 		})
 	}
 }
+
+func TestWebDAVHostAllowlist(t *testing.T) {
+	cases := []struct {
+		name string
+		host string
+		env  string
+		want bool
+	}{
+		{"yandex default", "webdav.yandex.ru", "", true},
+		{"yandex uppercase", "WebDAV.Yandex.RU", "", true},
+		{"trailing dot", "webdav.yandex.ru.", "", true},
+		{"foreign host", "evil.example.com", "", false},
+		{"nip.io to loopback", "127.0.0.1.nip.io", "", false},
+		{"ip address", "8.8.8.8", "", false},
+		{"env override", "dav.example.com", "dav.example.com", true},
+		{"env override keeps default", "webdav.yandex.ru", "dav.example.com", true},
+		{"env with spaces", "dav.example.com", " dav.example.com , other ", true},
+		{"empty env entry", "dav.example.com", ",,", false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Setenv("CF_WEBDAV_HOSTS", c.env)
+			if got := allowedWebDAVHost(c.host); got != c.want {
+				t.Fatalf("allowedWebDAVHost(%q) = %v, want %v", c.host, got, c.want)
+			}
+		})
+	}
+}
+
+func TestCreateAccountRejectsForeignWebDAVHost(t *testing.T) {
+	server, _, _ := newTestServer(t)
+	body := map[string]any{
+		"provider": "webdav", "url": "https://evil.example.com/dav", "user": "u", "password": "p",
+	}
+	resp, data := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/accounts", body)
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400, body = %v", resp.StatusCode, data)
+	}
+	if data["field"] != "url" {
+		t.Fatalf("field = %v, want url", data["field"])
+	}
+}

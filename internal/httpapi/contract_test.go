@@ -195,14 +195,35 @@ func TestCreateAccountRejectsLocalHostsAndEnforcesLengths(t *testing.T) {
 		}
 	})
 
-	t.Run("accepted public hosts", func(t *testing.T) {
+	t.Run("rejected hosts outside the allowlist", func(t *testing.T) {
+		cases := []string{
+			"https://93.184.216.34",
+			"https://[2606:2800:220:1:248:1893:25c8:1946]",
+			"https://evil.example.com",
+		}
+		for _, raw := range cases {
+			t.Run(raw, func(t *testing.T) {
+				server, st, _ := newTestServer(t)
+				resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/accounts", webdav(raw, "u", "p"))
+				if resp.StatusCode != http.StatusBadRequest {
+					t.Fatalf("status = %d, want 400, body = %v", resp.StatusCode, body)
+				}
+				if body["field"] != "url" {
+					t.Fatalf("field = %v, want url, body = %v", body["field"], body)
+				}
+				if accounts := st.Accounts(); len(accounts) != 0 {
+					t.Fatalf("a rejected host stored accounts: %+v", accounts)
+				}
+			})
+		}
+	})
+
+	t.Run("accepted allowlisted hosts", func(t *testing.T) {
 		cases := []struct {
 			name string
 			url  string
 		}{
-			{"public ipv4 literal", "https://93.184.216.34"},
-			{"public ipv6 literal", "https://[2606:2800:220:1:248:1893:25c8:1946]"},
-			{"public hostname", validURL},
+			{"yandex webdav host", validURL},
 		}
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
