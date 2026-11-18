@@ -92,16 +92,21 @@ type Job struct {
 	// SourceFiles lists individual cloud files the user picked, relative to
 	// the cloud root and normalised. Together with SourcePaths it makes Source
 	// "<remote>:"; the selected files keep their structure inside Dest.
-	SourceFiles  []string     `json:"sourceFiles,omitempty"`
-	Dest         string       `json:"dest"`
-	Mode         string       `json:"mode"`
-	Status       string       `json:"status"`
-	Group        string       `json:"group"`
-	RcloneJobID  int64        `json:"rcloneJobId"`
-	ExecuteID    string       `json:"executeId,omitempty"`
-	Error        string       `json:"error,omitempty"`
-	ErrorTitle   string       `json:"errorTitle,omitempty"`
-	ErrorAdvice  string       `json:"errorAdvice,omitempty"`
+	SourceFiles []string `json:"sourceFiles,omitempty"`
+	Dest        string   `json:"dest"`
+	Mode        string   `json:"mode"`
+	Status      string   `json:"status"`
+	Group       string   `json:"group"`
+	RcloneJobID int64    `json:"rcloneJobId"`
+	ExecuteID   string   `json:"executeId,omitempty"`
+	Error       string   `json:"error,omitempty"`
+	ErrorTitle  string   `json:"errorTitle,omitempty"`
+	ErrorAdvice string   `json:"errorAdvice,omitempty"`
+	// BytesBase is how much this job had already transferred when the current
+	// attempt was resumed. rclone counts the stats of one engine job, so a
+	// resumed attempt reports only the remainder; BytesBase keeps the stored
+	// progress cumulative instead of letting it jump back.
+	BytesBase    int64        `json:"bytesBase,omitempty"`
 	Stats        Stats        `json:"stats"`
 	Check        *CheckResult `json:"check,omitempty"`
 	Failures     []string     `json:"failures,omitempty"`

@@ -1512,7 +1512,7 @@ input:focus, select:focus, textarea:focus {
 .folder-row .icon { color: var(--muted); }
 .folder-row > .icon:last-child { transform: rotate(-90deg); }
 .folder-row-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Название папки, подпись фильтра и размер одной строкой: «12 483 файла · 4,1 ГБ». */
+/* Название папки и тег в одной строке: переносим только при нехватке места. */
 .folder-row-text { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-width: 0; }
 .folder-row-text .folder-row-name { flex: 0 1 auto; }
 /* Причина недоступности — текстом, а не только цветом. */
@@ -1533,14 +1533,6 @@ input:focus, select:focus, textarea:focus {
 .folder-node-main.is-disabled .folder-row-name { color: var(--muted); }
 .folder-node-main:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .folder-node-main.is-disabled:focus-visible { outline-color: var(--muted); }
-.folder-row-meta {
-  flex: none;
-  color: var(--muted);
-  font-size: var(--text-xs);
-  line-height: 18px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
 .folder-state {
   display: grid;
   justify-items: center;
@@ -2716,15 +2708,6 @@ body:has(dialog[open]) { overflow: hidden; }
 .folder-row-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .folder-row-title .folder-row-name { flex: 0 1 auto; }
 .folder-row-name { color: var(--ink); font-size: var(--text-md); line-height: 20px; }
-.folder-row-meta {
-  color: var(--muted);
-  font-size: var(--text-xs);
-  line-height: 16px;
-  font-variant-numeric: tabular-nums;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 /* Теги причин: высота 20, текст обязателен (цвет — не единственный носитель). */
 .folder-tag {
   flex: none;
@@ -3478,24 +3461,52 @@ body:has(dialog[open]) { overflow: hidden; }
 }
 
 #job-list { display:grid; gap:10px; }
-.job-row progress {
-  width:100%; height:4px; border:none; overflow:hidden;
-  appearance:none; border-radius:4px; color:var(--accent);
-  background:var(--surface-sunken); accent-color:var(--accent);
+/* Полоса прогресса карточки. Пока движок готовит запуск или пересканирует
+   облако, по ней бежит блик, а прошлый процент остаётся видимым, но
+   приглушённым: полоса не стоит на нуле и не прыгает назад. */
+.job-row .progress {
+  position:relative; width:100%; height:4px; overflow:hidden;
+  border-radius:4px; background:var(--surface-sunken);
 }
-.job-row progress::-webkit-progress-bar { background:var(--surface-sunken); }
-.job-row progress::-webkit-progress-value { background:var(--accent); border-radius:4px; }
-.job-row progress::-moz-progress-bar { background:var(--accent); border-radius:4px; }
-.job-row:is([data-status="interrupted"],[data-status="canceled"]) progress { opacity:.55; }
+.job-row .progress > i {
+  position:relative; z-index:1; display:block; width:0; height:100%;
+  border-radius:inherit; background:var(--accent);
+  transition:width .7s var(--ease);
+}
+.job-row .progress--prepare > i { opacity:.45; }
+.job-row .progress--prepare::after {
+  content:""; position:absolute; inset:0; z-index:2; width:34%;
+  border-radius:inherit; pointer-events:none;
+  background:linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation:job-progress-scan 1.5s var(--ease) infinite;
+}
+@keyframes job-progress-scan {
+  0% { transform:translateX(-110%); }
+  100% { transform:translateX(320%); }
+}
+/* В очереди кнопка «Приостановить» остаётся доступной: aria-busy лишь
+   сообщает, что запуск ещё идёт, поэтому спиннер и отключение указателя из
+   общего busy-правила здесь не нужны. */
+.job-row .btn[aria-busy="true"] { color:inherit; pointer-events:auto; }
+.job-row .btn[aria-busy="true"]::after { content:none; }
+.job-row .btn[aria-busy="true"] .icon { visibility:visible; }
+/* Пауза — не ошибка, но прогресс уже не растёт. */
+.job-row:is([data-status="interrupted"],[data-status="canceled"]) .progress > i { opacity:.55; }
 .job-error { font-size:var(--text-sm); color:var(--err); }
 .source-bar { flex-wrap:wrap; }
 .disk-toggle { display:inline-flex; align-items:center; gap:8px; order:-1; min-height:44px; font-size:var(--text-md); cursor:pointer; }
 .disk-toggle input[type="checkbox"] { appearance:auto; width:18px; height:18px; min-height:0; padding:0; margin:0; accent-color:var(--accent); }
 
-.job-row[data-status="done"] progress { color:var(--ok); accent-color:var(--ok); }
-.job-row[data-status="done"] progress::-webkit-progress-value { background:var(--ok); }
-.job-row[data-status="done"] progress::-moz-progress-bar { background:var(--ok); }
+.job-row[data-status="done"] .progress > i { background:var(--ok); }
 .job-row[data-status="done"] .task-stats span:last-child { color:var(--ok); }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Без движения: полоса всё равно честно показывает, что идёт подготовка,
+     а состояние объясняет текст. */
+  .job-row .progress--prepare::after {
+    animation:none; transform:none; width:100%; opacity:.35;
+  }
+}
 
 /* ── Неудачная или прерванная задача ──────────────────────────────────────
    Проверки целостности в интерфейсе нет: под карточкой одна строка — сколько

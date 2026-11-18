@@ -1,0 +1,1080 @@
+{
+  "base": "http://127.0.0.1:8877",
+  "frames": {
+    "dark": [
+      {
+        "size": [
+          1440,
+          900
+        ],
+        "pixels": [
+          [
+            22,
+            21,
+            26,
+            255
+          ],
+          [
+            22,
+            21,
+            26,
+            255
+          ],
+          [
+            22,
+            21,
+            26,
+            255
+          ],
+          [
+            22,
+            21,
+            26,
+            255
+          ]
+        ]
+      },
+      {
+        "size": [
+          1440,
+          900
+        ],
+        "pixels": [
+          [
+            22,
+            21,
+            26,
+            255
+          ],
+          [
+            22,
+            21,
+            26,
+            255
+          ],
+          [
+            22,
+            21,
+            26,
+            255
+          ],
+          [
+            34,
+            33,
+            39,
+            255
+          ]
+        ]
+      },
+      {
+        "size": [
+          1440,
+          900
+        ],
+        "pixels": [
+          [
+            22,
+            21,
+            26,
+            255
+          ],
+          [
+            22,
+            21,
+            26,
+            255
+          ],
+          [
+            22,
+            21,
+            26,
+            255
+          ],
+          [
+            22,
+            21,
+            26,
+            255
+          ]
+        ]
+      }
+    ],
+    "light": [
+      {
+        "size": [
+          1440,
+          900
+        ],
+        "pixels": [
+          [
+            245,
+            244,
+            248,
+            255
+          ],
+          [
+            245,
+            244,
+            248,
+            255
+          ],
+          [
+            245,
+            244,
+            248,
+            255
+          ],
+          [
+            245,
+            244,
+            248,
+            255
+          ]
+        ]
+      },
+      {
+        "size": [
+          1440,
+          900
+        ],
+        "pixels": [
+          [
+            245,
+            244,
+            248,
+            255
+          ],
+          [
+            245,
+            244,
+            248,
+            255
+          ],
+          [
+            245,
+            244,
+            248,
+            255
+          ],
+          [
+            255,
+            255,
+            255,
+            255
+          ]
+        ]
+      },
+      {
+        "size": [
+          1440,
+          900
+        ],
+        "pixels": [
+          [
+            245,
+            244,
+            248,
+            255
+          ],
+          [
+            245,
+            244,
+            248,
+            255
+          ],
+          [
+            245,
+            244,
+            248,
+            255
+          ],
+          [
+            245,
+            244,
+            248,
+            255
+          ]
+        ]
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "real server: CSP script-src self present",
+      "ok": true,
+      "detail": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+    },
+    {
+      "name": "real server: CSP does not allow inline scripts",
+      "ok": true,
+      "detail": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+    },
+    {
+      "name": "real server: /theme.js served",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "first frame dark: a rendered frame captured",
+      "ok": true,
+      "detail": "[\"rgb(22, 21, 26)\",\"rgb(22, 21, 26)\",\"rgb(22, 21, 26)\"]"
+    },
+    {
+      "name": "first frame dark: first rendered frame is dark",
+      "ok": true,
+      "detail": "dominant=rgb(22, 21, 26) expected=rgb(22, 21, 26) blankFramesBefore=0"
+    },
+    {
+      "name": "first frame dark: no wrong-theme frame after first paint",
+      "ok": true,
+      "detail": "[\"rgb(22, 21, 26)\",\"rgb(22, 21, 26)\",\"rgb(22, 21, 26)\"]"
+    },
+    {
+      "name": "first frame light: a rendered frame captured",
+      "ok": true,
+      "detail": "[\"rgb(245, 244, 248)\",\"rgb(245, 244, 248)\",\"rgb(245, 244, 248)\"]"
+    },
+    {
+      "name": "first frame light: first rendered frame is light",
+      "ok": true,
+      "detail": "dominant=rgb(245, 244, 248) expected=rgb(245, 244, 248) blankFramesBefore=0"
+    },
+    {
+      "name": "first frame light: no wrong-theme frame after first paint",
+      "ok": true,
+      "detail": "[\"rgb(245, 244, 248)\",\"rgb(245, 244, 248)\",\"rgb(245, 244, 248)\"]"
+    },
+    {
+      "name": "light@1440: theme applied from prefers-color-scheme",
+      "ok": true,
+      "detail": "{\"theme\":\"light\",\"stored\":null}"
+    },
+    {
+      "name": "light@1440: html color-scheme",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "light@1440: body background",
+      "ok": true,
+      "detail": "rgb(245, 244, 248) vs rgb(245, 244, 248)"
+    },
+    {
+      "name": "light@1440: meta theme-color",
+      "ok": true,
+      "detail": "#f5f4f8"
+    },
+    {
+      "name": "light@1440: no horizontal overflow on home",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "light@1440: theme and background set at DOMContentLoaded",
+      "ok": true,
+      "detail": "{\"at\":\"DOMContentLoaded\",\"ready\":\"interactive\",\"theme\":\"light\",\"colorScheme\":\"light\",\"bg\":\"rgb(245, 244, 248)\",\"page\":\"#f5f4f8\"}"
+    },
+    {
+      "name": "light@1440: data-theme already correct at first readystatechange",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440: one visible theme toggle",
+      "ok": true,
+      "detail": "[{\"pressed\":\"false\",\"label\":\"Тёмная тема\",\"visible\":false},{\"pressed\":\"false\",\"label\":\"Тёмная тема\",\"visible\":true}]"
+    },
+    {
+      "name": "light@1440: aria-pressed reflects theme",
+      "ok": true,
+      "detail": "[{\"pressed\":\"false\",\"label\":\"Тёмная тема\",\"visible\":false},{\"pressed\":\"false\",\"label\":\"Тёмная тема\",\"visible\":true}]"
+    },
+    {
+      "name": "light@1440: no inline scripts in document",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440: theme.js before style.css in <head>",
+      "ok": true,
+      "detail": "{\"script\":5,\"style\":7}"
+    },
+    {
+      "name": "light@1440: theme.js network request starts before style.css",
+      "ok": true,
+      "detail": "{\"theme\":5.600000023841858,\"style\":5.700000017881393}"
+    },
+    {
+      "name": "light@1440: opening dialog makes one /folders request",
+      "ok": true,
+      "detail": "{\"folders\":1,\"sizes\":0}"
+    },
+    {
+      "name": "light@1440: opening dialog makes no /api/cloud/sizes request",
+      "ok": true,
+      "detail": "{\"folders\":1,\"sizes\":0}"
+    },
+    {
+      "name": "light@1440: dialog opens on «Что скачать»",
+      "ok": true,
+      "detail": "{\"open\":true,\"step\":\"2\"}"
+    },
+    {
+      "name": "light@1440: root cloud level has 4 folders",
+      "ok": true,
+      "detail": "4"
+    },
+    {
+      "name": "light@1440: rows keep icon, checkbox and name",
+      "ok": true,
+      "detail": "[{\"name\":\"Видео\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Видео\",\"tags\":[],\"metaCount\":0},{\"name\":\"Документы\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Документы\",\"tags\":[],\"metaCount\":0},{\"name\":\"Музыка\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Музыка\",\"tags\":[],\"metaCount\":0},{\"name\":\"Фотографии\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Фотографии Пустая папка на сервере\",\"tags\":[\"Пустая папка на сервере\"],\"metaCount\":0}]"
+    },
+    {
+      "name": "light@1440: no size metadata in folder rows",
+      "ok": true,
+      "detail": "[\"Видео\",\"Документы\",\"Музыка\",\"Фотографии Пустая папка на сервере\"]"
+    },
+    {
+      "name": "light@1440: no size/count text in rows",
+      "ok": true,
+      "detail": "[\"Видео\",\"Документы\",\"Музыка\",\"Фотографии Пустая папка на сервере\"]"
+    },
+    {
+      "name": "light@1440: row text is name plus tags only",
+      "ok": true,
+      "detail": "[\"Видео\",\"Документы\",\"Музыка\",\"Фотографии Пустая папка на сервере\"]"
+    },
+    {
+      "name": "light@1440: three expanded levels each make one /folders request",
+      "ok": true,
+      "detail": "{\"folders\":3,\"sizes\":0}"
+    },
+    {
+      "name": "light@1440: expanding levels makes no /api/cloud/sizes request",
+      "ok": true,
+      "detail": "{\"folders\":3,\"sizes\":0}"
+    },
+    {
+      "name": "light@1440: expanded tree has no size metadata",
+      "ok": true,
+      "detail": "{\"rows\":8,\"rowMetas\":0}"
+    },
+    {
+      "name": "light@1440: folder selection works",
+      "ok": true,
+      "detail": "{\"checked\":[\"Фотографии\",\"Фотографии/2023\",\"Фотографии/2024\"],\"footer\":\"\"}"
+    },
+    {
+      "name": "light@1440: «Весь диск» selects and locks all rows",
+      "ok": true,
+      "detail": "{\"title\":\"Что скачать\",\"checked\":[\"Видео\",\"Документы\",\"Документы/Личное\",\"Документы/Работа\",\"Музыка\",\"Фотографии\",\"Фотографии/2023\",\"Фотографии/2024\"],\"disabled\":8,\"total\":8}"
+    },
+    {
+      "name": "light@1440: leaving «Весь диск» returns to normal tree",
+      "ok": true,
+      "detail": "{\"disabled\":0,\"checked\":0,\"primary\":\"Далее\",\"primaryDisabled\":true}"
+    },
+    {
+      "name": "light@1440: folder can be selected after leaving «Весь диск»",
+      "ok": true,
+      "detail": "[\"Фотографии\",\"Фотографии/2023\",\"Фотографии/2024\"]"
+    },
+    {
+      "name": "light@1440: no horizontal overflow in dialog",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "light@1440: review makes no /api/cloud/sizes request",
+      "ok": true,
+      "detail": "{\"sizes\":0,\"preflight\":1,\"folders\":0}"
+    },
+    {
+      "name": "light@1440: preflight still computes the total",
+      "ok": true,
+      "detail": "{\"sizes\":0,\"preflight\":1,\"folders\":0}"
+    },
+    {
+      "name": "light@1440: review step rendered",
+      "ok": true,
+      "detail": "{\"step\":\"3\",\"estimate\":\"8 файлов · 1 ГБ\"}"
+    },
+    {
+      "name": "light@1440: review total counted by preflight",
+      "ok": true,
+      "detail": "8 файлов · 1 ГБ"
+    },
+    {
+      "name": "light@1440: no horizontal overflow on review",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "console light@1440: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console light@1440: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console light@1440: no JS log errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console light@1440: no CSP/security violations",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console light@1440: no API responses >= 400",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440: theme applied from prefers-color-scheme",
+      "ok": true,
+      "detail": "{\"theme\":\"dark\",\"stored\":null}"
+    },
+    {
+      "name": "dark@1440: html color-scheme",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "dark@1440: body background",
+      "ok": true,
+      "detail": "rgb(22, 21, 26) vs rgb(22, 21, 26)"
+    },
+    {
+      "name": "dark@1440: meta theme-color",
+      "ok": true,
+      "detail": "#16151a"
+    },
+    {
+      "name": "dark@1440: no horizontal overflow on home",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "dark@1440: theme and background set at DOMContentLoaded",
+      "ok": true,
+      "detail": "{\"at\":\"DOMContentLoaded\",\"ready\":\"interactive\",\"theme\":\"dark\",\"colorScheme\":\"dark\",\"bg\":\"rgb(22, 21, 26)\",\"page\":\"#16151a\"}"
+    },
+    {
+      "name": "dark@1440: data-theme already correct at first readystatechange",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440: one visible theme toggle",
+      "ok": true,
+      "detail": "[{\"pressed\":\"true\",\"label\":\"Тёмная тема\",\"visible\":false},{\"pressed\":\"true\",\"label\":\"Тёмная тема\",\"visible\":true}]"
+    },
+    {
+      "name": "dark@1440: aria-pressed reflects theme",
+      "ok": true,
+      "detail": "[{\"pressed\":\"true\",\"label\":\"Тёмная тема\",\"visible\":false},{\"pressed\":\"true\",\"label\":\"Тёмная тема\",\"visible\":true}]"
+    },
+    {
+      "name": "dark@1440: no inline scripts in document",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440: theme.js before style.css in <head>",
+      "ok": true,
+      "detail": "{\"script\":5,\"style\":7}"
+    },
+    {
+      "name": "dark@1440: theme.js network request starts before style.css",
+      "ok": true,
+      "detail": "{\"theme\":10,\"style\":10.199999988079071}"
+    },
+    {
+      "name": "dark@1440: opening dialog makes one /folders request",
+      "ok": true,
+      "detail": "{\"folders\":1,\"sizes\":0}"
+    },
+    {
+      "name": "dark@1440: opening dialog makes no /api/cloud/sizes request",
+      "ok": true,
+      "detail": "{\"folders\":1,\"sizes\":0}"
+    },
+    {
+      "name": "dark@1440: dialog opens on «Что скачать»",
+      "ok": true,
+      "detail": "{\"open\":true,\"step\":\"2\"}"
+    },
+    {
+      "name": "dark@1440: root cloud level has 4 folders",
+      "ok": true,
+      "detail": "4"
+    },
+    {
+      "name": "dark@1440: rows keep icon, checkbox and name",
+      "ok": true,
+      "detail": "[{\"name\":\"Видео\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Видео\",\"tags\":[],\"metaCount\":0},{\"name\":\"Документы\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Документы\",\"tags\":[],\"metaCount\":0},{\"name\":\"Музыка\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Музыка\",\"tags\":[],\"metaCount\":0},{\"name\":\"Фотографии\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Фотографии Пустая папка на сервере\",\"tags\":[\"Пустая папка на сервере\"],\"metaCount\":0}]"
+    },
+    {
+      "name": "dark@1440: no size metadata in folder rows",
+      "ok": true,
+      "detail": "[\"Видео\",\"Документы\",\"Музыка\",\"Фотографии Пустая папка на сервере\"]"
+    },
+    {
+      "name": "dark@1440: no size/count text in rows",
+      "ok": true,
+      "detail": "[\"Видео\",\"Документы\",\"Музыка\",\"Фотографии Пустая папка на сервере\"]"
+    },
+    {
+      "name": "dark@1440: row text is name plus tags only",
+      "ok": true,
+      "detail": "[\"Видео\",\"Документы\",\"Музыка\",\"Фотографии Пустая папка на сервере\"]"
+    },
+    {
+      "name": "dark@1440: three expanded levels each make one /folders request",
+      "ok": true,
+      "detail": "{\"folders\":3,\"sizes\":0}"
+    },
+    {
+      "name": "dark@1440: expanding levels makes no /api/cloud/sizes request",
+      "ok": true,
+      "detail": "{\"folders\":3,\"sizes\":0}"
+    },
+    {
+      "name": "dark@1440: expanded tree has no size metadata",
+      "ok": true,
+      "detail": "{\"rows\":8,\"rowMetas\":0}"
+    },
+    {
+      "name": "dark@1440: folder selection works",
+      "ok": true,
+      "detail": "{\"checked\":[\"Фотографии\",\"Фотографии/2023\",\"Фотографии/2024\"],\"footer\":\"\"}"
+    },
+    {
+      "name": "dark@1440: «Весь диск» selects and locks all rows",
+      "ok": true,
+      "detail": "{\"title\":\"Что скачать\",\"checked\":[\"Видео\",\"Документы\",\"Документы/Личное\",\"Документы/Работа\",\"Музыка\",\"Фотографии\",\"Фотографии/2023\",\"Фотографии/2024\"],\"disabled\":8,\"total\":8}"
+    },
+    {
+      "name": "dark@1440: leaving «Весь диск» returns to normal tree",
+      "ok": true,
+      "detail": "{\"disabled\":0,\"checked\":0,\"primary\":\"Далее\",\"primaryDisabled\":true}"
+    },
+    {
+      "name": "dark@1440: folder can be selected after leaving «Весь диск»",
+      "ok": true,
+      "detail": "[\"Фотографии\",\"Фотографии/2023\",\"Фотографии/2024\"]"
+    },
+    {
+      "name": "dark@1440: no horizontal overflow in dialog",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "dark@1440: review makes no /api/cloud/sizes request",
+      "ok": true,
+      "detail": "{\"sizes\":0,\"preflight\":1,\"folders\":0}"
+    },
+    {
+      "name": "dark@1440: preflight still computes the total",
+      "ok": true,
+      "detail": "{\"sizes\":0,\"preflight\":1,\"folders\":0}"
+    },
+    {
+      "name": "dark@1440: review step rendered",
+      "ok": true,
+      "detail": "{\"step\":\"3\",\"estimate\":\"8 файлов · 1 ГБ\"}"
+    },
+    {
+      "name": "dark@1440: review total counted by preflight",
+      "ok": true,
+      "detail": "8 файлов · 1 ГБ"
+    },
+    {
+      "name": "dark@1440: no horizontal overflow on review",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "console dark@1440: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console dark@1440: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console dark@1440: no JS log errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console dark@1440: no CSP/security violations",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console dark@1440: no API responses >= 400",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390: theme applied from prefers-color-scheme",
+      "ok": true,
+      "detail": "{\"theme\":\"light\",\"stored\":null}"
+    },
+    {
+      "name": "light@390: html color-scheme",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "light@390: body background",
+      "ok": true,
+      "detail": "rgb(245, 244, 248) vs rgb(245, 244, 248)"
+    },
+    {
+      "name": "light@390: meta theme-color",
+      "ok": true,
+      "detail": "#f5f4f8"
+    },
+    {
+      "name": "light@390: no horizontal overflow on home",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "light@390: theme and background set at DOMContentLoaded",
+      "ok": true,
+      "detail": "{\"at\":\"DOMContentLoaded\",\"ready\":\"interactive\",\"theme\":\"light\",\"colorScheme\":\"light\",\"bg\":\"rgb(245, 244, 248)\",\"page\":\"#f5f4f8\"}"
+    },
+    {
+      "name": "light@390: data-theme already correct at first readystatechange",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390: one visible theme toggle",
+      "ok": true,
+      "detail": "[{\"pressed\":\"false\",\"label\":\"Тёмная тема\",\"visible\":false},{\"pressed\":\"false\",\"label\":\"Тёмная тема\",\"visible\":true}]"
+    },
+    {
+      "name": "light@390: aria-pressed reflects theme",
+      "ok": true,
+      "detail": "[{\"pressed\":\"false\",\"label\":\"Тёмная тема\",\"visible\":false},{\"pressed\":\"false\",\"label\":\"Тёмная тема\",\"visible\":true}]"
+    },
+    {
+      "name": "light@390: no inline scripts in document",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390: theme.js before style.css in <head>",
+      "ok": true,
+      "detail": "{\"script\":5,\"style\":7}"
+    },
+    {
+      "name": "light@390: theme.js network request starts before style.css",
+      "ok": true,
+      "detail": "{\"theme\":8.700000017881393,\"style\":8.900000005960464}"
+    },
+    {
+      "name": "light@390: opening dialog makes one /folders request",
+      "ok": true,
+      "detail": "{\"folders\":1,\"sizes\":0}"
+    },
+    {
+      "name": "light@390: opening dialog makes no /api/cloud/sizes request",
+      "ok": true,
+      "detail": "{\"folders\":1,\"sizes\":0}"
+    },
+    {
+      "name": "light@390: dialog opens on «Что скачать»",
+      "ok": true,
+      "detail": "{\"open\":true,\"step\":\"2\"}"
+    },
+    {
+      "name": "light@390: root cloud level has 4 folders",
+      "ok": true,
+      "detail": "4"
+    },
+    {
+      "name": "light@390: rows keep icon, checkbox and name",
+      "ok": true,
+      "detail": "[{\"name\":\"Видео\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Видео\",\"tags\":[],\"metaCount\":0},{\"name\":\"Документы\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Документы\",\"tags\":[],\"metaCount\":0},{\"name\":\"Музыка\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Музыка\",\"tags\":[],\"metaCount\":0},{\"name\":\"Фотографии\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Фотографии Пустая папка на сервере\",\"tags\":[\"Пустая папка на сервере\"],\"metaCount\":0}]"
+    },
+    {
+      "name": "light@390: no size metadata in folder rows",
+      "ok": true,
+      "detail": "[\"Видео\",\"Документы\",\"Музыка\",\"Фотографии Пустая папка на сервере\"]"
+    },
+    {
+      "name": "light@390: no size/count text in rows",
+      "ok": true,
+      "detail": "[\"Видео\",\"Документы\",\"Музыка\",\"Фотографии Пустая папка на сервере\"]"
+    },
+    {
+      "name": "light@390: row text is name plus tags only",
+      "ok": true,
+      "detail": "[\"Видео\",\"Документы\",\"Музыка\",\"Фотографии Пустая папка на сервере\"]"
+    },
+    {
+      "name": "light@390: three expanded levels each make one /folders request",
+      "ok": true,
+      "detail": "{\"folders\":3,\"sizes\":0}"
+    },
+    {
+      "name": "light@390: expanding levels makes no /api/cloud/sizes request",
+      "ok": true,
+      "detail": "{\"folders\":3,\"sizes\":0}"
+    },
+    {
+      "name": "light@390: expanded tree has no size metadata",
+      "ok": true,
+      "detail": "{\"rows\":8,\"rowMetas\":0}"
+    },
+    {
+      "name": "light@390: folder selection works",
+      "ok": true,
+      "detail": "{\"checked\":[\"Фотографии\",\"Фотографии/2023\",\"Фотографии/2024\"],\"footer\":\"\"}"
+    },
+    {
+      "name": "light@390: «Весь диск» selects and locks all rows",
+      "ok": true,
+      "detail": "{\"title\":\"Что скачать\",\"checked\":[\"Видео\",\"Документы\",\"Документы/Личное\",\"Документы/Работа\",\"Музыка\",\"Фотографии\",\"Фотографии/2023\",\"Фотографии/2024\"],\"disabled\":8,\"total\":8}"
+    },
+    {
+      "name": "light@390: leaving «Весь диск» returns to normal tree",
+      "ok": true,
+      "detail": "{\"disabled\":0,\"checked\":0,\"primary\":\"Далее\",\"primaryDisabled\":true}"
+    },
+    {
+      "name": "light@390: folder can be selected after leaving «Весь диск»",
+      "ok": true,
+      "detail": "[\"Фотографии\",\"Фотографии/2023\",\"Фотографии/2024\"]"
+    },
+    {
+      "name": "light@390: no horizontal overflow in dialog",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "light@390: review makes no /api/cloud/sizes request",
+      "ok": true,
+      "detail": "{\"sizes\":0,\"preflight\":1,\"folders\":0}"
+    },
+    {
+      "name": "light@390: preflight still computes the total",
+      "ok": true,
+      "detail": "{\"sizes\":0,\"preflight\":1,\"folders\":0}"
+    },
+    {
+      "name": "light@390: review step rendered",
+      "ok": true,
+      "detail": "{\"step\":\"3\",\"estimate\":\"8 файлов · 1 ГБ\"}"
+    },
+    {
+      "name": "light@390: review total counted by preflight",
+      "ok": true,
+      "detail": "8 файлов · 1 ГБ"
+    },
+    {
+      "name": "light@390: no horizontal overflow on review",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "console light@390: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console light@390: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console light@390: no JS log errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console light@390: no CSP/security violations",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console light@390: no API responses >= 400",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390: theme applied from prefers-color-scheme",
+      "ok": true,
+      "detail": "{\"theme\":\"dark\",\"stored\":null}"
+    },
+    {
+      "name": "dark@390: html color-scheme",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "dark@390: body background",
+      "ok": true,
+      "detail": "rgb(22, 21, 26) vs rgb(22, 21, 26)"
+    },
+    {
+      "name": "dark@390: meta theme-color",
+      "ok": true,
+      "detail": "#16151a"
+    },
+    {
+      "name": "dark@390: no horizontal overflow on home",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "dark@390: theme and background set at DOMContentLoaded",
+      "ok": true,
+      "detail": "{\"at\":\"DOMContentLoaded\",\"ready\":\"interactive\",\"theme\":\"dark\",\"colorScheme\":\"dark\",\"bg\":\"rgb(22, 21, 26)\",\"page\":\"#16151a\"}"
+    },
+    {
+      "name": "dark@390: data-theme already correct at first readystatechange",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390: one visible theme toggle",
+      "ok": true,
+      "detail": "[{\"pressed\":\"true\",\"label\":\"Тёмная тема\",\"visible\":false},{\"pressed\":\"true\",\"label\":\"Тёмная тема\",\"visible\":true}]"
+    },
+    {
+      "name": "dark@390: aria-pressed reflects theme",
+      "ok": true,
+      "detail": "[{\"pressed\":\"true\",\"label\":\"Тёмная тема\",\"visible\":false},{\"pressed\":\"true\",\"label\":\"Тёмная тема\",\"visible\":true}]"
+    },
+    {
+      "name": "dark@390: no inline scripts in document",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390: theme.js before style.css in <head>",
+      "ok": true,
+      "detail": "{\"script\":5,\"style\":7}"
+    },
+    {
+      "name": "dark@390: theme.js network request starts before style.css",
+      "ok": true,
+      "detail": "{\"theme\":9.399999976158142,\"style\":9.5}"
+    },
+    {
+      "name": "dark@390: opening dialog makes one /folders request",
+      "ok": true,
+      "detail": "{\"folders\":1,\"sizes\":0}"
+    },
+    {
+      "name": "dark@390: opening dialog makes no /api/cloud/sizes request",
+      "ok": true,
+      "detail": "{\"folders\":1,\"sizes\":0}"
+    },
+    {
+      "name": "dark@390: dialog opens on «Что скачать»",
+      "ok": true,
+      "detail": "{\"open\":true,\"step\":\"2\"}"
+    },
+    {
+      "name": "dark@390: root cloud level has 4 folders",
+      "ok": true,
+      "detail": "4"
+    },
+    {
+      "name": "dark@390: rows keep icon, checkbox and name",
+      "ok": true,
+      "detail": "[{\"name\":\"Видео\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Видео\",\"tags\":[],\"metaCount\":0},{\"name\":\"Документы\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Документы\",\"tags\":[],\"metaCount\":0},{\"name\":\"Музыка\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Музыка\",\"tags\":[],\"metaCount\":0},{\"name\":\"Фотографии\",\"hasIcon\":true,\"hasCheck\":true,\"text\":\"Фотографии Пустая папка на сервере\",\"tags\":[\"Пустая папка на сервере\"],\"metaCount\":0}]"
+    },
+    {
+      "name": "dark@390: no size metadata in folder rows",
+      "ok": true,
+      "detail": "[\"Видео\",\"Документы\",\"Музыка\",\"Фотографии Пустая папка на сервере\"]"
+    },
+    {
+      "name": "dark@390: no size/count text in rows",
+      "ok": true,
+      "detail": "[\"Видео\",\"Документы\",\"Музыка\",\"Фотографии Пустая папка на сервере\"]"
+    },
+    {
+      "name": "dark@390: row text is name plus tags only",
+      "ok": true,
+      "detail": "[\"Видео\",\"Документы\",\"Музыка\",\"Фотографии Пустая папка на сервере\"]"
+    },
+    {
+      "name": "dark@390: three expanded levels each make one /folders request",
+      "ok": true,
+      "detail": "{\"folders\":3,\"sizes\":0}"
+    },
+    {
+      "name": "dark@390: expanding levels makes no /api/cloud/sizes request",
+      "ok": true,
+      "detail": "{\"folders\":3,\"sizes\":0}"
+    },
+    {
+      "name": "dark@390: expanded tree has no size metadata",
+      "ok": true,
+      "detail": "{\"rows\":8,\"rowMetas\":0}"
+    },
+    {
+      "name": "dark@390: folder selection works",
+      "ok": true,
+      "detail": "{\"checked\":[\"Фотографии\",\"Фотографии/2023\",\"Фотографии/2024\"],\"footer\":\"\"}"
+    },
+    {
+      "name": "dark@390: «Весь диск» selects and locks all rows",
+      "ok": true,
+      "detail": "{\"title\":\"Что скачать\",\"checked\":[\"Видео\",\"Документы\",\"Документы/Личное\",\"Документы/Работа\",\"Музыка\",\"Фотографии\",\"Фотографии/2023\",\"Фотографии/2024\"],\"disabled\":8,\"total\":8}"
+    },
+    {
+      "name": "dark@390: leaving «Весь диск» returns to normal tree",
+      "ok": true,
+      "detail": "{\"disabled\":0,\"checked\":0,\"primary\":\"Далее\",\"primaryDisabled\":true}"
+    },
+    {
+      "name": "dark@390: folder can be selected after leaving «Весь диск»",
+      "ok": true,
+      "detail": "[\"Фотографии\",\"Фотографии/2023\",\"Фотографии/2024\"]"
+    },
+    {
+      "name": "dark@390: no horizontal overflow in dialog",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "dark@390: review makes no /api/cloud/sizes request",
+      "ok": true,
+      "detail": "{\"sizes\":0,\"preflight\":1,\"folders\":0}"
+    },
+    {
+      "name": "dark@390: preflight still computes the total",
+      "ok": true,
+      "detail": "{\"sizes\":0,\"preflight\":1,\"folders\":0}"
+    },
+    {
+      "name": "dark@390: review step rendered",
+      "ok": true,
+      "detail": "{\"step\":\"3\",\"estimate\":\"8 файлов · 1 ГБ\"}"
+    },
+    {
+      "name": "dark@390: review total counted by preflight",
+      "ok": true,
+      "detail": "8 файлов · 1 ГБ"
+    },
+    {
+      "name": "dark@390: no horizontal overflow on review",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "console dark@390: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console dark@390: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console dark@390: no JS log errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console dark@390: no CSP/security violations",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console dark@390: no API responses >= 400",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "toggle: starts light under light OS",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "toggle: click switches to dark and saves",
+      "ok": true,
+      "detail": "{\"theme\":\"dark\",\"stored\":\"dark\"}"
+    },
+    {
+      "name": "toggle: aria-pressed=true after switching to dark",
+      "ok": true,
+      "detail": "[{\"pressed\":\"true\",\"label\":\"Тёмная тема\",\"visible\":false},{\"pressed\":\"true\",\"label\":\"Тёмная тема\",\"visible\":true}]"
+    },
+    {
+      "name": "toggle: meta theme-color updated",
+      "ok": true,
+      "detail": "#16151a"
+    },
+    {
+      "name": "toggle: saved dark survives reload under light OS",
+      "ok": true,
+      "detail": "{\"theme\":\"dark\",\"stored\":\"dark\"}"
+    },
+    {
+      "name": "toggle: saved theme applied before DOMContentLoaded (no flash)",
+      "ok": true,
+      "detail": "{\"at\":\"DOMContentLoaded\",\"ready\":\"interactive\",\"theme\":\"dark\",\"colorScheme\":\"dark\",\"bg\":\"rgb(22, 21, 26)\",\"page\":\"#16151a\"}"
+    },
+    {
+      "name": "console toggle: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console toggle: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console toggle: no JS log errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console toggle: no CSP/security violations",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console toggle: no API responses >= 400",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "fallback: no saved theme uses dark system preference",
+      "ok": true,
+      "detail": "{\"theme\":\"dark\",\"stored\":null}"
+    }
+  ],
+  "problems": [],
+  "console": {
+    "errors": [],
+    "exceptions": [],
+    "logErrors": [],
+    "security": [],
+    "api4xx": []
+  },
+  "summary": {
+    "checks": 173,
+    "problems": 0
+  }
+}

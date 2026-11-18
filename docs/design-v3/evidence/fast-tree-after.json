@@ -1,0 +1,140 @@
+{
+  "base": "http://127.0.0.1:8877",
+  "phases": {
+    "openDialog": {
+      "requests": [
+        "200 /api/accounts/a1/folders?path=",
+        "200 /api/jobs/existing"
+      ],
+      "folders": 1,
+      "sizes": 0,
+      "existing": 1
+    },
+    "expand3Levels": {
+      "requests": [
+        "200 /api/accounts/a1/folders?path=%D0%A4%D0%BE%D1%82%D0%BE%D0%B3%D1%80%D0%B0%D1%84%D0%B8%D0%B8",
+        "200 /api/jobs/existing",
+        "200 /api/state",
+        "200 /api/system",
+        "200 /api/accounts/a1/folders?path=%D0%A4%D0%BE%D1%82%D0%BE%D0%B3%D1%80%D0%B0%D1%84%D0%B8%D0%B8%2F2024",
+        "200 /api/system",
+        "200 /api/state",
+        "200 /api/accounts/a1/folders?path=%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B",
+        "200 /api/jobs/existing",
+        "200 /api/state",
+        "200 /api/system"
+      ],
+      "folders": 3,
+      "sizes": 0,
+      "existing": 2
+    },
+    "selectAndAll": {
+      "requests": [],
+      "folders": 0,
+      "sizes": 0,
+      "existing": 0,
+      "preflight": 0
+    },
+    "review": {
+      "requests": [
+        "200 /api/preflight",
+        "200 /api/state",
+        "200 /api/system"
+      ],
+      "folders": 0,
+      "sizes": 0,
+      "preflight": 1
+    }
+  },
+  "console": {
+    "initial": {
+      "errors": [],
+      "logErrors": [],
+      "security": []
+    },
+    "final": {
+      "errors": [],
+      "logErrors": [],
+      "security": [],
+      "exceptions": []
+    }
+  },
+  "dom": {
+    "openDialog": {
+      "dialogOpen": true,
+      "step": "2",
+      "rows": [
+        "Видео",
+        "Документы",
+        "Музыка",
+        "Фотографии"
+      ],
+      "rowMetas": 0,
+      "rowTexts": [
+        "Видео",
+        "Документы",
+        "Музыка",
+        "Фотографии Пустая папка на сервере"
+      ],
+      "tags": [
+        "Пустая папка на сервере"
+      ],
+      "hasExpand": true
+    },
+    "expanded": {
+      "rows": 8,
+      "rowMetas": 0,
+      "rowTexts": [
+        "Видео",
+        "Документы",
+        "Личное",
+        "Работа",
+        "Музыка",
+        "Фотографии Пустая папка на сервере",
+        "2023",
+        "2024"
+      ]
+    },
+    "selection": {
+      "selectDom": {
+        "selected": [
+          "Фотографии",
+          "Фотографии/2023",
+          "Фотографии/2024"
+        ],
+        "indeterminate": [],
+        "footer": ""
+      },
+      "menuDom": {
+        "found": true,
+        "checked": true
+      },
+      "allDom": {
+        "title": "Что скачать",
+        "selected": [
+          "Видео",
+          "Документы",
+          "Документы/Личное",
+          "Документы/Работа",
+          "Музыка",
+          "Фотографии",
+          "Фотографии/2023",
+          "Фотографии/2024"
+        ],
+        "disabled": 8
+      }
+    },
+    "review": {
+      "step": "3",
+      "title": "Перед скачиванием",
+      "estimate": "8 файлов · 1 ГБ",
+      "bodyText": "Перед скачиванием\nИсточник\nВесь диск\nИзменить\nПапка на сервере\n/tmp/cf-ft/downloads\nИзменить\nК скачиванию\n8 файлов · 1 ГБ\nСвободно\n90,5 ГБ\n\nОбъём: 8 файлов · 1 ГБ\n\nНазад\nСкачать"
+    }
+  },
+  "totals": {
+    "folders": 4,
+    "sizes": 0,
+    "existing": 3,
+    "preflight": 1
+  }
+}

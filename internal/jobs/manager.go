@@ -720,7 +720,17 @@ func (m *Manager) Resume(ctx context.Context, id string) (store.Job, error) {
 			j.Check = nil
 			j.StartedAt = startedAt
 			j.FinishedAt = time.Time{}
-			j.Stats = store.Stats{}
+			// rclone starts a fresh counter for the resumed engine job, so the
+			// amount already transferred is remembered and added to the new
+			// numbers. The old bytes and totals stay visible until the first
+			// fresh poll arrives; only the live quantities are cleared.
+			j.BytesBase = j.Stats.Bytes
+			j.Stats = store.Stats{
+				Bytes:          j.Stats.Bytes,
+				TotalBytes:     j.Stats.TotalBytes,
+				Transfers:      j.Stats.Transfers,
+				TotalTransfers: j.Stats.TotalTransfers,
+			}
 			return true
 		}); err != nil {
 			return err
@@ -961,8 +971,20 @@ func (m *Manager) pollOne(ctx context.Context, job store.Job) bool {
 			if j.Status != store.StatusRunning || j.RcloneJobID != job.RcloneJobID {
 				return false
 			}
+			// rclone counts one engine job: after a resume it reports only the
+			// remainder. BytesBase restores the cumulative amount, and neither
+			// the transferred bytes nor the planned total may shrink, so the
+			// card never jumps back to a smaller percentage.
+			bytes := j.BytesBase + stats.Bytes
+			total := j.BytesBase + stats.TotalBytes
+			if bytes < j.Stats.Bytes {
+				bytes = j.Stats.Bytes
+			}
+			if total < j.Stats.TotalBytes {
+				total = j.Stats.TotalBytes
+			}
 			j.Stats = store.Stats{
-				Bytes: stats.Bytes, TotalBytes: stats.TotalBytes, Speed: stats.Speed,
+				Bytes: bytes, TotalBytes: total, Speed: stats.Speed,
 				ETA: stats.ETA, Transfers: stats.Transfers, TotalTransfers: stats.TotalTransfers,
 				Errors: stats.Errors, ElapsedTime: stats.ElapsedTime,
 			}

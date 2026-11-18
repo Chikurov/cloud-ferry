@@ -103,6 +103,12 @@ let yandexAuth = {
   tickTimer: null,
 };
 const jobActionBusy = new Set();
+/* Задачи, которые пользователь продолжил в этой сессии: в очереди карточка
+   говорит «Продолжаем…», а не «Начинается». */
+const resumedJobs = new Set();
+/* Нижняя граница показанного процента: между опросами полоса не откатывается
+   назад, «замирание» допустимо. */
+const jobPercentFloor = new Map();
 let focusStartAfterRender = false;
 let pendingFocusKey = '';
 /* Одна сессия диалога «Новое скачивание».
@@ -139,9 +145,6 @@ let folder = {
   filePanelPath: '',
   files: new Map(),
   filesInflight: new Map(),
-  /* Размеры папок текущего уровня: path → {bytes, files} | {error:true}. */
-  sizes: new Map(),
-  sizePending: new Set(),
   /* Уже скачанные: по одному ответу на видимый уровень. */
   existingPending: new Set(),
   existingFailed: new Set(),
@@ -152,9 +155,6 @@ let folder = {
 /* Создание папок появляется вместе с POST /api/fs/dirs. Если сервер этой
    ручки не знает (404/405), кнопку убираем до перезагрузки страницы. */
 let folderCreateUnavailable = false;
-/* POST /api/cloud/sizes мог появиться позже фронтенда: на 404 просто больше
-   не запрашиваем размеры и не показываем их — без ошибок и заглушек. */
-let cloudSizesUnavailable = false;
 /* GET /api/accounts/{id}/files появился позже пикера: если сервер ответил
    404/405, кнопки «Показать файлы» убираем и оставляем прежний пикер. */
 let cloudFilesUnavailable = false;
@@ -2463,6 +2463,48 @@ function percentOf(job) {
   return 0;
 }
 
+/* Процент только растёт: после продолжения rclone может прислать меньший
+   знаменатель, и полоса не должна прыгать назад. «Замирание» допустимо. */
+function shownPercent(job) {
+  if (job.status === 'done') return 100;
+  const fresh = percentOf(job);
+  const floor = jobPercentFloor.get(job.id);
+  const value = floor === undefined ? fresh : Math.max(fresh, floor);
+  if (Number(job.stats && job.stats.totalBytes) > 0 || value > 0) jobPercentFloor.set(job.id, value);
+  return value;
+}
+
+/* Сколько было скачано к началу текущей попытки. Сервер присылает байты уже
+   кумулятивно, а это значение показывает, что первый свежий пакет пришёл. */
+function jobBaseBytes(job) {
+  return Math.max(0, Number(job.bytesBase) || 0);
+}
+
+/* Возобновлена ли задача: в этой сессии или прошлой попыткой, которую пережил
+   сервер (тогда он хранит ненулевой bytesBase). */
+function jobResumed(job) {
+  return resumedJobs.has(job.id) || jobBaseBytes(job) > 0;
+}
+
+/* Движок ещё готовит запуск: задача в очереди, rclone сканирует облако или не
+   отдал ещё ни одного нового байта. Скорости и ETA в это время нет. */
+function jobPreparing(job) {
+  if (job.status === 'queued') return true;
+  if (job.status !== 'running') return false;
+  const stats = job.stats || {};
+  return !(Number(stats.elapsedTime) > 0) || !(Number(stats.bytes) > jobBaseBytes(job));
+}
+
+/* Подпись состояния карточки: во время подготовки движка скорость и ETA ещё
+   ни о чём не говорят, поэтому показываем, что происходит. */
+function jobStateText(job) {
+  if (job.status === 'done') return 'Завершена';
+  if (PAUSED_STATUSES.includes(job.status)) return statusOf(job)[0];
+  if (job.status === 'queued') return jobResumed(job) ? 'Продолжаем…' : 'Начинается';
+  if (job.status === 'running' && jobPreparing(job)) return 'Проверяем, что уже скачано…';
+  return jobMeta(job);
+}
+
 function jobSourceLabel(job) {
   const paths = jobSourcePaths(job);
   const files = jobSourceFiles(job);
@@ -2541,12 +2583,24 @@ function humanPair(used, total) {
   return `${format(used)} из ${format(total)}\u00A0${units[unit]}`;
 }
 
-/* «3 папки · 12,4 из 29,0 ГБ» — понятный объём в «Сейчас». */
-function jobSizeText(job) {
+/* «40 % · 12,4 из 29,0 ГБ» — прогресс карточки. У завершённой задачи полный
+   объём: файлы на месте, разница — уже существовавшие файлы, которые rclone
+   пропустил. */
+function jobProgressText(job) {
   const stats = job.stats || {};
-  if (stats.totalBytes > 0) return humanPair(stats.bytes, stats.totalBytes);
-  return stats.bytes > 0 ? humanBytes(stats.bytes) : '';
-
+  let size = '';
+  if (job.status === 'done') {
+    const total = Number(stats.totalBytes) || Number(stats.bytes) || 0;
+    size = total > 0 ? humanBytes(total) : '';
+  } else if (Number(stats.totalBytes) > 0) {
+    size = humanPair(stats.bytes, stats.totalBytes);
+  } else if (Number(stats.bytes) > 0) {
+    size = humanBytes(stats.bytes);
+  }
+  const percent = shownPercent(job);
+  const known = job.status === 'done' || Number(stats.totalBytes) > 0 || percent > 0;
+  if (!known) return '';
+  return size ? `${percent} % · ${size}` : `${percent} %`;
 }
 
 function homeMarkup() {
@@ -2664,7 +2718,7 @@ function renderJobList(jobs) {
       row.className = 'cell cell--now job-row';
       row.dataset.id = job.id;
       row.innerHTML = `<div class="task-head">${icon('folder')}<h2></h2><button class="btn btn--secondary" type="button"></button></div>
-        <div class="now-body"><progress max="100"></progress><div class="task-stats"><span></span><span></span></div><div class="job-error"></div><div class="job-failure" role="status" hidden></div></div>`;
+        <div class="now-body"><div class="progress job-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div><div class="task-stats"><span></span><span></span></div><div class="job-error"></div><div class="job-failure" role="status" hidden></div></div>`;
       list.append(row);
     }
     const paths = [...jobSourcePaths(job), ...jobSourceFiles(job)];
@@ -2683,18 +2737,32 @@ function renderJobList(jobs) {
       button.title = label;
       button.setAttribute('aria-label', label + ' · ' + title);
       button.innerHTML = icon(done ? 'close' : paused ? 'resume' : 'pause');
+      /* В очереди кнопка остаётся доступной — пауза сработает, — но
+         aria-busy честно говорит, что запуск ещё не завершён. */
+      button.setAttribute('aria-busy', job.status === 'queued' ? 'true' : 'false');
       const error = row.querySelector('.job-error');
       error.hidden = !failed;
       if (failed) error.innerHTML = escapeHtml(job.errorAdvice || job.errorTitle || 'Не удалось скачать') + failureListMarkup(job.failures || [], job.failureCount || 0) +
         (job.failureCount ? `<button class="btn btn--quiet" data-action="copy-failures" data-id="${escapeHtml(job.id)}">Скопировать список</button>` : '');
     }
-    const progress = row.querySelector('progress');
+    /* Пока движок готовится или пересканирует облако, полоса показывает, что
+       работа идёт, а старый процент остаётся видимым и приглушённым. */
+    const preparing = jobPreparing(job);
+    const percent = shownPercent(job);
+    const known = done || Number(job.stats?.totalBytes) > 0 || percent > 0;
+    const stateText = jobStateText(job);
+    const progress = row.querySelector('.job-progress');
     progress.setAttribute('aria-label', title);
-    if (job.stats?.totalBytes > 0 || paused || done) progress.value = percentOf(job);
-    else progress.removeAttribute('value');
+    progress.classList.toggle('progress--prepare', preparing);
+    progress.querySelector('i').style.width = `${known ? percent : 0}%`;
+    if (known) progress.setAttribute('aria-valuenow', String(percent));
+    else progress.removeAttribute('aria-valuenow');
+    const valueText = [known ? `${percent} %` : '', stateText].filter(Boolean).join(', ');
+    if (valueText) progress.setAttribute('aria-valuetext', valueText);
+    else progress.removeAttribute('aria-valuetext');
     const facts = row.querySelectorAll('.task-stats span');
-    facts[0].textContent = jobSizeText(job);
-    facts[1].textContent = done ? 'Завершена' : paused ? statusOf(job)[0] : job.status === 'running' && !(job.stats?.bytes > 0) ? 'Начинается' : jobMeta(job);
+    facts[0].textContent = jobProgressText(job);
+    facts[1].textContent = stateText;
     renderJobFailure(row, job);
   }
   for (const row of stale.values()) {
@@ -2922,7 +2990,13 @@ async function resumeJob(id, trigger) {
     if (trigger && trigger.isConnected) setBusy(trigger, false);
   }
   if (failed) throw failed;
+  /* Карточка сразу говорит «Продолжаем…», а не «Начинается», и держит
+     процент, показанный до паузы, пока не придёт первый свежий пакет. */
   const job = state.jobs.find((item) => item.id === id);
+  resumedJobs.add(id);
+  if (job) {
+    jobPercentFloor.set(id, Math.max(jobPercentFloor.get(id) || 0, shownPercent(job)));
+  }
   pendingFocusKey = trigger && trigger.dataset ? (trigger.dataset.focusKey || '') : '';
   try {
     showToast({
@@ -2993,7 +3067,6 @@ const ESTIMATE_SLOW_MS = 20000;
 let reviewWaitTimer = 0;
 /* /files отдаёт максимум 200 файлов; count — размер ответа, не всего списка. */
 const CLOUD_FILES_LIMIT = 200;
-const CLOUD_SIZES_BATCH = 20;
 /* «+N» на шаге 3 раскрывает остальные чипы выбора. */
 let reviewShowAll = false;
 
@@ -3047,8 +3120,6 @@ function folderSession(context, opener) {
     filePanelPath: '',
     files: new Map(),
     filesInflight: new Map(),
-    sizes: new Map(),
-    sizePending: new Set(),
     existingPending: new Set(),
     existingFailed: new Set(),
     existingError: '',
@@ -3693,7 +3764,6 @@ function cloudNodeMarkup(path, depth) {
   const filesButton = !folder.all && cloudFilesAvailable()
     ? `<button class="folder-files-toggle" type="button" data-preview="${escapeHtml(path)}" aria-expanded="${filesOpen}" aria-controls="${escapeHtml(filesPanelId(path))}" aria-label="${filesOpen ? 'Скрыть файлы' : 'Показать файлы'} в папке «${escapeHtml(name)}»">${icon('eye')}</button>`
     : '';
-  const meta = cloudSizesUnavailable ? '' : folderSizeText(path);
   const children = expanded ? cloudNodeChildren(path, depth) : '';
   const panel = !folder.all && filesOpen ? filesPanelMarkup(path) : '';
   const confirm = folder.confirmPath === path ? folderConfirmMarkup(path, name) : '';
@@ -3709,7 +3779,6 @@ function cloudNodeMarkup(path, depth) {
             <span class="folder-row-name" title="${escapeHtml(title)}">${escapeHtml(name)}</span>
             ${tag}
           </span>
-          ${meta ? `<span class="folder-row-meta">${escapeHtml(meta)}</span>` : ''}
         </span>
       </label>
       <div class="folder-row-actions">${filesButton}${expandButton}</div>
@@ -4018,7 +4087,6 @@ async function loadCloudNode(path) {
       truncated: !!data.truncated,
     });
     renderFlow();
-    requestCloudSizes(dirs.map((entry) => entry.path));
     requestExisting(dirs.map((entry) => entry.path));
   } catch (error) {
     if (token !== folderToken) return;
@@ -4218,62 +4286,6 @@ function retryFilePanel(path) {
   entry.limit = CLOUD_FILES_LIMIT;
   renderSourceTree();
   requestCloudFiles(path);
-}
-
-/* --- размеры папок в облаке ---------------------------------------------- */
-
-function folderSizeText(path) {
-  if (cloudSizesUnavailable) return '';
-  const entry = folder.sizes && folder.sizes.get(path);
-  if (!entry) return '\u2026';
-  if (entry.error) return '';
-  return `${formatFiles(entry.files)} · ${humanBytes(entry.bytes)}`;
-}
-
-async function requestCloudSizes(paths) {
-  if (cloudSizesUnavailable) return;
-  const account = currentAccount();
-  if (!account) return;
-  const pending = (Array.isArray(paths) ? paths : []).filter((path) => (
-    path && !folder.sizes.has(path) && !folder.sizePending.has(path)
-  ));
-  if (!pending.length) return;
-  const token = folderToken;
-  for (const path of pending) folder.sizePending.add(path);
-  const chunks = [];
-  for (let index = 0; index < pending.length; index += CLOUD_SIZES_BATCH) {
-    chunks.push(pending.slice(index, index + CLOUD_SIZES_BATCH));
-  }
-  try {
-    for (const chunk of chunks) {
-      try {
-        const data = await api('/api/cloud/sizes', {
-          method: 'POST',
-          timeout: API_TIMEOUT.folders,
-          body: JSON.stringify({ accountId: account.id, paths: chunk }),
-        });
-        if (token !== folderToken) return;
-        const entries = Array.isArray(data && data.entries) ? data.entries : [];
-        for (const entry of entries) {
-          if (!entry || !entry.path) continue;
-          const path = cloudApiPath(entry.path);
-          if (!path) continue;
-          if (entry.error) folder.sizes.set(path, { error: true });
-          else folder.sizes.set(path, { bytes: Number(entry.bytes) || 0, files: Number(entry.files) || 0 });
-        }
-      } catch (error) {
-        if (token !== folderToken) return;
-        if (error && (error.status === 404 || error.status === 405)) {
-          cloudSizesUnavailable = true;
-          break;
-        }
-        for (const path of chunk) folder.sizes.set(path, { error: true });
-      }
-    }
-  } finally {
-    for (const path of pending) folder.sizePending.delete(path);
-    if (token === folderToken && folder.context === 'flow-source') renderSourceTree();
-  }
 }
 
 /* --- что уже скачано в назначение ----------------------------------------- */
@@ -5071,6 +5083,8 @@ $('#home-view').addEventListener('click', async (event) => {
     const job = accountJobs().find(item => item.id === id);
     if (!job || job.status !== 'done') return;
     dismissedJobs.add(id);
+    resumedJobs.delete(id);
+    jobPercentFloor.delete(id);
     try { localStorage.setItem('cloud-ferry.dismissed-jobs', JSON.stringify([...dismissedJobs])); }
     catch { /* Скрытие продолжает работать до перезагрузки страницы. */ }
     renderNow();

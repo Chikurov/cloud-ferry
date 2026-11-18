@@ -1,0 +1,925 @@
+{
+  "generatedAt": "2026-11-18T20:48:57.119Z",
+  "checks": [
+    {
+      "name": "e2e: задача идёт",
+      "ok": true,
+      "detail": "running"
+    },
+    {
+      "name": "e2e: исходно 40 %",
+      "ok": true,
+      "detail": "40 % · 4,8 из 12,0 ГБ"
+    },
+    {
+      "name": "e2e: доступна пауза",
+      "ok": true,
+      "detail": "stop"
+    },
+    {
+      "name": "e2e: пауза сохраняет 40 %",
+      "ok": true,
+      "detail": "40 % · 4,8 из 12,0 ГБ"
+    },
+    {
+      "name": "e2e: подпись «Пауза»",
+      "ok": true,
+      "detail": "Пауза"
+    },
+    {
+      "name": "e2e: несколько опросов во время продолжения",
+      "ok": true,
+      "detail": "71"
+    },
+    {
+      "name": "e2e: процент не убывает",
+      "ok": true,
+      "detail": "40 → 40 → 40 → 40 → 40 → 40 → 40 → 40 → 40 → 40 → 40 → 40 → 40 → 40 → 40 → 40 → 40 → 40 → 40 → 40 → 42 → 42 → 42 → 42 → 42 → 42 → 44 → 44 → 44 → 44 → 44 → 44 → 46 → 46 → 46 → 46 → 46 → 46 → 46 → 48 → 48 → 48 → 48 → 48 → 48 → 52 → 52 → 52 → 52 → 52 → 52 → 55 → 55 → 55 → 55 → 55 → 55 → 57 → 57 → 57 → 57 → 57 → 57 → 59 → 59 → 59 → 59 → 59 → 59 → 59 → 100"
+    },
+    {
+      "name": "e2e: после продолжения сразу 40 %, не 0",
+      "ok": true,
+      "detail": "40"
+    },
+    {
+      "name": "e2e: показано состояние подготовки после продолжения",
+      "ok": true,
+      "detail": "Пауза | Проверяем, что уже скачано… | 8,4 МБ/с · ≈ 5 мин | 8,4 МБ/с · ≈ 4 мин | 8,4 МБ/с · ≈ 3 мин | 8,4 МБ/с · ≈ 2 мин | 8,4 МБ/с · ≈ 1 мин | Завершена"
+    },
+    {
+      "name": "e2e: «Начинается» после продолжения нет",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "e2e: анимация подготовки включалась",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "e2e: задача завершилась",
+      "ok": true,
+      "detail": "done"
+    },
+    {
+      "name": "e2e: финал 100 % и полный объём",
+      "ok": true,
+      "detail": "100 % · 12 ГБ"
+    },
+    {
+      "name": "e2e: подпись «Завершена»",
+      "ok": true,
+      "detail": "Завершена"
+    },
+    {
+      "name": "e2e: bytesBase сохранён при продолжении",
+      "ok": true,
+      "detail": "5153960755"
+    },
+    {
+      "name": "e2e: байты кумулятивны",
+      "ok": true,
+      "detail": "8106750771"
+    },
+    {
+      "name": "e2e: знаменатель не уменьшился",
+      "ok": true,
+      "detail": "12884901888"
+    },
+    {
+      "name": "e2e: API отдаёт done",
+      "ok": true,
+      "detail": "done"
+    },
+    {
+      "name": "e2e: нет горизонтального скролла",
+      "ok": true,
+      "detail": "{\"docScroll\":1440,\"bodyScroll\":1440,\"innerWidth\":1440}"
+    },
+    {
+      "name": "e2e: консоль без ошибок (кроме известного CSP-предупреждения)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "e2e: CSP-предупреждение только от inline-скрипта темы",
+      "ok": true,
+      "detail": "2"
+    }
+  ],
+  "problems": [],
+  "percents": [
+    40,
+    40,
+    40,
+    40,
+    40,
+    40,
+    40,
+    40,
+    40,
+    40,
+    40,
+    40,
+    40,
+    40,
+    40,
+    40,
+    40,
+    40,
+    40,
+    40,
+    42,
+    42,
+    42,
+    42,
+    42,
+    42,
+    44,
+    44,
+    44,
+    44,
+    44,
+    44,
+    46,
+    46,
+    46,
+    46,
+    46,
+    46,
+    46,
+    48,
+    48,
+    48,
+    48,
+    48,
+    48,
+    52,
+    52,
+    52,
+    52,
+    52,
+    52,
+    55,
+    55,
+    55,
+    55,
+    55,
+    55,
+    57,
+    57,
+    57,
+    57,
+    57,
+    57,
+    59,
+    59,
+    59,
+    59,
+    59,
+    59,
+    59,
+    100
+  ],
+  "samples": [
+    {
+      "at": "2026-11-18T20:48:28.430Z",
+      "status": "canceled",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Пауза",
+      "prepare": false,
+      "fill": "40%",
+      "buttonAction": "resume",
+      "buttonBusy": "true"
+    },
+    {
+      "at": "2026-11-18T20:48:28.844Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:29.524Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:29.927Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:30.330Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:30.734Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:31.138Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:31.540Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:31.945Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:32.349Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:32.755Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:33.160Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:33.564Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:33.968Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:34.373Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:34.777Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:35.181Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:35.585Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:35.988Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:36.392Z",
+      "status": "running",
+      "progressText": "40 % · 4,8 из 12,0 ГБ",
+      "stateText": "Проверяем, что уже скачано…",
+      "prepare": true,
+      "fill": "40%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:36.797Z",
+      "status": "running",
+      "progressText": "42 % · 5,0 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 5 мин",
+      "prepare": false,
+      "fill": "42%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:37.202Z",
+      "status": "running",
+      "progressText": "42 % · 5,0 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 5 мин",
+      "prepare": false,
+      "fill": "42%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:37.605Z",
+      "status": "running",
+      "progressText": "42 % · 5,0 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 5 мин",
+      "prepare": false,
+      "fill": "42%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:38.010Z",
+      "status": "running",
+      "progressText": "42 % · 5,0 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 5 мин",
+      "prepare": false,
+      "fill": "42%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:38.412Z",
+      "status": "running",
+      "progressText": "42 % · 5,0 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 5 мин",
+      "prepare": false,
+      "fill": "42%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:38.816Z",
+      "status": "running",
+      "progressText": "42 % · 5,0 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 5 мин",
+      "prepare": false,
+      "fill": "42%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:39.220Z",
+      "status": "running",
+      "progressText": "44 % · 5,3 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 5 мин",
+      "prepare": false,
+      "fill": "44%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:39.624Z",
+      "status": "running",
+      "progressText": "44 % · 5,3 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 5 мин",
+      "prepare": false,
+      "fill": "44%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:40.027Z",
+      "status": "running",
+      "progressText": "44 % · 5,3 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 5 мин",
+      "prepare": false,
+      "fill": "44%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:40.431Z",
+      "status": "running",
+      "progressText": "44 % · 5,3 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 5 мин",
+      "prepare": false,
+      "fill": "44%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:40.834Z",
+      "status": "running",
+      "progressText": "44 % · 5,3 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 5 мин",
+      "prepare": false,
+      "fill": "44%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:41.236Z",
+      "status": "running",
+      "progressText": "44 % · 5,3 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 5 мин",
+      "prepare": false,
+      "fill": "44%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:41.640Z",
+      "status": "running",
+      "progressText": "46 % · 5,5 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 4 мин",
+      "prepare": false,
+      "fill": "46%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:42.044Z",
+      "status": "running",
+      "progressText": "46 % · 5,5 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 4 мин",
+      "prepare": false,
+      "fill": "46%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:42.447Z",
+      "status": "running",
+      "progressText": "46 % · 5,5 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 4 мин",
+      "prepare": false,
+      "fill": "46%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:42.851Z",
+      "status": "running",
+      "progressText": "46 % · 5,5 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 4 мин",
+      "prepare": false,
+      "fill": "46%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:43.255Z",
+      "status": "running",
+      "progressText": "46 % · 5,5 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 4 мин",
+      "prepare": false,
+      "fill": "46%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:43.658Z",
+      "status": "running",
+      "progressText": "46 % · 5,5 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 4 мин",
+      "prepare": false,
+      "fill": "46%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:44.061Z",
+      "status": "running",
+      "progressText": "46 % · 5,5 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 4 мин",
+      "prepare": false,
+      "fill": "46%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:44.465Z",
+      "status": "running",
+      "progressText": "48 % · 5,8 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 4 мин",
+      "prepare": false,
+      "fill": "48%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:44.869Z",
+      "status": "running",
+      "progressText": "48 % · 5,8 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 4 мин",
+      "prepare": false,
+      "fill": "48%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:45.271Z",
+      "status": "running",
+      "progressText": "48 % · 5,8 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 4 мин",
+      "prepare": false,
+      "fill": "48%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:45.675Z",
+      "status": "running",
+      "progressText": "48 % · 5,8 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 4 мин",
+      "prepare": false,
+      "fill": "48%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:46.079Z",
+      "status": "running",
+      "progressText": "48 % · 5,8 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 4 мин",
+      "prepare": false,
+      "fill": "48%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:46.483Z",
+      "status": "running",
+      "progressText": "48 % · 5,8 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 4 мин",
+      "prepare": false,
+      "fill": "48%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:46.886Z",
+      "status": "running",
+      "progressText": "52 % · 6,3 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 3 мин",
+      "prepare": false,
+      "fill": "52%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:47.290Z",
+      "status": "running",
+      "progressText": "52 % · 6,3 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 3 мин",
+      "prepare": false,
+      "fill": "52%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:47.693Z",
+      "status": "running",
+      "progressText": "52 % · 6,3 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 3 мин",
+      "prepare": false,
+      "fill": "52%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:48.096Z",
+      "status": "running",
+      "progressText": "52 % · 6,3 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 3 мин",
+      "prepare": false,
+      "fill": "52%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:48.500Z",
+      "status": "running",
+      "progressText": "52 % · 6,3 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 3 мин",
+      "prepare": false,
+      "fill": "52%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:48.904Z",
+      "status": "running",
+      "progressText": "52 % · 6,3 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 3 мин",
+      "prepare": false,
+      "fill": "52%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:49.308Z",
+      "status": "running",
+      "progressText": "55 % · 6,5 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 2 мин",
+      "prepare": false,
+      "fill": "55%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:49.711Z",
+      "status": "running",
+      "progressText": "55 % · 6,5 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 2 мин",
+      "prepare": false,
+      "fill": "55%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:50.116Z",
+      "status": "running",
+      "progressText": "55 % · 6,5 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 2 мин",
+      "prepare": false,
+      "fill": "55%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:50.520Z",
+      "status": "running",
+      "progressText": "55 % · 6,5 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 2 мин",
+      "prepare": false,
+      "fill": "55%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:50.923Z",
+      "status": "running",
+      "progressText": "55 % · 6,5 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 2 мин",
+      "prepare": false,
+      "fill": "55%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:51.327Z",
+      "status": "running",
+      "progressText": "55 % · 6,5 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 2 мин",
+      "prepare": false,
+      "fill": "55%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:51.731Z",
+      "status": "running",
+      "progressText": "57 % · 6,8 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 2 мин",
+      "prepare": false,
+      "fill": "57%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:52.135Z",
+      "status": "running",
+      "progressText": "57 % · 6,8 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 2 мин",
+      "prepare": false,
+      "fill": "57%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:52.539Z",
+      "status": "running",
+      "progressText": "57 % · 6,8 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 2 мин",
+      "prepare": false,
+      "fill": "57%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:52.943Z",
+      "status": "running",
+      "progressText": "57 % · 6,8 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 2 мин",
+      "prepare": false,
+      "fill": "57%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:53.347Z",
+      "status": "running",
+      "progressText": "57 % · 6,8 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 2 мин",
+      "prepare": false,
+      "fill": "57%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:53.752Z",
+      "status": "running",
+      "progressText": "57 % · 6,8 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 2 мин",
+      "prepare": false,
+      "fill": "57%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:54.156Z",
+      "status": "running",
+      "progressText": "59 % · 7,0 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 1 мин",
+      "prepare": false,
+      "fill": "59%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:54.559Z",
+      "status": "running",
+      "progressText": "59 % · 7,0 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 1 мин",
+      "prepare": false,
+      "fill": "59%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:54.963Z",
+      "status": "running",
+      "progressText": "59 % · 7,0 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 1 мин",
+      "prepare": false,
+      "fill": "59%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:55.365Z",
+      "status": "running",
+      "progressText": "59 % · 7,0 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 1 мин",
+      "prepare": false,
+      "fill": "59%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:55.769Z",
+      "status": "running",
+      "progressText": "59 % · 7,0 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 1 мин",
+      "prepare": false,
+      "fill": "59%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:56.173Z",
+      "status": "running",
+      "progressText": "59 % · 7,0 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 1 мин",
+      "prepare": false,
+      "fill": "59%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:56.577Z",
+      "status": "running",
+      "progressText": "59 % · 7,0 из 12,0 ГБ",
+      "stateText": "8,4 МБ/с · ≈ 1 мин",
+      "prepare": false,
+      "fill": "59%",
+      "buttonAction": "stop",
+      "buttonBusy": "false"
+    },
+    {
+      "at": "2026-11-18T20:48:56.981Z",
+      "status": "done",
+      "progressText": "100 % · 12 ГБ",
+      "stateText": "Завершена",
+      "prepare": false,
+      "fill": "100%",
+      "buttonAction": "dismiss-job",
+      "buttonBusy": "false"
+    }
+  ],
+  "storedJob": {
+    "id": "j1",
+    "accountId": "a1",
+    "source": "cf_a1:",
+    "dest": "/tmp/cf-resume-test/downloads/yandex",
+    "mode": "copy",
+    "status": "done",
+    "group": "migrate/j1/1795034908429499000",
+    "rcloneJobId": 100,
+    "executeId": "exec-100",
+    "bytesBase": 5153960755,
+    "stats": {
+      "bytes": 8106750771,
+      "totalBytes": 12884901888,
+      "speed": 8808038,
+      "eta": 30,
+      "transfers": 1181,
+      "totalTransfers": 100,
+      "errors": 0,
+      "elapsedTime": 27.99310302734375
+    },
+    "createdAt": "2026-11-18T22:00:00Z",
+    "startedAt": "2026-11-18T20:48:28.429502Z",
+    "finishedAt": "2026-11-18T20:48:56.443215Z"
+  },
+  "knownConsoleIssues": [
+    "Executing inline script violates the following Content Security Policy directive 'script-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-yuHwCTZ6o/k3AfAQVI+g+fsOxs9sfXxgBF6jU6zm5vU='), or a nonce ('nonce-...') is required to enable inline execution. The action has been blocked.",
+    "Executing inline script violates the following Content Security Policy directive 'script-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-yuHwCTZ6o/k3AfAQVI+g+fsOxs9sfXxgBF6jU6zm5vU='), or a nonce ('nonce-...') is required to enable inline execution. The action has been blocked."
+  ]
+}
