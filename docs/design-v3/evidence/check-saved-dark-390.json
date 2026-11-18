@@ -1,0 +1,101 @@
+{
+  "rows": [
+    {
+      "id": "job-done-saved",
+      "status": "done",
+      "title": "Фотографии",
+      "stats": [
+        "11,4 из 11,4 МБ",
+        "Завершена"
+      ],
+      "progress": 100,
+      "hasCheck": true,
+      "checkText": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40",
+      "result": {
+        "text": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40",
+        "live": "polite",
+        "role": "status",
+        "tabindex": -1
+      },
+      "action": null,
+      "error": null,
+      "retry": null,
+      "rect": {
+        "x": 16,
+        "y": 207.078125,
+        "width": 358,
+        "height": 168,
+        "top": 207.078125,
+        "right": 374,
+        "bottom": 375.078125,
+        "left": 16
+      },
+      "checkRect": {
+        "x": 36,
+        "y": 316.078125,
+        "width": 318,
+        "height": 42,
+        "top": 316.078125,
+        "right": 354,
+        "bottom": 358.078125,
+        "left": 36
+      }
+    },
+    {
+      "id": "job-failed-saved",
+      "status": "failed",
+      "title": "Фотографии",
+      "stats": [
+        "11,4 из 11,4 МБ",
+        "Не удалось"
+      ],
+      "progress": 100,
+      "hasCheck": true,
+      "checkText": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1",
+      "result": {
+        "text": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1",
+        "live": "polite",
+        "role": "status",
+        "tabindex": -1
+      },
+      "action": null,
+      "error": null,
+      "retry": null,
+      "rect": {
+        "x": 16,
+        "y": 385.078125,
+        "width": 358,
+        "height": 198,
+        "top": 385.078125,
+        "right": 374,
+        "bottom": 583.078125,
+        "left": 16
+      },
+      "checkRect": {
+        "x": 36,
+        "y": 524.078125,
+        "width": 318,
+        "height": 42,
+        "top": 524.078125,
+        "right": 354,
+        "bottom": 566.078125,
+        "left": 36
+      }
+    }
+  ],
+  "theme": "dark",
+  "bg": "rgb(22, 21, 26)",
+  "scrollWidth": 390,
+  "bodyScrollWidth": 390,
+  "innerWidth": 390,
+  "offline": false,
+  "toasts": [],
+  "active": {
+    "tag": "BODY",
+    "cls": "",
+    "text": "Cloud Ferry Настройки artem Яндекс Диск Скачать ••• Фотографии 11,4 из 11,4 МБ З"
+  },
+  "bodyText": "Cloud Ferry Настройки artem Яндекс Диск Скачать ••• Фотографии 11,4 из 11,4 МБ Завершена Все файлы на месте Проверено: 12 файлов · сегодня, 20:40 Фотографии 11,4 из 11,4 МБ Не удалось Проверьте место на сервере и повторите. Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1",
+  "checkButtons": 0,
+  "retryButtons": 0
+}

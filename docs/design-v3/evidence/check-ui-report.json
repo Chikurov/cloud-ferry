@@ -1,0 +1,2568 @@
+{
+  "base": "http://127.0.0.1:8899",
+  "checks": 512,
+  "failed": 0,
+  "problems": [],
+  "report": [
+    {
+      "name": "saved light@390: две завершённые карточки из /api/state",
+      "ok": true,
+      "detail": "job-done-saved,job-failed-saved"
+    },
+    {
+      "name": "saved light@390: «Все файлы на месте» для совпавшей проверки",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "saved light@390: «Проверено: 12 файлов» из matched",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "saved light@390: «Проверено: N файлов» при расхождениях",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "saved light@390: строка расхождений",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "saved light@390: без кнопки, когда job.check уже есть",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "saved light@390: job-done-saved aria-live=\"polite\"",
+      "ok": true,
+      "detail": "polite"
+    },
+    {
+      "name": "saved light@390: job-done-saved role=\"status\"",
+      "ok": true,
+      "detail": "status"
+    },
+    {
+      "name": "saved light@390: job-done-saved результат доступен фокусу",
+      "ok": true,
+      "detail": "-1"
+    },
+    {
+      "name": "saved light@390: job-failed-saved aria-live=\"polite\"",
+      "ok": true,
+      "detail": "polite"
+    },
+    {
+      "name": "saved light@390: job-failed-saved role=\"status\"",
+      "ok": true,
+      "detail": "status"
+    },
+    {
+      "name": "saved light@390: job-failed-saved результат доступен фокусу",
+      "ok": true,
+      "detail": "-1"
+    },
+    {
+      "name": "saved light@390: тема",
+      "ok": true,
+      "detail": "light rgb(245, 244, 248)"
+    },
+    {
+      "name": "saved light@390: нет полосы потери связи",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "saved light@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "saved light@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "saved light@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "saved light@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "saved light@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "saved light@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "zero light@390: «Все файлы на месте» без matched",
+      "ok": true,
+      "detail": "Все файлы на месте сегодня, 20:40"
+    },
+    {
+      "name": "zero light@390: нет «Проверено: 0 файлов»",
+      "ok": true,
+      "detail": "Все файлы на месте сегодня, 20:40"
+    },
+    {
+      "name": "zero light@390: сохранённый результат без кнопки",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "zero light@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "zero light@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "zero light@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "zero light@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "zero light@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "zero light@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "action light@390: job-done — действие «Проверить файлы»",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action light@390: job-done — это button",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверить файлы\",\"busy\":null,\"disabled\":null}"
+    },
+    {
+      "name": "action light@390: job-done — только действие",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action light@390: job-failed — действие «Проверить файлы»",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action light@390: job-failed — это button",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверить файлы\",\"busy\":null,\"disabled\":null}"
+    },
+    {
+      "name": "action light@390: job-failed — только действие",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action light@390: job-paused — действие «Проверить файлы»",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action light@390: job-paused — это button",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверить файлы\",\"busy\":null,\"disabled\":null}"
+    },
+    {
+      "name": "action light@390: job-paused — только действие",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action light@390: у идущей задачи нет проверки",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "action light@390: три действия, по одному на карточку",
+      "ok": true,
+      "detail": "3"
+    },
+    {
+      "name": "action light@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "action light@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "action light@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "action light@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "action light@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "action light@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "action light@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "busy light@390: кнопка в aria-busy",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверяем…\",\"busy\":\"true\",\"disabled\":\"true\"}"
+    },
+    {
+      "name": "busy light@390: повтор нажатия заблокирован",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверяем…\",\"busy\":\"true\",\"disabled\":\"true\"}"
+    },
+    {
+      "name": "busy light@390: подпись «Проверяем…»",
+      "ok": true,
+      "detail": "Проверяем…"
+    },
+    {
+      "name": "busy light@390: фокус остался на кнопке",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"cls\":\"btn btn--secondary btn--sm job-check-action\",\"text\":\"Проверяем…\"}"
+    },
+    {
+      "name": "busy light@390: повторный клик не отправил второй POST",
+      "ok": true,
+      "detail": "{\"job-done\":1}"
+    },
+    {
+      "name": "busy light@390: одна кнопка проверки",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "name": "busy light@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "busy light@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "busy light@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "busy light@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "busy light@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "busy light@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok light@390: «Все файлы на месте» после 200",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "ok light@390: «Проверено: 12 файлов»",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "ok light@390: кнопка исчезла после результата",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "ok light@390: фокус переведён на результат",
+      "ok": true,
+      "detail": "{\"tag\":\"DIV\",\"cls\":\"job-check-result job-check-result--ok\",\"text\":\"Все файлы на месте Проверено: 12 файлов · сегодня, 20:40\"}"
+    },
+    {
+      "name": "ok light@390: без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok light@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok light@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok light@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "ok light@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ok light@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ok light@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "diff light@390: «Проверено: N файлов»",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "diff light@390: расхождения с тремя счётчиками",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "diff light@390: нет ложного «Все файлы на месте»",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "diff light@390: без кнопки после результата",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "diff light@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "diff light@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "diff light@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "diff light@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "diff light@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "diff light@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict light@390: сохранённый результат из job.check",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 7 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "conflict light@390: без кнопки после 409",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "conflict light@390: 409 без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict light@390: один POST",
+      "ok": true,
+      "detail": "{\"job-done\":1}"
+    },
+    {
+      "name": "conflict light@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict light@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict light@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "conflict light@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "conflict light@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "conflict light@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 light@390: inline «Не удалось проверить файлы»",
+      "ok": true,
+      "detail": "Не удалось проверить файлы Повторить"
+    },
+    {
+      "name": "502 light@390: кнопка «Повторить»",
+      "ok": true,
+      "detail": "Повторить"
+    },
+    {
+      "name": "502 light@390: статус задачи не изменился",
+      "ok": true,
+      "detail": "done/100"
+    },
+    {
+      "name": "502 light@390: данные задачи не изменились",
+      "ok": true,
+      "detail": "[\"11,4 из 11,4 МБ\",\"Завершена\"]"
+    },
+    {
+      "name": "502 light@390: 502 без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 light@390: одна кнопка «Повторить»",
+      "ok": true,
+      "detail": "1/1"
+    },
+    {
+      "name": "502 light@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 light@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 light@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "502 light@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 light@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 light@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 light@390: «Повторить» показывает результат",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 9 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "502 light@390: ровно два POST",
+      "ok": true,
+      "detail": "{\"job-done\":2}"
+    },
+    {
+      "name": "502 light@390 retry: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 light@390 retry: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 light@390 retry: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "502 light@390 retry: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 light@390 retry: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 light@390 retry: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline light@390: показана общая полоса «Нет связи»",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "name": "offline light@390: потеря связи не выдана за ошибку проверки",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline light@390: нет inline-ошибки проверки",
+      "ok": true,
+      "detail": "[\"Проверяем…\"]"
+    },
+    {
+      "name": "offline light@390: без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline light@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline light@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline light@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "offline light@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline light@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline light@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline light@390: статус подтянулся после восстановления",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 11 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "offline light@390: полоса «Нет связи» скрылась",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "offline light@390 restored: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline light@390 restored: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline light@390 restored: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "offline light@390 restored: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline light@390 restored: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline light@390 restored: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "saved dark@390: две завершённые карточки из /api/state",
+      "ok": true,
+      "detail": "job-done-saved,job-failed-saved"
+    },
+    {
+      "name": "saved dark@390: «Все файлы на месте» для совпавшей проверки",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "saved dark@390: «Проверено: 12 файлов» из matched",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "saved dark@390: «Проверено: N файлов» при расхождениях",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "saved dark@390: строка расхождений",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "saved dark@390: без кнопки, когда job.check уже есть",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "saved dark@390: job-done-saved aria-live=\"polite\"",
+      "ok": true,
+      "detail": "polite"
+    },
+    {
+      "name": "saved dark@390: job-done-saved role=\"status\"",
+      "ok": true,
+      "detail": "status"
+    },
+    {
+      "name": "saved dark@390: job-done-saved результат доступен фокусу",
+      "ok": true,
+      "detail": "-1"
+    },
+    {
+      "name": "saved dark@390: job-failed-saved aria-live=\"polite\"",
+      "ok": true,
+      "detail": "polite"
+    },
+    {
+      "name": "saved dark@390: job-failed-saved role=\"status\"",
+      "ok": true,
+      "detail": "status"
+    },
+    {
+      "name": "saved dark@390: job-failed-saved результат доступен фокусу",
+      "ok": true,
+      "detail": "-1"
+    },
+    {
+      "name": "saved dark@390: тема",
+      "ok": true,
+      "detail": "dark rgb(22, 21, 26)"
+    },
+    {
+      "name": "saved dark@390: нет полосы потери связи",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "saved dark@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "saved dark@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "saved dark@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "saved dark@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "saved dark@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "saved dark@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "zero dark@390: «Все файлы на месте» без matched",
+      "ok": true,
+      "detail": "Все файлы на месте сегодня, 20:40"
+    },
+    {
+      "name": "zero dark@390: нет «Проверено: 0 файлов»",
+      "ok": true,
+      "detail": "Все файлы на месте сегодня, 20:40"
+    },
+    {
+      "name": "zero dark@390: сохранённый результат без кнопки",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "zero dark@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "zero dark@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "zero dark@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "zero dark@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "zero dark@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "zero dark@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "action dark@390: job-done — действие «Проверить файлы»",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action dark@390: job-done — это button",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверить файлы\",\"busy\":null,\"disabled\":null}"
+    },
+    {
+      "name": "action dark@390: job-done — только действие",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action dark@390: job-failed — действие «Проверить файлы»",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action dark@390: job-failed — это button",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверить файлы\",\"busy\":null,\"disabled\":null}"
+    },
+    {
+      "name": "action dark@390: job-failed — только действие",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action dark@390: job-paused — действие «Проверить файлы»",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action dark@390: job-paused — это button",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверить файлы\",\"busy\":null,\"disabled\":null}"
+    },
+    {
+      "name": "action dark@390: job-paused — только действие",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action dark@390: у идущей задачи нет проверки",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "action dark@390: три действия, по одному на карточку",
+      "ok": true,
+      "detail": "3"
+    },
+    {
+      "name": "action dark@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "action dark@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "action dark@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "action dark@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "action dark@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "action dark@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "action dark@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "busy dark@390: кнопка в aria-busy",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверяем…\",\"busy\":\"true\",\"disabled\":\"true\"}"
+    },
+    {
+      "name": "busy dark@390: повтор нажатия заблокирован",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверяем…\",\"busy\":\"true\",\"disabled\":\"true\"}"
+    },
+    {
+      "name": "busy dark@390: подпись «Проверяем…»",
+      "ok": true,
+      "detail": "Проверяем…"
+    },
+    {
+      "name": "busy dark@390: фокус остался на кнопке",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"cls\":\"btn btn--secondary btn--sm job-check-action\",\"text\":\"Проверяем…\"}"
+    },
+    {
+      "name": "busy dark@390: повторный клик не отправил второй POST",
+      "ok": true,
+      "detail": "{\"job-done\":1}"
+    },
+    {
+      "name": "busy dark@390: одна кнопка проверки",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "name": "busy dark@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "busy dark@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "busy dark@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "busy dark@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "busy dark@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "busy dark@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok dark@390: «Все файлы на месте» после 200",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "ok dark@390: «Проверено: 12 файлов»",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "ok dark@390: кнопка исчезла после результата",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "ok dark@390: фокус переведён на результат",
+      "ok": true,
+      "detail": "{\"tag\":\"DIV\",\"cls\":\"job-check-result job-check-result--ok\",\"text\":\"Все файлы на месте Проверено: 12 файлов · сегодня, 20:40\"}"
+    },
+    {
+      "name": "ok dark@390: без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok dark@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok dark@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok dark@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "ok dark@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ok dark@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ok dark@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "diff dark@390: «Проверено: N файлов»",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "diff dark@390: расхождения с тремя счётчиками",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "diff dark@390: нет ложного «Все файлы на месте»",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "diff dark@390: без кнопки после результата",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "diff dark@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "diff dark@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "diff dark@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "diff dark@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "diff dark@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "diff dark@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict dark@390: сохранённый результат из job.check",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 7 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "conflict dark@390: без кнопки после 409",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "conflict dark@390: 409 без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict dark@390: один POST",
+      "ok": true,
+      "detail": "{\"job-done\":1}"
+    },
+    {
+      "name": "conflict dark@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict dark@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict dark@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "conflict dark@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "conflict dark@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "conflict dark@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 dark@390: inline «Не удалось проверить файлы»",
+      "ok": true,
+      "detail": "Не удалось проверить файлы Повторить"
+    },
+    {
+      "name": "502 dark@390: кнопка «Повторить»",
+      "ok": true,
+      "detail": "Повторить"
+    },
+    {
+      "name": "502 dark@390: статус задачи не изменился",
+      "ok": true,
+      "detail": "done/100"
+    },
+    {
+      "name": "502 dark@390: данные задачи не изменились",
+      "ok": true,
+      "detail": "[\"11,4 из 11,4 МБ\",\"Завершена\"]"
+    },
+    {
+      "name": "502 dark@390: 502 без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 dark@390: одна кнопка «Повторить»",
+      "ok": true,
+      "detail": "1/1"
+    },
+    {
+      "name": "502 dark@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 dark@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 dark@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "502 dark@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 dark@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 dark@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 dark@390: «Повторить» показывает результат",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 9 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "502 dark@390: ровно два POST",
+      "ok": true,
+      "detail": "{\"job-done\":2}"
+    },
+    {
+      "name": "502 dark@390 retry: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 dark@390 retry: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 dark@390 retry: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "502 dark@390 retry: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 dark@390 retry: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 dark@390 retry: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline dark@390: показана общая полоса «Нет связи»",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "name": "offline dark@390: потеря связи не выдана за ошибку проверки",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline dark@390: нет inline-ошибки проверки",
+      "ok": true,
+      "detail": "[\"Проверяем…\"]"
+    },
+    {
+      "name": "offline dark@390: без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline dark@390: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline dark@390: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline dark@390: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "offline dark@390: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline dark@390: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline dark@390: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline dark@390: статус подтянулся после восстановления",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 11 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "offline dark@390: полоса «Нет связи» скрылась",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "offline dark@390 restored: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline dark@390 restored: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline dark@390 restored: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "offline dark@390 restored: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline dark@390 restored: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline dark@390 restored: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "saved light@1440: две завершённые карточки из /api/state",
+      "ok": true,
+      "detail": "job-done-saved,job-failed-saved"
+    },
+    {
+      "name": "saved light@1440: «Все файлы на месте» для совпавшей проверки",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "saved light@1440: «Проверено: 12 файлов» из matched",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "saved light@1440: «Проверено: N файлов» при расхождениях",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "saved light@1440: строка расхождений",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "saved light@1440: без кнопки, когда job.check уже есть",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "saved light@1440: job-done-saved aria-live=\"polite\"",
+      "ok": true,
+      "detail": "polite"
+    },
+    {
+      "name": "saved light@1440: job-done-saved role=\"status\"",
+      "ok": true,
+      "detail": "status"
+    },
+    {
+      "name": "saved light@1440: job-done-saved результат доступен фокусу",
+      "ok": true,
+      "detail": "-1"
+    },
+    {
+      "name": "saved light@1440: job-failed-saved aria-live=\"polite\"",
+      "ok": true,
+      "detail": "polite"
+    },
+    {
+      "name": "saved light@1440: job-failed-saved role=\"status\"",
+      "ok": true,
+      "detail": "status"
+    },
+    {
+      "name": "saved light@1440: job-failed-saved результат доступен фокусу",
+      "ok": true,
+      "detail": "-1"
+    },
+    {
+      "name": "saved light@1440: тема",
+      "ok": true,
+      "detail": "light rgb(245, 244, 248)"
+    },
+    {
+      "name": "saved light@1440: нет полосы потери связи",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "saved light@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "saved light@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "saved light@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "saved light@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "saved light@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "saved light@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "zero light@1440: «Все файлы на месте» без matched",
+      "ok": true,
+      "detail": "Все файлы на месте сегодня, 20:40"
+    },
+    {
+      "name": "zero light@1440: нет «Проверено: 0 файлов»",
+      "ok": true,
+      "detail": "Все файлы на месте сегодня, 20:40"
+    },
+    {
+      "name": "zero light@1440: сохранённый результат без кнопки",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "zero light@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "zero light@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "zero light@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "zero light@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "zero light@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "zero light@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "action light@1440: job-done — действие «Проверить файлы»",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action light@1440: job-done — это button",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверить файлы\",\"busy\":null,\"disabled\":null}"
+    },
+    {
+      "name": "action light@1440: job-done — только действие",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action light@1440: job-failed — действие «Проверить файлы»",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action light@1440: job-failed — это button",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверить файлы\",\"busy\":null,\"disabled\":null}"
+    },
+    {
+      "name": "action light@1440: job-failed — только действие",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action light@1440: job-paused — действие «Проверить файлы»",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action light@1440: job-paused — это button",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверить файлы\",\"busy\":null,\"disabled\":null}"
+    },
+    {
+      "name": "action light@1440: job-paused — только действие",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action light@1440: у идущей задачи нет проверки",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "action light@1440: три действия, по одному на карточку",
+      "ok": true,
+      "detail": "3"
+    },
+    {
+      "name": "action light@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "action light@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "action light@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "action light@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "action light@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "action light@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "action light@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "busy light@1440: кнопка в aria-busy",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверяем…\",\"busy\":\"true\",\"disabled\":\"true\"}"
+    },
+    {
+      "name": "busy light@1440: повтор нажатия заблокирован",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверяем…\",\"busy\":\"true\",\"disabled\":\"true\"}"
+    },
+    {
+      "name": "busy light@1440: подпись «Проверяем…»",
+      "ok": true,
+      "detail": "Проверяем…"
+    },
+    {
+      "name": "busy light@1440: фокус остался на кнопке",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"cls\":\"btn btn--secondary btn--sm job-check-action\",\"text\":\"Проверяем…\"}"
+    },
+    {
+      "name": "busy light@1440: повторный клик не отправил второй POST",
+      "ok": true,
+      "detail": "{\"job-done\":1}"
+    },
+    {
+      "name": "busy light@1440: одна кнопка проверки",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "name": "busy light@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "busy light@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "busy light@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "busy light@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "busy light@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "busy light@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok light@1440: «Все файлы на месте» после 200",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "ok light@1440: «Проверено: 12 файлов»",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "ok light@1440: кнопка исчезла после результата",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "ok light@1440: фокус переведён на результат",
+      "ok": true,
+      "detail": "{\"tag\":\"DIV\",\"cls\":\"job-check-result job-check-result--ok\",\"text\":\"Все файлы на месте Проверено: 12 файлов · сегодня, 20:40\"}"
+    },
+    {
+      "name": "ok light@1440: без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok light@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok light@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok light@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "ok light@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ok light@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ok light@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "diff light@1440: «Проверено: N файлов»",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "diff light@1440: расхождения с тремя счётчиками",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "diff light@1440: нет ложного «Все файлы на месте»",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "diff light@1440: без кнопки после результата",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "diff light@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "diff light@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "diff light@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "diff light@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "diff light@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "diff light@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict light@1440: сохранённый результат из job.check",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 7 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "conflict light@1440: без кнопки после 409",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "conflict light@1440: 409 без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict light@1440: один POST",
+      "ok": true,
+      "detail": "{\"job-done\":1}"
+    },
+    {
+      "name": "conflict light@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict light@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict light@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "conflict light@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "conflict light@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "conflict light@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 light@1440: inline «Не удалось проверить файлы»",
+      "ok": true,
+      "detail": "Не удалось проверить файлы Повторить"
+    },
+    {
+      "name": "502 light@1440: кнопка «Повторить»",
+      "ok": true,
+      "detail": "Повторить"
+    },
+    {
+      "name": "502 light@1440: статус задачи не изменился",
+      "ok": true,
+      "detail": "done/100"
+    },
+    {
+      "name": "502 light@1440: данные задачи не изменились",
+      "ok": true,
+      "detail": "[\"11,4 из 11,4 МБ\",\"Завершена\"]"
+    },
+    {
+      "name": "502 light@1440: 502 без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 light@1440: одна кнопка «Повторить»",
+      "ok": true,
+      "detail": "1/1"
+    },
+    {
+      "name": "502 light@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 light@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 light@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "502 light@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 light@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 light@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 light@1440: «Повторить» показывает результат",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 9 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "502 light@1440: ровно два POST",
+      "ok": true,
+      "detail": "{\"job-done\":2}"
+    },
+    {
+      "name": "502 light@1440 retry: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 light@1440 retry: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 light@1440 retry: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "502 light@1440 retry: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 light@1440 retry: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 light@1440 retry: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline light@1440: показана общая полоса «Нет связи»",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "name": "offline light@1440: потеря связи не выдана за ошибку проверки",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline light@1440: нет inline-ошибки проверки",
+      "ok": true,
+      "detail": "[\"Проверяем…\"]"
+    },
+    {
+      "name": "offline light@1440: без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline light@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline light@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline light@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "offline light@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline light@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline light@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline light@1440: статус подтянулся после восстановления",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 11 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "offline light@1440: полоса «Нет связи» скрылась",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "offline light@1440 restored: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline light@1440 restored: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline light@1440 restored: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "offline light@1440 restored: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline light@1440 restored: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline light@1440 restored: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "saved dark@1440: две завершённые карточки из /api/state",
+      "ok": true,
+      "detail": "job-done-saved,job-failed-saved"
+    },
+    {
+      "name": "saved dark@1440: «Все файлы на месте» для совпавшей проверки",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "saved dark@1440: «Проверено: 12 файлов» из matched",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "saved dark@1440: «Проверено: N файлов» при расхождениях",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "saved dark@1440: строка расхождений",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "saved dark@1440: без кнопки, когда job.check уже есть",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "saved dark@1440: job-done-saved aria-live=\"polite\"",
+      "ok": true,
+      "detail": "polite"
+    },
+    {
+      "name": "saved dark@1440: job-done-saved role=\"status\"",
+      "ok": true,
+      "detail": "status"
+    },
+    {
+      "name": "saved dark@1440: job-done-saved результат доступен фокусу",
+      "ok": true,
+      "detail": "-1"
+    },
+    {
+      "name": "saved dark@1440: job-failed-saved aria-live=\"polite\"",
+      "ok": true,
+      "detail": "polite"
+    },
+    {
+      "name": "saved dark@1440: job-failed-saved role=\"status\"",
+      "ok": true,
+      "detail": "status"
+    },
+    {
+      "name": "saved dark@1440: job-failed-saved результат доступен фокусу",
+      "ok": true,
+      "detail": "-1"
+    },
+    {
+      "name": "saved dark@1440: тема",
+      "ok": true,
+      "detail": "dark rgb(22, 21, 26)"
+    },
+    {
+      "name": "saved dark@1440: нет полосы потери связи",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "saved dark@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "saved dark@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "saved dark@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "saved dark@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "saved dark@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "saved dark@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "zero dark@1440: «Все файлы на месте» без matched",
+      "ok": true,
+      "detail": "Все файлы на месте сегодня, 20:40"
+    },
+    {
+      "name": "zero dark@1440: нет «Проверено: 0 файлов»",
+      "ok": true,
+      "detail": "Все файлы на месте сегодня, 20:40"
+    },
+    {
+      "name": "zero dark@1440: сохранённый результат без кнопки",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "zero dark@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "zero dark@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "zero dark@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "zero dark@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "zero dark@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "zero dark@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "action dark@1440: job-done — действие «Проверить файлы»",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action dark@1440: job-done — это button",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверить файлы\",\"busy\":null,\"disabled\":null}"
+    },
+    {
+      "name": "action dark@1440: job-done — только действие",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action dark@1440: job-failed — действие «Проверить файлы»",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action dark@1440: job-failed — это button",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверить файлы\",\"busy\":null,\"disabled\":null}"
+    },
+    {
+      "name": "action dark@1440: job-failed — только действие",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action dark@1440: job-paused — действие «Проверить файлы»",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action dark@1440: job-paused — это button",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверить файлы\",\"busy\":null,\"disabled\":null}"
+    },
+    {
+      "name": "action dark@1440: job-paused — только действие",
+      "ok": true,
+      "detail": "Проверить файлы"
+    },
+    {
+      "name": "action dark@1440: у идущей задачи нет проверки",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "action dark@1440: три действия, по одному на карточку",
+      "ok": true,
+      "detail": "3"
+    },
+    {
+      "name": "action dark@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "action dark@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "action dark@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "action dark@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "action dark@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "action dark@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "action dark@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "busy dark@1440: кнопка в aria-busy",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверяем…\",\"busy\":\"true\",\"disabled\":\"true\"}"
+    },
+    {
+      "name": "busy dark@1440: повтор нажатия заблокирован",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"type\":\"button\",\"text\":\"Проверяем…\",\"busy\":\"true\",\"disabled\":\"true\"}"
+    },
+    {
+      "name": "busy dark@1440: подпись «Проверяем…»",
+      "ok": true,
+      "detail": "Проверяем…"
+    },
+    {
+      "name": "busy dark@1440: фокус остался на кнопке",
+      "ok": true,
+      "detail": "{\"tag\":\"BUTTON\",\"cls\":\"btn btn--secondary btn--sm job-check-action\",\"text\":\"Проверяем…\"}"
+    },
+    {
+      "name": "busy dark@1440: повторный клик не отправил второй POST",
+      "ok": true,
+      "detail": "{\"job-done\":1}"
+    },
+    {
+      "name": "busy dark@1440: одна кнопка проверки",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "name": "busy dark@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "busy dark@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "busy dark@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "busy dark@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "busy dark@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "busy dark@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok dark@1440: «Все файлы на месте» после 200",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "ok dark@1440: «Проверено: 12 файлов»",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 12 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "ok dark@1440: кнопка исчезла после результата",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "ok dark@1440: фокус переведён на результат",
+      "ok": true,
+      "detail": "{\"tag\":\"DIV\",\"cls\":\"job-check-result job-check-result--ok\",\"text\":\"Все файлы на месте Проверено: 12 файлов · сегодня, 20:40\"}"
+    },
+    {
+      "name": "ok dark@1440: без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok dark@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok dark@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "ok dark@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "ok dark@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ok dark@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ok dark@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "diff dark@1440: «Проверено: N файлов»",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "diff dark@1440: расхождения с тремя счётчиками",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "diff dark@1440: нет ложного «Все файлы на месте»",
+      "ok": true,
+      "detail": "Проверено: 12 файлов · сегодня, 20:40 Нет на сервере: 1 · Отличаются: 2 · Ошибки: 1"
+    },
+    {
+      "name": "diff dark@1440: без кнопки после результата",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "diff dark@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "diff dark@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "diff dark@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "diff dark@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "diff dark@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "diff dark@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict dark@1440: сохранённый результат из job.check",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 7 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "conflict dark@1440: без кнопки после 409",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "conflict dark@1440: 409 без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict dark@1440: один POST",
+      "ok": true,
+      "detail": "{\"job-done\":1}"
+    },
+    {
+      "name": "conflict dark@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict dark@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "conflict dark@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "conflict dark@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "conflict dark@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "conflict dark@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 dark@1440: inline «Не удалось проверить файлы»",
+      "ok": true,
+      "detail": "Не удалось проверить файлы Повторить"
+    },
+    {
+      "name": "502 dark@1440: кнопка «Повторить»",
+      "ok": true,
+      "detail": "Повторить"
+    },
+    {
+      "name": "502 dark@1440: статус задачи не изменился",
+      "ok": true,
+      "detail": "done/100"
+    },
+    {
+      "name": "502 dark@1440: данные задачи не изменились",
+      "ok": true,
+      "detail": "[\"11,4 из 11,4 МБ\",\"Завершена\"]"
+    },
+    {
+      "name": "502 dark@1440: 502 без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 dark@1440: одна кнопка «Повторить»",
+      "ok": true,
+      "detail": "1/1"
+    },
+    {
+      "name": "502 dark@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 dark@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 dark@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "502 dark@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 dark@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 dark@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 dark@1440: «Повторить» показывает результат",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 9 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "502 dark@1440: ровно два POST",
+      "ok": true,
+      "detail": "{\"job-done\":2}"
+    },
+    {
+      "name": "502 dark@1440 retry: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 dark@1440 retry: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "502 dark@1440 retry: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "502 dark@1440 retry: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 dark@1440 retry: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "502 dark@1440 retry: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline dark@1440: показана общая полоса «Нет связи»",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "name": "offline dark@1440: потеря связи не выдана за ошибку проверки",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline dark@1440: нет inline-ошибки проверки",
+      "ok": true,
+      "detail": "[\"Проверяем…\"]"
+    },
+    {
+      "name": "offline dark@1440: без тоста об ошибке",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline dark@1440: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline dark@1440: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline dark@1440: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "offline dark@1440: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline dark@1440: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline dark@1440: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline dark@1440: статус подтянулся после восстановления",
+      "ok": true,
+      "detail": "Все файлы на месте Проверено: 11 файлов · сегодня, 20:40"
+    },
+    {
+      "name": "offline dark@1440: полоса «Нет связи» скрылась",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "offline dark@1440 restored: console без ошибок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline dark@1440 restored: без uncaught исключений",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "offline dark@1440 restored: scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "offline dark@1440 restored: карточки не перекрываются",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline dark@1440 restored: строка проверки не выходит за карточку",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "offline dark@1440 restored: нет неожиданных HTTP-ошибок",
+      "ok": true,
+      "detail": "[]"
+    }
+  ]
+}

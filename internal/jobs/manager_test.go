@@ -118,7 +118,7 @@ func newTestManager(t *testing.T) (*Manager, *fakeRC, *store.Store) {
 		"core/stats":       map[string]any{"bytes": 100, "totalBytes": 1000, "speed": 50, "transfers": 2, "totalTransfers": 10, "eta": 18},
 		"job/status":       map[string]any{"finished": true, "success": true},
 		"operations/stat":  map[string]any{"item": map[string]any{"IsDir": true}},
-		"operations/check": map[string]any{"hashType": "md5", "differ": []string{"a/b"}, "missingOnDst": []string{}, "error": []string{}},
+		"operations/check": map[string]any{"hashType": "md5", "match": []string{"ok/1", "ok/2"}, "differ": []string{"a/b"}, "missingOnDst": []string{}, "error": []string{}},
 	}}
 	return NewManager(st, fake, Options{Transfers: 4}), fake, st
 }
@@ -435,11 +435,11 @@ func TestCheckSummarisesResult(t *testing.T) {
 	if err != nil {
 		t.Fatalf("check: %v", err)
 	}
-	if result.HashType != "md5" || result.Differ != 1 || result.MissingOnDst != 0 {
+	if result.HashType != "md5" || result.Differ != 1 || result.MissingOnDst != 0 || result.Matched != 2 {
 		t.Fatalf("result = %+v", result)
 	}
 	stored, _ := st.Job("j1")
-	if stored.Check == nil || stored.Check.Differ != 1 {
+	if stored.Check == nil || stored.Check.Differ != 1 || stored.Check.Matched != 2 {
 		t.Fatalf("stored check = %+v", stored.Check)
 	}
 }

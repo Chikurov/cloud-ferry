@@ -1,0 +1,60 @@
+{
+  "rows": [
+    {
+      "id": "job-done",
+      "status": "done",
+      "title": "Фотографии",
+      "stats": [
+        "11,4 из 11,4 МБ",
+        "Завершена"
+      ],
+      "progress": 100,
+      "hasCheck": true,
+      "checkText": "Все файлы на месте Проверено: 7 файлов · сегодня, 20:40",
+      "result": {
+        "text": "Все файлы на месте Проверено: 7 файлов · сегодня, 20:40",
+        "live": "polite",
+        "role": "status",
+        "tabindex": -1
+      },
+      "action": null,
+      "error": null,
+      "retry": null,
+      "rect": {
+        "x": 16,
+        "y": 207.078125,
+        "width": 358,
+        "height": 168,
+        "top": 207.078125,
+        "right": 374,
+        "bottom": 375.078125,
+        "left": 16
+      },
+      "checkRect": {
+        "x": 36,
+        "y": 316.078125,
+        "width": 318,
+        "height": 42,
+        "top": 316.078125,
+        "right": 354,
+        "bottom": 358.078125,
+        "left": 36
+      }
+    }
+  ],
+  "theme": "dark",
+  "bg": "rgb(22, 21, 26)",
+  "scrollWidth": 390,
+  "bodyScrollWidth": 390,
+  "innerWidth": 390,
+  "offline": false,
+  "toasts": [],
+  "active": {
+    "tag": "BODY",
+    "cls": "",
+    "text": "Cloud Ferry Настройки artem Яндекс Диск Скачать ••• Фотографии 11,4 из 11,4 МБ З"
+  },
+  "bodyText": "Cloud Ferry Настройки artem Яндекс Диск Скачать ••• Фотографии 11,4 из 11,4 МБ Завершена Все файлы на месте Проверено: 7 файлов · сегодня, 20:40",
+  "checkButtons": 0,
+  "retryButtons": 0
+}

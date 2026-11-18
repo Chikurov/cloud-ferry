@@ -1,0 +1,172 @@
+{
+  "rows": [
+    {
+      "id": "job-done",
+      "status": "done",
+      "title": "Фотографии",
+      "stats": [
+        "11,4 из 11,4 МБ",
+        "Завершена"
+      ],
+      "progress": 100,
+      "hasCheck": true,
+      "checkText": "Проверить файлы",
+      "result": null,
+      "action": {
+        "tag": "BUTTON",
+        "type": "button",
+        "text": "Проверить файлы",
+        "busy": null,
+        "disabled": null
+      },
+      "error": null,
+      "retry": null,
+      "rect": {
+        "x": 16,
+        "y": 207.078125,
+        "width": 358,
+        "height": 170,
+        "top": 207.078125,
+        "right": 374,
+        "bottom": 377.078125,
+        "left": 16
+      },
+      "checkRect": {
+        "x": 36,
+        "y": 316.078125,
+        "width": 318,
+        "height": 44,
+        "top": 316.078125,
+        "right": 354,
+        "bottom": 360.078125,
+        "left": 36
+      }
+    },
+    {
+      "id": "job-failed",
+      "status": "failed",
+      "title": "Фотографии",
+      "stats": [
+        "11,4 из 11,4 МБ",
+        "Не удалось"
+      ],
+      "progress": 100,
+      "hasCheck": true,
+      "checkText": "Проверить файлы",
+      "result": null,
+      "action": {
+        "tag": "BUTTON",
+        "type": "button",
+        "text": "Проверить файлы",
+        "busy": null,
+        "disabled": null
+      },
+      "error": null,
+      "retry": null,
+      "rect": {
+        "x": 16,
+        "y": 387.078125,
+        "width": 358,
+        "height": 200,
+        "top": 387.078125,
+        "right": 374,
+        "bottom": 587.078125,
+        "left": 16
+      },
+      "checkRect": {
+        "x": 36,
+        "y": 526.078125,
+        "width": 318,
+        "height": 44,
+        "top": 526.078125,
+        "right": 354,
+        "bottom": 570.078125,
+        "left": 36
+      }
+    },
+    {
+      "id": "job-paused",
+      "status": "interrupted",
+      "title": "Фотографии",
+      "stats": [
+        "5,7 из 11,4 МБ",
+        "Пауза"
+      ],
+      "progress": 50,
+      "hasCheck": true,
+      "checkText": "Проверить файлы",
+      "result": null,
+      "action": {
+        "tag": "BUTTON",
+        "type": "button",
+        "text": "Проверить файлы",
+        "busy": null,
+        "disabled": null
+      },
+      "error": null,
+      "retry": null,
+      "rect": {
+        "x": 16,
+        "y": 597.078125,
+        "width": 358,
+        "height": 170,
+        "top": 597.078125,
+        "right": 374,
+        "bottom": 767.078125,
+        "left": 16
+      },
+      "checkRect": {
+        "x": 36,
+        "y": 706.078125,
+        "width": 318,
+        "height": 44,
+        "top": 706.078125,
+        "right": 354,
+        "bottom": 750.078125,
+        "left": 36
+      }
+    },
+    {
+      "id": "job-running",
+      "status": "running",
+      "title": "Фотографии",
+      "stats": [
+        "5,7 из 11,4 МБ",
+        "2,3 МБ/с · ≈ 30 с"
+      ],
+      "progress": 50,
+      "hasCheck": false,
+      "checkText": "",
+      "result": null,
+      "action": null,
+      "error": null,
+      "retry": null,
+      "rect": {
+        "x": 16,
+        "y": 777.078125,
+        "width": 358,
+        "height": 116,
+        "top": 777.078125,
+        "right": 374,
+        "bottom": 893.078125,
+        "left": 16
+      },
+      "checkRect": null
+    }
+  ],
+  "theme": "light",
+  "bg": "rgb(245, 244, 248)",
+  "scrollWidth": 390,
+  "bodyScrollWidth": 390,
+  "innerWidth": 390,
+  "offline": false,
+  "toasts": [],
+  "active": {
+    "tag": "BODY",
+    "cls": "",
+    "text": "Cloud Ferry Настройки artem Яндекс Диск Скачать ••• Фотографии 11,4 из 11,4 МБ З"
+  },
+  "bodyText": "Cloud Ferry Настройки artem Яндекс Диск Скачать ••• Фотографии 11,4 из 11,4 МБ Завершена Проверить файлы Фотографии 11,4 из 11,4 МБ Не удалось Проверьте место на сервере и повторите. Проверить файлы Фотографии 5,7 из 11,4 МБ Пауза Проверить файлы Фотографии 5,7 из 11,4 МБ 2,3 МБ/с · ≈ 30 с",
+  "checkButtons": 3,
+  "retryButtons": 0
+}

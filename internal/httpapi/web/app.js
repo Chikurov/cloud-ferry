@@ -17,6 +17,10 @@ const JOB_STATUS = {
 };
 const ACTIVE_STATUSES = ['running', 'verifying', 'queued'];
 const PAUSED_STATUSES = ['failed', 'interrupted', 'canceled'];
+/* Проверка целостности доступна только для задачи, которая уже не пишет
+   файлы: у идущего переноса получатель ещё меняется. Ровно эти статусы
+   принимает POST /api/jobs/{id}/check; canceled сервер отклоняет. */
+const CHECKABLE_STATUSES = ['done', 'failed', 'interrupted'];
 const KNOWN_JOB_STATUSES = new Set(Object.keys(JOB_STATUS));
 
 /* One icon set: 24 grid, stroke 1.6, round caps, currentColor. */
@@ -103,6 +107,11 @@ let yandexAuth = {
   tickTimer: null,
 };
 const jobActionBusy = new Set();
+/* Состояние проверки файлов живёт до перерисовки: строка «Проверяем…» и
+   inline-ошибка 502 относятся к карточке, а не к странице. job.check из
+   состояния всегда важнее: сохранённый результат показывается без кнопки. */
+const jobCheckBusy = new Set();
+const jobCheckErrors = new Map(); /* id → 'failed' (502 и прочие ответы сервера) */
 let focusStartAfterRender = false;
 let pendingFocusKey = '';
 /* Одна сессия диалога «Новое скачивание».
@@ -237,6 +246,11 @@ function formatFiles(count) {
   return `${FILE_COUNT_FORMAT.format(value)}\u00A0${fileWord(value)}`;
 }
 
+/* Только число: для строк проверки, где рядом стоит своя подпись. */
+function formatCount(count) {
+  return FILE_COUNT_FORMAT.format(Math.max(0, Number(count) || 0));
+}
+
 /* --- helpers -------------------------------------------------------------- */
 
 /* Таймаут на каждый запрос: зависший fetch иначе навсегда оставляет кнопку
@@ -251,6 +265,10 @@ const API_TIMEOUT = {
   /* POST /api/preflight перебирает дерево в облаке: сервер отводит ему до
      10 минут, поэтому таймаут клиента не должен обрывать подсчёт раньше. */
   preflight: 600000,
+  /* Проверка файлов сравнивает деревья на сервере: сервер отводит ей до
+     двух часов, клиент ждёт не меньше десяти минут — иначе большая задача
+     превращалась бы в ложную «потерю связи». */
+  check: 600000,
 };
 const API_TIMEOUT_DEFAULT = 30000;
 
@@ -2619,6 +2637,112 @@ function nowHead(right = '') {
     </div>`;
 }
 
+/* --- проверка файлов в карточке задачи ------------------------------------ */
+
+/* Сохранённый результат: compact-сводка operations/check. Счётчики
+   расхождений считаются отдельно, чтобы «Все файлы на месте» не появлялось
+   при любом ненулевом значении. matched приходит от сервера; если его нет
+   (пустое значение), «Проверено» показывает хотя бы известные файлы. */
+function jobCheckProblems(check) {
+  return Math.max(0, Number(check.differ) || 0)
+    + Math.max(0, Number(check.missingOnDst) || 0)
+    + Math.max(0, Number(check.broken) || 0);
+}
+
+function jobCheckTime(check) {
+  const text = checkedAtText(check && check.checkedAt);
+  return text && text !== 'не проверялось' ? text : '';
+}
+
+function jobCheckResultMarkup(job) {
+  const check = job.check || {};
+  const problems = jobCheckProblems(check);
+  const total = Math.max(0, Number(check.matched) || 0) + problems;
+  const when = jobCheckTime(check);
+  if (!problems) {
+    const meta = [total > 0 ? `Проверено: ${formatFiles(total)}` : '', when].filter(Boolean).join(' · ');
+    return `<div class="job-check-result job-check-result--ok" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">
+      <span class="job-check-headline">${icon('check')}Все файлы на месте</span>
+      ${meta ? `<span class="job-check-meta">${escapeHtml(meta)}</span>` : ''}
+    </div>`;
+  }
+  const detail = `Нет на сервере: ${formatCount(check.missingOnDst)}`
+    + ` · Отличаются: ${formatCount(check.differ)}`
+    + ` · Ошибки: ${formatCount(check.broken)}`;
+  const summary = `Проверено: ${formatFiles(total)}${when ? `<span class="job-check-meta"> · ${escapeHtml(when)}</span>` : ''}`;
+  return `<div class="job-check-result job-check-result--warn" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">
+    <span class="job-check-headline">${icon('warning')}${summary}</span>
+    <span class="job-check-detail">${escapeHtml(detail)}</span>
+  </div>`;
+}
+
+function jobCheckActionMarkup(job, label = 'Проверить файлы') {
+  return `<button class="btn btn--secondary btn--sm job-check-action" type="button" data-action="check" data-id="${escapeHtml(job.id)}">${icon('check')}${label}</button>`;
+}
+
+function jobCheckBusyMarkup(job) {
+  /* aria-disabled не убирает кнопку из порядка фокуса: фокус остаётся на
+     месте, пока идёт запрос. Повторное нажатие гасит обработчик. */
+  return `<button class="btn btn--secondary btn--sm job-check-action" type="button" data-action="check" data-id="${escapeHtml(job.id)}" aria-busy="true" aria-disabled="true" aria-label="Проверяем файлы">
+    <span class="job-check-spinner" aria-hidden="true"></span>Проверяем…</button>`;
+}
+
+function jobCheckErrorMarkup(job) {
+  return `<div class="job-check-error" role="status" aria-live="polite">
+    <span class="job-check-error-text">${icon('warning')}Не удалось проверить файлы</span>
+    <button class="btn btn--secondary btn--sm job-check-retry" type="button" data-action="check" data-id="${escapeHtml(job.id)}">Повторить</button>
+  </div>`;
+}
+
+/* Строка проверки в карточке: результат из job.check, «Проверяем…», ошибка
+   с «Повторить» или действие. Для идущих задач строки нет. */
+function jobCheckMarkup(job) {
+  if (!job) return '';
+  if (job.check) return jobCheckResultMarkup(job);
+  if (!CHECKABLE_STATUSES.includes(job.status)) return '';
+  if (jobCheckBusy.has(job.id)) return jobCheckBusyMarkup(job);
+  if (jobCheckErrors.has(job.id)) return jobCheckErrorMarkup(job);
+  return jobCheckActionMarkup(job);
+}
+
+function jobCheckKey(job) {
+  const check = job.check;
+  const counts = check
+    ? [check.matched, check.differ, check.missingOnDst, check.broken, check.checkedAt].join(':')
+    : '';
+  return [
+    job.status,
+    jobCheckBusy.has(job.id) ? 'busy' : '',
+    jobCheckErrors.get(job.id) || '',
+    counts,
+  ].join('|');
+}
+
+/* Обновление по месту: строка не пересоздаётся на каждом опросе, а
+   aria-live-регион не перечитывает один и тот же результат. */
+function renderJobCheck(row, job) {
+  const host = row.querySelector('.job-check');
+  if (!host) return;
+  if (!CHECKABLE_STATUSES.includes(job.status) && !job.check) {
+    jobCheckBusy.delete(job.id);
+    jobCheckErrors.delete(job.id);
+  }
+  const key = jobCheckKey(job);
+  if (host.dataset.key === key) return;
+  const active = document.activeElement;
+  const hadFocus = !!active && active !== host && host.contains(active);
+  host.dataset.key = key;
+  const markup = jobCheckMarkup(job);
+  host.innerHTML = markup;
+  host.hidden = !markup;
+  if (hadFocus) {
+    /* После действия фокус не должен падать на body: ведём его на новое
+       действие или на сам результат (он объявляется через aria-live). */
+    const next = host.querySelector('button:not([disabled])') || host.querySelector('.job-check-result');
+    if (next) next.focus({ preventScroll: true });
+  }
+}
+
 function renderJobList(jobs) {
   const list = $('#job-list');
   const stale = new Map(Array.from(list.children, row => [row.dataset.id, row]));
@@ -2630,7 +2754,7 @@ function renderJobList(jobs) {
       row.className = 'cell cell--now job-row';
       row.dataset.id = job.id;
       row.innerHTML = `<div class="task-head">${icon('folder')}<h2></h2><button class="btn btn--secondary" type="button"></button></div>
-        <div class="now-body"><progress max="100"></progress><div class="task-stats"><span></span><span></span></div><div class="job-error"></div></div>`;
+        <div class="now-body"><progress max="100"></progress><div class="task-stats"><span></span><span></span></div><div class="job-error"></div><div class="job-check" hidden></div></div>`;
       list.append(row);
     }
     const paths = [...jobSourcePaths(job), ...jobSourceFiles(job)];
@@ -2661,6 +2785,7 @@ function renderJobList(jobs) {
     const facts = row.querySelectorAll('.task-stats span');
     facts[0].textContent = jobSizeText(job);
     facts[1].textContent = done ? 'Завершена' : paused ? statusOf(job)[0] : job.status === 'running' && !(job.stats?.bytes > 0) ? 'Начинается' : jobMeta(job);
+    renderJobCheck(row, job);
   }
   for (const row of stale.values()) {
     const hadFocus = row.contains(document.activeElement);
@@ -2899,6 +3024,74 @@ async function resumeJob(id, trigger) {
     await refreshAfterAction();
   } finally {
     pendingFocusKey = '';
+  }
+}
+
+/* Проверка файлов: POST доступен только завершённой задаче и только один
+   раз. 409 значит «уже проверяли» — показываем сохранённый результат без
+   тоста об ошибке; 502 — inline-ошибка у карточки, статус задачи не меняется;
+   потеря связи — не ошибка проверки, общая полоса и следующий опрос. */
+async function checkJob(id, trigger) {
+  const job = accountJobs().find((item) => item.id === id);
+  if (!job || job.check || !CHECKABLE_STATUSES.includes(job.status)) return;
+  if (jobCheckBusy.has(id)) return;
+  jobCheckBusy.add(id);
+  jobCheckErrors.delete(id);
+  renderNow();
+  let result = null;
+  let failure = null;
+  try {
+    result = await api(`/api/jobs/${encodeURIComponent(id)}/check`, {
+      method: 'POST',
+      timeout: API_TIMEOUT.check,
+    });
+  } catch (error) {
+    failure = error;
+  } finally {
+    jobCheckBusy.delete(id);
+  }
+
+  if (failure) {
+    const status = Number(failure.status) || 0;
+    if (status === 409) {
+      /* Проверку уже запустили (или она уже была): тихо подтягиваем состояние
+         и показываем job.check, если он там есть. */
+      await refreshCheckState();
+    } else if (status === 0) {
+      /* Связь, а не проверка: не рисуем ошибку у карточки. После
+         восстановления опрос сам принесёт сохранённый результат. */
+      setOffline(true);
+      announce('Нет связи. Проверка не запущена.');
+      renderNow();
+    } else {
+      jobCheckErrors.set(id, 'failed');
+      renderNow();
+      announce('Не удалось проверить файлы');
+    }
+    return;
+  }
+
+  /* 200 — сервер подтвердил проверку. Результат показываем сразу, даже если
+     обновление /api/state ниже не удастся. */
+  const saved = state.jobs.find((item) => item.id === id);
+  if (saved && result) saved.check = result;
+  renderNow();
+  try {
+    await loadData();
+    render();
+  } catch {
+    /* Результат уже на экране; состояние задачи не откатываем. */
+  }
+}
+
+/* Обновление после 409 без предупреждений: 409 — не ошибка для пользователя. */
+async function refreshCheckState() {
+  try {
+    await loadData();
+    render();
+  } catch {
+    setOffline(true);
+    renderNow();
   }
 }
 
@@ -5083,13 +5276,16 @@ $('#home-view').addEventListener('click', async (event) => {
     }
     if (action === 'stop') await stopJob(id, trigger);
     else if (action === 'resume') await resumeJob(id, trigger);
+    else if (action === 'check') await checkJob(id, trigger);
   } catch (error) {
     const retry = action === 'stop'
       ? () => stopJob(id, null)
-      : () => resumeJob(id, null);
+      : action === 'resume' ? () => resumeJob(id, null) : () => checkJob(id, null);
     showToast({
       type: 'error',
-      title: action === 'stop' ? 'Не удалось приостановить скачивание' : 'Не удалось продолжить скачивание',
+      title: action === 'stop'
+        ? 'Не удалось приостановить скачивание'
+        : action === 'resume' ? 'Не удалось продолжить скачивание' : 'Не удалось проверить файлы',
       message: friendlyError(error),
       action: { label: 'Повторить', onClick: retry },
     });

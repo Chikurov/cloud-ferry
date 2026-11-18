@@ -538,3 +538,47 @@ func newValidateTestServer(t *testing.T, engine Engine) (*httptest.Server, *stor
 	t.Cleanup(server.Close)
 	return server, st
 }
+
+func TestIsLocalHostRejectsZoneAndNumericForms(t *testing.T) {
+	cases := []struct {
+		host string
+		want bool
+	}{
+		{"fe80::1%eth0", true},
+		{"fe80::1", true},
+		{"fd00::1", true},
+		{"2130706433", true},
+		{"127.0.0.1", true},
+		{"10.0.0.1", true},
+		{"example.com", false},
+		{"8.8.8.8", false},
+		{"2a02:6b8::2:242", false},
+	}
+	for _, c := range cases {
+		if got := isLocalHost(c.host); got != c.want {
+			t.Errorf("isLocalHost(%q) = %v, want %v", c.host, got, c.want)
+		}
+	}
+}
+
+func TestCreateAccountRejectsZoneLinkLocal(t *testing.T) {
+	for _, raw := range []string{
+		"http://[fe80::1%25eth0]/dav",
+		"http://[fe80::1%eth0]/dav",
+		"http://2130706433/dav",
+	} {
+		t.Run(raw, func(t *testing.T) {
+			server, _, _ := newTestServer(t)
+			body := map[string]any{
+				"provider": "webdav", "url": raw, "user": "u", "password": "p",
+			}
+			resp, data := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/accounts", body)
+			if resp.StatusCode != http.StatusBadRequest {
+				t.Fatalf("status = %d, want 400, body = %v", resp.StatusCode, data)
+			}
+			if data["field"] != "url" {
+				t.Fatalf("field = %v, want url, body = %v", data["field"], data)
+			}
+		})
+	}
+}

@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -250,7 +251,18 @@ func isLocalHost(host string) bool {
 	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
 		return true
 	}
+	// Зона интерфейса (%eth0) не является частью адреса и мешает разбору:
+	// без её отбрасывания link-local fe80::1%eth0 считался публичным хостом.
+	if i := strings.LastIndexByte(host, '%'); i > 0 {
+		host = host[:i]
+	}
 	ip := net.ParseIP(host)
+	if ip == nil {
+		// Числовая форма IPv4 (http://2130706433) равнозначна 127.0.0.1.
+		if n, err := strconv.ParseUint(host, 10, 32); err == nil && host != "" {
+			ip = net.IPv4(byte(n>>24), byte(n>>16), byte(n>>8), byte(n))
+		}
+	}
 	if ip == nil {
 		return false
 	}

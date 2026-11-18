@@ -1173,6 +1173,7 @@ func (m *Manager) Check(ctx context.Context, id string) (store.CheckResult, erro
 	}
 	var out struct {
 		HashType     string   `json:"hashType"`
+		Match        []string `json:"match"`
 		MissingOnDst []string `json:"missingOnDst"`
 		Differ       []string `json:"differ"`
 		Error        []string `json:"error"`
@@ -1189,6 +1190,7 @@ func (m *Manager) Check(ctx context.Context, id string) (store.CheckResult, erro
 	}
 	result := store.CheckResult{
 		HashType:     hashType,
+		Matched:      len(out.Match),
 		Differ:       len(out.Differ),
 		MissingOnDst: len(out.MissingOnDst),
 		Broken:       len(out.Error),
