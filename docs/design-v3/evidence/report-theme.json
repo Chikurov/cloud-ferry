@@ -1,0 +1,70 @@
+{
+  "problems": [],
+  "report": [
+    {
+      "name": "dark: no horizontal overflow",
+      "ok": true,
+      "detail": "{\"scheme\":\"dark\",\"scrollWidth\":1440,\"innerWidth\":1440,\"bodyBg\":\"rgb(22, 21, 26)\",\"ink\":\"rgb(243, 239, 249)\"}"
+    },
+    {
+      "name": "dark: media emulation applied",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "dark: file panel opened",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "dark: file panel title contrast >= 3:1",
+      "ok": true,
+      "detail": "9.79 (rgb(218, 211, 226) on rgb(44, 41, 50))"
+    },
+    {
+      "name": "dark: file name contrast >= 3:1",
+      "ok": true,
+      "detail": "9.79 (rgb(218, 211, 226) on rgb(44, 41, 50))"
+    },
+    {
+      "name": "dark: no failed API requests",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light: no horizontal overflow",
+      "ok": true,
+      "detail": "{\"scheme\":\"light\",\"scrollWidth\":1440,\"innerWidth\":1440,\"bodyBg\":\"rgb(245, 244, 248)\",\"ink\":\"rgb(38, 34, 46)\"}"
+    },
+    {
+      "name": "light: media emulation applied",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "light: file panel opened",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "light: file panel title contrast >= 3:1",
+      "ok": true,
+      "detail": "8.13 (rgb(75, 69, 85) on rgb(242, 240, 245))"
+    },
+    {
+      "name": "light: file name contrast >= 3:1",
+      "ok": true,
+      "detail": "8.13 (rgb(75, 69, 85) on rgb(242, 240, 245))"
+    },
+    {
+      "name": "light: no failed API requests",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "theme: no console errors",
+      "ok": true,
+      "detail": "[]"
+    }
+  ]
+}

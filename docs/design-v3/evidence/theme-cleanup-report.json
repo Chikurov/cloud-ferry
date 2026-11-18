@@ -1,0 +1,1122 @@
+{
+  "base": "http://127.0.0.1:8899",
+  "empty": "http://127.0.0.1:8898",
+  "problems": [],
+  "report": [
+    {
+      "name": "light@390: data-theme=light",
+      "ok": true,
+      "detail": "{\"theme\":\"light\",\"colorScheme\":\"light\",\"bg\":\"rgb(245, 244, 248)\",\"ink\":\"rgb(38, 34, 46)\",\"meta\":\"#f5f4f8\",\"togglesVisible\":1,\"presses\":[\"false\"],\"labels\":[\"Тёмная тема\"],\"moon\":[\"block\"],\"sun\":[],\"scrollWidth\":390,\"bodyScrollWidth\":390,\"innerWidth\":390,\"samples\":[{\"at\":\"DOMContentLoaded\",\"theme\":\"light\",\"colorScheme\":\"light\",\"bg\":\"rgb(245, 244, 248)\",\"ready\":\"interactive\"},{\"at\":\"load\",\"theme\":\"light\"}],\"stepPos\":false,\"setupSteps\":false,\"fdest\":false,\"iz3\":false,\"setupTitle\":\"\"}"
+    },
+    {
+      "name": "light@390: color-scheme=light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "light@390: body background",
+      "ok": true,
+      "detail": "rgb(245, 244, 248) vs rgb(245, 244, 248)"
+    },
+    {
+      "name": "light@390: meta theme-color",
+      "ok": true,
+      "detail": "#f5f4f8"
+    },
+    {
+      "name": "light@390: aria-pressed",
+      "ok": true,
+      "detail": "[\"false\"]"
+    },
+    {
+      "name": "light@390: aria-label",
+      "ok": true,
+      "detail": "[\"Тёмная тема\"]"
+    },
+    {
+      "name": "light@390: sun/moon icon visibility",
+      "ok": true,
+      "detail": "moon=block sun="
+    },
+    {
+      "name": "light@390: no horizontal overflow",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "light@390: theme set before DOMContentLoaded",
+      "ok": true,
+      "detail": "[{\"at\":\"DOMContentLoaded\",\"theme\":\"light\",\"colorScheme\":\"light\",\"bg\":\"rgb(245, 244, 248)\",\"ready\":\"interactive\"},{\"at\":\"load\",\"theme\":\"light\"}]"
+    },
+    {
+      "name": "light@390: first styled paint in theme",
+      "ok": true,
+      "detail": "rgb(245, 244, 248)"
+    },
+    {
+      "name": "light@390: flow step counter removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "light@390: wizard destination field removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "light@390 home: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390 home: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390 home: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390 home: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(222, 219, 229)\",\"bg\":\"rgb(245, 244, 248)\",\"ratio\":1.25}]"
+    },
+    {
+      "name": "light@390: flow no horizontal overflow",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "light@390: no \"N из 3\" text",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "light@390 flow: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390 flow: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390 flow: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390 flow: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(222, 219, 229)\",\"bg\":\"rgb(245, 244, 248)\",\"ratio\":1.25}]"
+    },
+    {
+      "name": "light@390: source folder selectable",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "light@390 review: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390 review: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390 review: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390 review: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(222, 219, 229)\",\"bg\":\"rgb(245, 244, 248)\",\"ratio\":1.25}]"
+    },
+    {
+      "name": "light@390 account: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390 account: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390 account: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390 account: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(222, 219, 229)\",\"bg\":\"rgb(245, 244, 248)\",\"ratio\":1.25}]"
+    },
+    {
+      "name": "light@390: no console errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@390: no failed requests",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "toggle@390: system light -> light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "toggle@390: click switches to dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "toggle@390: aria-pressed=true after switch",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "toggle@390: dark saved to localStorage",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "toggle@390: dark background after switch",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "toggle@390: saved dark survives reload under light OS",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "toggle@390: no flash on reload",
+      "ok": true,
+      "detail": "[{\"at\":\"DOMContentLoaded\",\"theme\":\"dark\",\"colorScheme\":\"dark\",\"bg\":\"rgb(22, 21, 26)\",\"ready\":\"interactive\"},{\"at\":\"load\",\"theme\":\"dark\"}]"
+    },
+    {
+      "name": "toggle@390: second click returns to light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "toggle@390: aria-pressed=false after return",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "dark@390: data-theme=dark",
+      "ok": true,
+      "detail": "{\"theme\":\"dark\",\"colorScheme\":\"dark\",\"bg\":\"rgb(22, 21, 26)\",\"ink\":\"rgb(243, 239, 249)\",\"meta\":\"#16151a\",\"togglesVisible\":1,\"presses\":[\"true\"],\"labels\":[\"Тёмная тема\"],\"moon\":[],\"sun\":[\"block\"],\"scrollWidth\":390,\"bodyScrollWidth\":390,\"innerWidth\":390,\"samples\":[{\"at\":\"DOMContentLoaded\",\"theme\":\"dark\",\"colorScheme\":\"dark\",\"bg\":\"rgb(22, 21, 26)\",\"ready\":\"interactive\"},{\"at\":\"load\",\"theme\":\"dark\"}],\"stepPos\":false,\"setupSteps\":false,\"fdest\":false,\"iz3\":false,\"setupTitle\":\"\"}"
+    },
+    {
+      "name": "dark@390: color-scheme=dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "dark@390: body background",
+      "ok": true,
+      "detail": "rgb(22, 21, 26) vs rgb(22, 21, 26)"
+    },
+    {
+      "name": "dark@390: meta theme-color",
+      "ok": true,
+      "detail": "#16151a"
+    },
+    {
+      "name": "dark@390: aria-pressed",
+      "ok": true,
+      "detail": "[\"true\"]"
+    },
+    {
+      "name": "dark@390: aria-label",
+      "ok": true,
+      "detail": "[\"Тёмная тема\"]"
+    },
+    {
+      "name": "dark@390: sun/moon icon visibility",
+      "ok": true,
+      "detail": "moon= sun=block"
+    },
+    {
+      "name": "dark@390: no horizontal overflow",
+      "ok": true,
+      "detail": "390/390/390"
+    },
+    {
+      "name": "dark@390: theme set before DOMContentLoaded",
+      "ok": true,
+      "detail": "[{\"at\":\"DOMContentLoaded\",\"theme\":\"dark\",\"colorScheme\":\"dark\",\"bg\":\"rgb(22, 21, 26)\",\"ready\":\"interactive\"},{\"at\":\"load\",\"theme\":\"dark\"}]"
+    },
+    {
+      "name": "dark@390: first styled paint in theme",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "dark@390: flow step counter removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "dark@390: wizard destination field removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "dark@390 home: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390 home: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390 home: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390 home: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(57, 53, 63)\",\"bg\":\"rgb(22, 21, 26)\",\"ratio\":1.52}]"
+    },
+    {
+      "name": "dark@390: flow no horizontal overflow",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "dark@390: no \"N из 3\" text",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "dark@390 flow: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390 flow: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390 flow: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390 flow: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(57, 53, 63)\",\"bg\":\"rgb(22, 21, 26)\",\"ratio\":1.52}]"
+    },
+    {
+      "name": "dark@390: source folder selectable",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "dark@390 review: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390 review: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390 review: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390 review: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(57, 53, 63)\",\"bg\":\"rgb(22, 21, 26)\",\"ratio\":1.52}]"
+    },
+    {
+      "name": "dark@390 account: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390 account: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390 account: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390 account: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(57, 53, 63)\",\"bg\":\"rgb(22, 21, 26)\",\"ratio\":1.52}]"
+    },
+    {
+      "name": "dark@390: no console errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@390: no failed requests",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "toggle@390: system light -> light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "toggle@390: click switches to dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "toggle@390: aria-pressed=true after switch",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "toggle@390: dark saved to localStorage",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "toggle@390: dark background after switch",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "toggle@390: saved dark survives reload under light OS",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "toggle@390: no flash on reload",
+      "ok": true,
+      "detail": "[{\"at\":\"DOMContentLoaded\",\"theme\":\"dark\",\"colorScheme\":\"dark\",\"bg\":\"rgb(22, 21, 26)\",\"ready\":\"interactive\"},{\"at\":\"load\",\"theme\":\"dark\"}]"
+    },
+    {
+      "name": "toggle@390: second click returns to light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "toggle@390: aria-pressed=false after return",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup light@390: theme applied",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "setup light@390: theme toggle in setup header",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "name": "setup light@390: step strips removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup light@390: single-step title",
+      "ok": true,
+      "detail": "Подключение"
+    },
+    {
+      "name": "setup light@390: dead destination input removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup light@390: no horizontal overflow",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "setup light@390: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup light@390: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup light@390: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup light@390: no console errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup light@390: no exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup dark@390: theme applied",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "setup dark@390: theme toggle in setup header",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "name": "setup dark@390: step strips removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup dark@390: single-step title",
+      "ok": true,
+      "detail": "Подключение"
+    },
+    {
+      "name": "setup dark@390: dead destination input removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup dark@390: no horizontal overflow",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "setup dark@390: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup dark@390: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup dark@390: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup dark@390: no console errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup dark@390: no exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440: data-theme=light",
+      "ok": true,
+      "detail": "{\"theme\":\"light\",\"colorScheme\":\"light\",\"bg\":\"rgb(245, 244, 248)\",\"ink\":\"rgb(38, 34, 46)\",\"meta\":\"#f5f4f8\",\"togglesVisible\":1,\"presses\":[\"false\"],\"labels\":[\"Тёмная тема\"],\"moon\":[\"block\"],\"sun\":[],\"scrollWidth\":1440,\"bodyScrollWidth\":1440,\"innerWidth\":1440,\"samples\":[{\"at\":\"DOMContentLoaded\",\"theme\":\"light\",\"colorScheme\":\"light\",\"bg\":\"rgb(245, 244, 248)\",\"ready\":\"interactive\"},{\"at\":\"load\",\"theme\":\"light\"}],\"stepPos\":false,\"setupSteps\":false,\"fdest\":false,\"iz3\":false,\"setupTitle\":\"\"}"
+    },
+    {
+      "name": "light@1440: color-scheme=light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "light@1440: body background",
+      "ok": true,
+      "detail": "rgb(245, 244, 248) vs rgb(245, 244, 248)"
+    },
+    {
+      "name": "light@1440: meta theme-color",
+      "ok": true,
+      "detail": "#f5f4f8"
+    },
+    {
+      "name": "light@1440: aria-pressed",
+      "ok": true,
+      "detail": "[\"false\"]"
+    },
+    {
+      "name": "light@1440: aria-label",
+      "ok": true,
+      "detail": "[\"Тёмная тема\"]"
+    },
+    {
+      "name": "light@1440: sun/moon icon visibility",
+      "ok": true,
+      "detail": "moon=block sun="
+    },
+    {
+      "name": "light@1440: no horizontal overflow",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "light@1440: theme set before DOMContentLoaded",
+      "ok": true,
+      "detail": "[{\"at\":\"DOMContentLoaded\",\"theme\":\"light\",\"colorScheme\":\"light\",\"bg\":\"rgb(245, 244, 248)\",\"ready\":\"interactive\"},{\"at\":\"load\",\"theme\":\"light\"}]"
+    },
+    {
+      "name": "light@1440: first styled paint in theme",
+      "ok": true,
+      "detail": "rgb(245, 244, 248)"
+    },
+    {
+      "name": "light@1440: flow step counter removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "light@1440: wizard destination field removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "light@1440 home: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440 home: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440 home: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440 home: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(222, 219, 229)\",\"bg\":\"rgb(245, 244, 248)\",\"ratio\":1.25}]"
+    },
+    {
+      "name": "light@1440: flow no horizontal overflow",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "light@1440: no \"N из 3\" text",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "light@1440 flow: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440 flow: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440 flow: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440 flow: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(222, 219, 229)\",\"bg\":\"rgb(245, 244, 248)\",\"ratio\":1.25}]"
+    },
+    {
+      "name": "light@1440: source folder selectable",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "light@1440 review: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440 review: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440 review: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440 review: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(222, 219, 229)\",\"bg\":\"rgb(245, 244, 248)\",\"ratio\":1.25}]"
+    },
+    {
+      "name": "light@1440 account: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440 account: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440 account: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440 account: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(222, 219, 229)\",\"bg\":\"rgb(245, 244, 248)\",\"ratio\":1.25}]"
+    },
+    {
+      "name": "light@1440: no console errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "light@1440: no failed requests",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "toggle@1440: system light -> light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "toggle@1440: click switches to dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "toggle@1440: aria-pressed=true after switch",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "toggle@1440: dark saved to localStorage",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "toggle@1440: dark background after switch",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "toggle@1440: saved dark survives reload under light OS",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "toggle@1440: no flash on reload",
+      "ok": true,
+      "detail": "[{\"at\":\"DOMContentLoaded\",\"theme\":\"dark\",\"colorScheme\":\"dark\",\"bg\":\"rgb(22, 21, 26)\",\"ready\":\"interactive\"},{\"at\":\"load\",\"theme\":\"dark\"}]"
+    },
+    {
+      "name": "toggle@1440: second click returns to light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "toggle@1440: aria-pressed=false after return",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "dark@1440: data-theme=dark",
+      "ok": true,
+      "detail": "{\"theme\":\"dark\",\"colorScheme\":\"dark\",\"bg\":\"rgb(22, 21, 26)\",\"ink\":\"rgb(243, 239, 249)\",\"meta\":\"#16151a\",\"togglesVisible\":1,\"presses\":[\"true\"],\"labels\":[\"Тёмная тема\"],\"moon\":[],\"sun\":[\"block\"],\"scrollWidth\":1440,\"bodyScrollWidth\":1440,\"innerWidth\":1440,\"samples\":[{\"at\":\"DOMContentLoaded\",\"theme\":\"dark\",\"colorScheme\":\"dark\",\"bg\":\"rgb(22, 21, 26)\",\"ready\":\"interactive\"},{\"at\":\"load\",\"theme\":\"dark\"}],\"stepPos\":false,\"setupSteps\":false,\"fdest\":false,\"iz3\":false,\"setupTitle\":\"\"}"
+    },
+    {
+      "name": "dark@1440: color-scheme=dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "dark@1440: body background",
+      "ok": true,
+      "detail": "rgb(22, 21, 26) vs rgb(22, 21, 26)"
+    },
+    {
+      "name": "dark@1440: meta theme-color",
+      "ok": true,
+      "detail": "#16151a"
+    },
+    {
+      "name": "dark@1440: aria-pressed",
+      "ok": true,
+      "detail": "[\"true\"]"
+    },
+    {
+      "name": "dark@1440: aria-label",
+      "ok": true,
+      "detail": "[\"Тёмная тема\"]"
+    },
+    {
+      "name": "dark@1440: sun/moon icon visibility",
+      "ok": true,
+      "detail": "moon= sun=block"
+    },
+    {
+      "name": "dark@1440: no horizontal overflow",
+      "ok": true,
+      "detail": "1440/1440/1440"
+    },
+    {
+      "name": "dark@1440: theme set before DOMContentLoaded",
+      "ok": true,
+      "detail": "[{\"at\":\"DOMContentLoaded\",\"theme\":\"dark\",\"colorScheme\":\"dark\",\"bg\":\"rgb(22, 21, 26)\",\"ready\":\"interactive\"},{\"at\":\"load\",\"theme\":\"dark\"}]"
+    },
+    {
+      "name": "dark@1440: first styled paint in theme",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "dark@1440: flow step counter removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "dark@1440: wizard destination field removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "dark@1440 home: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440 home: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440 home: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440 home: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(57, 53, 63)\",\"bg\":\"rgb(22, 21, 26)\",\"ratio\":1.52}]"
+    },
+    {
+      "name": "dark@1440: flow no horizontal overflow",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "dark@1440: no \"N из 3\" text",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "dark@1440 flow: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440 flow: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440 flow: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440 flow: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(57, 53, 63)\",\"bg\":\"rgb(22, 21, 26)\",\"ratio\":1.52}]"
+    },
+    {
+      "name": "dark@1440: source folder selectable",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "dark@1440 review: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440 review: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440 review: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440 review: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(57, 53, 63)\",\"bg\":\"rgb(22, 21, 26)\",\"ratio\":1.52}]"
+    },
+    {
+      "name": "dark@1440 account: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440 account: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440 account: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440 account: decorative hairline borders (WCAG 1.4.11 exception)",
+      "ok": true,
+      "detail": "[{\"tag\":\"button\",\"cls\":\"account-chip\",\"border\":\"rgb(57, 53, 63)\",\"bg\":\"rgb(22, 21, 26)\",\"ratio\":1.52}]"
+    },
+    {
+      "name": "dark@1440: no console errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "dark@1440: no failed requests",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "toggle@1440: system light -> light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "toggle@1440: click switches to dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "toggle@1440: aria-pressed=true after switch",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "toggle@1440: dark saved to localStorage",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "toggle@1440: dark background after switch",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "toggle@1440: saved dark survives reload under light OS",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "toggle@1440: no flash on reload",
+      "ok": true,
+      "detail": "[{\"at\":\"DOMContentLoaded\",\"theme\":\"dark\",\"colorScheme\":\"dark\",\"bg\":\"rgb(22, 21, 26)\",\"ready\":\"interactive\"},{\"at\":\"load\",\"theme\":\"dark\"}]"
+    },
+    {
+      "name": "toggle@1440: second click returns to light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "toggle@1440: aria-pressed=false after return",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup light@1440: theme applied",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "setup light@1440: theme toggle in setup header",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "name": "setup light@1440: step strips removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup light@1440: single-step title",
+      "ok": true,
+      "detail": "Подключение"
+    },
+    {
+      "name": "setup light@1440: dead destination input removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup light@1440: no horizontal overflow",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "setup light@1440: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup light@1440: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup light@1440: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup light@1440: no console errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup light@1440: no exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup dark@1440: theme applied",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "setup dark@1440: theme toggle in setup header",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "name": "setup dark@1440: step strips removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup dark@1440: single-step title",
+      "ok": true,
+      "detail": "Подключение"
+    },
+    {
+      "name": "setup dark@1440: dead destination input removed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "setup dark@1440: no horizontal overflow",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "setup dark@1440: text contrast >= 4.5",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup dark@1440: control border contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup dark@1440: icon contrast >= 3",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup dark@1440: no console errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup dark@1440: no exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "clientToken@1440: first attempt failed, retry sent",
+      "ok": true,
+      "detail": "posts=2"
+    },
+    {
+      "name": "clientToken@1440: first POST carries clientToken",
+      "ok": true,
+      "detail": "\"6776c6cd-3e1c-42c1-bbf1-8685582152f9\""
+    },
+    {
+      "name": "clientToken@1440: retry reuses the same token",
+      "ok": true,
+      "detail": "6776c6cd-3e1c-42c1-bbf1-8685582152f9 vs 6776c6cd-3e1c-42c1-bbf1-8685582152f9"
+    },
+    {
+      "name": "clientToken@1440: retry body unchanged",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "clientToken@1440: dialog closed after confirmed start",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "clientToken@1440: success toast after retry",
+      "ok": true,
+      "detail": "[\"Скачивание началось 1 папка → /downloads · 12 483 файла · 910,6 МБ\"]"
+    },
+    {
+      "name": "clientToken@1440: console clean",
+      "ok": true,
+      "detail": "{\"errors\":[],\"exceptions\":[],\"http\":[]}"
+    }
+  ]
+}

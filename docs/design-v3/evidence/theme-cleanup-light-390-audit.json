@@ -1,0 +1,63 @@
+{
+  "home": {
+    "texts": [],
+    "borders": [],
+    "decorativeBorders": [
+      {
+        "tag": "button",
+        "cls": "account-chip",
+        "border": "rgb(222, 219, 229)",
+        "bg": "rgb(245, 244, 248)",
+        "ratio": 1.25
+      }
+    ],
+    "icons": []
+  },
+  "flow": {
+    "texts": [],
+    "borders": [],
+    "decorativeBorders": [
+      {
+        "tag": "button",
+        "cls": "account-chip",
+        "border": "rgb(222, 219, 229)",
+        "bg": "rgb(245, 244, 248)",
+        "ratio": 1.25
+      }
+    ],
+    "icons": []
+  },
+  "review": {
+    "texts": [],
+    "borders": [],
+    "decorativeBorders": [
+      {
+        "tag": "button",
+        "cls": "account-chip",
+        "border": "rgb(222, 219, 229)",
+        "bg": "rgb(245, 244, 248)",
+        "ratio": 1.25
+      }
+    ],
+    "icons": []
+  },
+  "account": {
+    "texts": [],
+    "borders": [],
+    "decorativeBorders": [
+      {
+        "tag": "button",
+        "cls": "account-chip",
+        "border": "rgb(222, 219, 229)",
+        "bg": "rgb(245, 244, 248)",
+        "ratio": 1.25
+      }
+    ],
+    "icons": []
+  },
+  "console": {
+    "errors": [],
+    "exceptions": [],
+    "http": []
+  }
+}

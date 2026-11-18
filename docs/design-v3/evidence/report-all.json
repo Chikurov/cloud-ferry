@@ -1,0 +1,148 @@
+{
+  "base": "http://127.0.0.1:8877",
+  "phase": "all",
+  "problems": [],
+  "report": [
+    {
+      "name": "overflow 1440 home: html scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "scrollWidth=1440 innerWidth=1440 bodyScroll=1440"
+    },
+    {
+      "name": "1440: app view visible",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "1440: boot skeleton hidden",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "console 1440 home: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 home: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 home: no JS log errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 home: no API responses >= 400",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "home: seeded jobs rendered",
+      "ok": true,
+      "detail": "[{\"status\":\"running\",\"title\":\"Фотографии\",\"stats\":[\"4,0 из 11,2 ГБ\",\"8,4 МБ/с · ≈ 14 мин\"],\"action\":\"stop\"},{\"status\":\"failed\",\"title\":\"Видео\",\"stats\":[\"95,4 из 762,9 МБ\",\"Не удалось\"],\"action\":\"resume\"},{\"status\":\"done\",\"title\":\"Документы\",\"stats\":[\"3,7 из 3,7 ГБ\",\"Завершена\"],\"action\":\"dismiss-job\"}]"
+    },
+    {
+      "name": "home: running job has pause action",
+      "ok": true,
+      "detail": "[{\"status\":\"running\",\"title\":\"Фотографии\",\"stats\":[\"4,0 из 11,2 ГБ\",\"8,4 МБ/с · ≈ 14 мин\"],\"action\":\"stop\"},{\"status\":\"failed\",\"title\":\"Видео\",\"stats\":[\"95,4 из 762,9 МБ\",\"Не удалось\"],\"action\":\"resume\"},{\"status\":\"done\",\"title\":\"Документы\",\"stats\":[\"3,7 из 3,7 ГБ\",\"Завершена\"],\"action\":\"dismiss-job\"}]"
+    },
+    {
+      "name": "home: done job has dismiss action",
+      "ok": true,
+      "detail": "[{\"status\":\"running\",\"title\":\"Фотографии\",\"stats\":[\"4,0 из 11,2 ГБ\",\"8,4 МБ/с · ≈ 14 мин\"],\"action\":\"stop\"},{\"status\":\"failed\",\"title\":\"Видео\",\"stats\":[\"95,4 из 762,9 МБ\",\"Не удалось\"],\"action\":\"resume\"},{\"status\":\"done\",\"title\":\"Документы\",\"stats\":[\"3,7 из 3,7 ГБ\",\"Завершена\"],\"action\":\"dismiss-job\"}]"
+    },
+    {
+      "name": "home: failed job has resume action",
+      "ok": true,
+      "detail": "[{\"status\":\"running\",\"title\":\"Фотографии\",\"stats\":[\"4,0 из 11,2 ГБ\",\"8,4 МБ/с · ≈ 14 мин\"],\"action\":\"stop\"},{\"status\":\"failed\",\"title\":\"Видео\",\"stats\":[\"95,4 из 762,9 МБ\",\"Не удалось\"],\"action\":\"resume\"},{\"status\":\"done\",\"title\":\"Документы\",\"stats\":[\"3,7 из 3,7 ГБ\",\"Завершена\"],\"action\":\"dismiss-job\"}]"
+    },
+    {
+      "name": "home: account chip visible",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "home: drive row account name rendered",
+      "ok": true,
+      "detail": "artem"
+    },
+    {
+      "name": "overflow 390 home: html scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "scrollWidth=390 innerWidth=390 bodyScroll=390"
+    },
+    {
+      "name": "console 390 home: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 390 home: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 390 home: no JS log errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 390 home: no API responses >= 400",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "390 flow: dialog opens",
+      "ok": true,
+      "detail": "{\"open\":true}"
+    },
+    {
+      "name": "390 flow: no horizontal overflow",
+      "ok": true,
+      "detail": "scrollWidth=390 innerWidth=390"
+    },
+    {
+      "name": "console 390 flow: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 390 flow: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 390 flow: no JS log errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 390 flow: no API responses >= 400",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "console": {
+    "errors": [],
+    "exceptions": [],
+    "logErrors": []
+  },
+  "apiResponses": [
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/accounts/a1/folders",
+    "200 /api/jobs/existing",
+    "200 /api/cloud/sizes",
+    "200 /api/oauth/yandex/status",
+    "200 /api/state",
+    "200 /api/system"
+  ]
+}

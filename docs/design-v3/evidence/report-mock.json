@@ -1,0 +1,128 @@
+{
+  "problems": [],
+  "report": [
+    {
+      "name": "mock full: one job from /api/state",
+      "ok": true,
+      "detail": "{\"drive\":\"artem\",\"jobCount\":1,\"row\":{\"status\":\"running\",\"title\":\"Фотографии\",\"stats\":[\"12,3 из 29,0 ГБ\",\"8,4 МБ/с · ≈ 5 ч 56 мин\"],\"progress\":42},\"body\":\"Cloud Ferry\\nНастройки\\nartem\\nЯндекс Диск\\nСкачать\\n•••\\nФотографии\\n12,3 из 29,0 ГБ\\n8,4 МБ/с · ≈ 5 ч 56 мин\"}"
+    },
+    {
+      "name": "mock full: account login from /api/state",
+      "ok": true,
+      "detail": "artem"
+    },
+    {
+      "name": "mock full: job size text derived from job.stats",
+      "ok": true,
+      "detail": "12,3 из 29,0 ГБ"
+    },
+    {
+      "name": "mock full: job speed from job.stats.speed",
+      "ok": true,
+      "detail": "8,4 МБ/с · ≈ 5 ч 56 мин"
+    },
+    {
+      "name": "mock full: eta from job.stats.eta",
+      "ok": true,
+      "detail": "8,4 МБ/с · ≈ 5 ч 56 мин"
+    },
+    {
+      "name": "mock full: progress from job.stats bytes/total",
+      "ok": true,
+      "detail": "42"
+    },
+    {
+      "name": "mock full: no invented \"42 %\" literal in the home text",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "mock full: panel login from account.login",
+      "ok": true,
+      "detail": "{\"login\":\"artem\",\"disk\":\"128,5 из 200 ГБ\",\"bar\":\"64%\",\"server\":\"931,5 ГБ из 1,8 ТБ\",\"status\":\"Доступно\"}"
+    },
+    {
+      "name": "mock full: disk usage from /api/system cloud",
+      "ok": true,
+      "detail": "128,5 из 200 ГБ"
+    },
+    {
+      "name": "mock full: disk bar from system cloud used/total",
+      "ok": true,
+      "detail": "64%"
+    },
+    {
+      "name": "mock full: server space from /api/system roots",
+      "ok": true,
+      "detail": "931,5 ГБ из 1,8 ТБ"
+    },
+    {
+      "name": "mock full: access from account.status",
+      "ok": true,
+      "detail": "Доступно"
+    },
+    {
+      "name": "mock full: download flow opens",
+      "ok": true,
+      "detail": "{\"rows\":[\"Фотографии\",\"Документы\",\"Видео\"],\"dialogOpen\":true,\"context\":\"flow-source\"}"
+    },
+    {
+      "name": "mock full: cloud folders from mock /api/accounts/a1/folders",
+      "ok": true,
+      "detail": "[\"Фотографии\",\"Документы\",\"Видео\"]"
+    },
+    {
+      "name": "mock full: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "mock full: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "mock empty: empty state with connect tile",
+      "ok": true,
+      "detail": "{\"appHidden\":false,\"setupHidden\":true,\"plus\":true,\"text\":\"Cloud Ferry\\nПодключить диск \\n    \\n      \\n      Нет связи с серверомПроверьте, что приложение запущено\\n      Повторить\\n    \\n\\n    \\n      \\n        \\n      \\n      Cloud Ferry\\n    \\n\\n    \\n      \\n      \\n      \\n      \\n      \\n        Отмена\\n        \\n        Подключиться\\n      \\n    \\n  \"}"
+    },
+    {
+      "name": "mock empty: no numbers rendered in empty state",
+      "ok": true,
+      "detail": "Cloud Ferry\nПодключить диск \n    \n      \n      Нет связи с серверомПроверьте, что приложение запущено\n      Повторить\n    \n\n    \n      \n        \n      \n      Cloud Ferry\n    \n\n    \n      \n      \n      \n      \n      \n        Отмена\n        \n        Подключиться\n      \n    \n  "
+    },
+    {
+      "name": "mock empty: no size or percent units in empty state",
+      "ok": true,
+      "detail": "Cloud Ferry\nПодключить диск \n    \n      \n      Нет связи с серверомПроверьте, что приложение запущено\n      Повторить\n    \n\n    \n      \n        \n      \n      Cloud Ferry\n    \n\n    \n      \n      \n      \n      \n      \n        Отмена\n        \n        Подключиться\n      \n    \n  "
+    },
+    {
+      "name": "mock empty: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "mock empty: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "mock empty: no horizontal overflow",
+      "ok": true,
+      "detail": "{\"scroll\":1440,\"inner\":1440}"
+    }
+  ],
+  "api": [
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/accounts/a1/folders",
+    "200 /api/cloud/sizes",
+    "200 /api/jobs/existing",
+    "200 /api/state",
+    "200 /api/system"
+  ]
+}

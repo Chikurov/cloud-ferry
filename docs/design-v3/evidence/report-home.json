@@ -1,0 +1,365 @@
+{
+  "base": "http://127.0.0.1:8877",
+  "phase": "home",
+  "problems": [],
+  "report": [
+    {
+      "name": "overflow 1440 home: html scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "scrollWidth=1440 innerWidth=1440 bodyScroll=1440"
+    },
+    {
+      "name": "1440: app view visible",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "1440: boot skeleton hidden",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "console 1440 home: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 home: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 home: no JS log errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 home: no API responses >= 400",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "home: seeded jobs rendered",
+      "ok": true,
+      "detail": "[{\"status\":\"running\",\"title\":\"Фотографии\",\"stats\":[\"4,1 из 11,2 ГБ\",\"8,4 МБ/с · ≈ 14 мин\"],\"action\":\"stop\"},{\"status\":\"failed\",\"title\":\"Видео\",\"stats\":[\"95,4 из 762,9 МБ\",\"Не удалось\"],\"action\":\"resume\"},{\"status\":\"done\",\"title\":\"Документы\",\"stats\":[\"3,7 из 3,7 ГБ\",\"Завершена\"],\"action\":\"dismiss-job\"}]"
+    },
+    {
+      "name": "home: running job has pause action",
+      "ok": true,
+      "detail": "[{\"status\":\"running\",\"title\":\"Фотографии\",\"stats\":[\"4,1 из 11,2 ГБ\",\"8,4 МБ/с · ≈ 14 мин\"],\"action\":\"stop\"},{\"status\":\"failed\",\"title\":\"Видео\",\"stats\":[\"95,4 из 762,9 МБ\",\"Не удалось\"],\"action\":\"resume\"},{\"status\":\"done\",\"title\":\"Документы\",\"stats\":[\"3,7 из 3,7 ГБ\",\"Завершена\"],\"action\":\"dismiss-job\"}]"
+    },
+    {
+      "name": "home: done job has dismiss action",
+      "ok": true,
+      "detail": "[{\"status\":\"running\",\"title\":\"Фотографии\",\"stats\":[\"4,1 из 11,2 ГБ\",\"8,4 МБ/с · ≈ 14 мин\"],\"action\":\"stop\"},{\"status\":\"failed\",\"title\":\"Видео\",\"stats\":[\"95,4 из 762,9 МБ\",\"Не удалось\"],\"action\":\"resume\"},{\"status\":\"done\",\"title\":\"Документы\",\"stats\":[\"3,7 из 3,7 ГБ\",\"Завершена\"],\"action\":\"dismiss-job\"}]"
+    },
+    {
+      "name": "home: failed job has resume action",
+      "ok": true,
+      "detail": "[{\"status\":\"running\",\"title\":\"Фотографии\",\"stats\":[\"4,1 из 11,2 ГБ\",\"8,4 МБ/с · ≈ 14 мин\"],\"action\":\"stop\"},{\"status\":\"failed\",\"title\":\"Видео\",\"stats\":[\"95,4 из 762,9 МБ\",\"Не удалось\"],\"action\":\"resume\"},{\"status\":\"done\",\"title\":\"Документы\",\"stats\":[\"3,7 из 3,7 ГБ\",\"Завершена\"],\"action\":\"dismiss-job\"}]"
+    },
+    {
+      "name": "home: account chip visible",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "home: drive row account name rendered",
+      "ok": true,
+      "detail": "artem"
+    },
+    {
+      "name": "account: panel opens",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "account: login from API",
+      "ok": true,
+      "detail": "artem"
+    },
+    {
+      "name": "account: method label from provider",
+      "ok": true,
+      "detail": "Пароль приложения"
+    },
+    {
+      "name": "account: status from account.status",
+      "ok": true,
+      "detail": "Доступно"
+    },
+    {
+      "name": "account: disk usage from /api/system cloud",
+      "ok": true,
+      "detail": "128,5 из 200 ГБ"
+    },
+    {
+      "name": "account: server free space from /api/system roots",
+      "ok": true,
+      "detail": "92 ГБ из 228,3 ГБ"
+    },
+    {
+      "name": "account probe: result from /api/accounts/{id}/probe",
+      "ok": true,
+      "detail": "{\"text\":\"Доступ есть. Занято 128,5 ГБ из 200 ГБ\",\"hidden\":false,\"cls\":\"account-probe-result account-probe-result--ok\"}"
+    },
+    {
+      "name": "console 1440 account: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 account: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 account: no JS log errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 account: no API responses >= 400",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "jobs: pause button clicked",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "jobs: POST /api/jobs/{id}/stop -> paused card offers resume",
+      "ok": true,
+      "detail": "{\"paused\":true,\"action\":\"resume\",\"toasts\":\"Скачивание приостановлено\\n1 папка · /tmp/cf-test/downloads/yandex\"}"
+    },
+    {
+      "name": "jobs: stop toast text",
+      "ok": true,
+      "detail": "Скачивание приостановлено\n1 папка · /tmp/cf-test/downloads/yandex"
+    },
+    {
+      "name": "jobs: resume button clicked",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "jobs: POST /api/jobs/{id}/resume -> running card",
+      "ok": true,
+      "detail": "{\"running\":true,\"toasts\":\"Скачивание приостановлено\\n1 папка · /tmp/cf-test/downloads/yandex | Скачивание продолжено\\n1 папка · /tmp/cf-test/downloads/yandex. Скачанные файлы не будут скачаны снова.\"}"
+    },
+    {
+      "name": "jobs: resume toast text",
+      "ok": true,
+      "detail": "Скачивание приостановлено\n1 папка · /tmp/cf-test/downloads/yandex | Скачивание продолжено\n1 папка · /tmp/cf-test/downloads/yandex. Скачанные файлы не будут скачаны снова."
+    },
+    {
+      "name": "jobs: done card dismissed from list (client-side)",
+      "ok": true,
+      "detail": "{\"doneRows\":0,\"stored\":\"[\\\"j2\\\"]\"}"
+    },
+    {
+      "name": "console 1440 jobs: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 jobs: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 jobs: no JS log errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 jobs: no API responses >= 400",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "flow: opens at source step",
+      "ok": true,
+      "detail": "{\"open\":true,\"context\":\"flow-source\"}"
+    },
+    {
+      "name": "flow source: cloud folders from /api/accounts/a1/folders",
+      "ok": true,
+      "detail": "[\"Видео\",\"Документы\",\"Музыка\",\"Фотографии\"]"
+    },
+    {
+      "name": "flow source: folder sizes from /api/cloud/sizes",
+      "ok": true,
+      "detail": "[\"1 файл · 1 ГБ\",\"2 файла · 1,5 МБ\",\"0 файлов · 0 Б\",\"4 файла · 19 МБ\"]"
+    },
+    {
+      "name": "flow source: \"already on server\" tags from /api/jobs/existing",
+      "ok": true,
+      "detail": "[\"Пустая папка на сервере\"]"
+    },
+    {
+      "name": "flow source: nested cloud folders loaded",
+      "ok": true,
+      "detail": "{\"rows\":[\"Видео\",\"Документы\",\"Музыка\",\"Фотографии\",\"Фотографии/2023\",\"Фотографии/2024\"],\"children\":true}"
+    },
+    {
+      "name": "flow source: file preview from /api/accounts/{id}/files",
+      "ok": true,
+      "detail": "{\"panel\":true,\"files\":[\"cover.jpg\"],\"error\":\"\"}"
+    },
+    {
+      "name": "console 1440 flow source: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 flow source: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 flow source: no JS log errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 flow source: no API responses >= 400",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "flow source: continue enabled after selection",
+      "ok": true,
+      "detail": "{\"text\":\"Далее\",\"disabled\":false}"
+    },
+    {
+      "name": "flow: review opened after preflight",
+      "ok": true,
+      "detail": "{\"context\":\"flow-review\",\"error\":\"\"}"
+    },
+    {
+      "name": "flow review: preflight shows files/bytes",
+      "ok": true,
+      "detail": "Источник\n1 папка\nИзменить\n/Документы\nПапка на сервере\n/tmp/cf-test/downloads\nИзменить\nК скачиванию\n8 файлов · 1 ГБ\nСвободно\n92 ГБ"
+    },
+    {
+      "name": "flow review: preflight did not fail",
+      "ok": true,
+      "detail": "Источник\n1 папка\nИзменить\n/Документы\nПапка на сервере\n/tmp/cf-test/downloads\nИзменить\nК скачиванию\n8 файлов · 1 ГБ\nСвободно\n92 ГБ"
+    },
+    {
+      "name": "console 1440 flow review: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 flow review: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 flow review: no JS log errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 flow review: no API responses >= 400",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "flow: POST /api/jobs returned 201",
+      "ok": true,
+      "detail": "[{\"url\":\"http://127.0.0.1:8877/api/jobs\",\"status\":201,\"type\":\"Fetch\",\"requestId\":\"11551.42\"}]"
+    },
+    {
+      "name": "flow: dialog closed after job start",
+      "ok": true,
+      "detail": "{\"dialogOpen\":false,\"toasts\":[\"Скачивание началось\\n1 папка → /tmp/cf-test/downloads · 8 файлов · 1 ГБ\"],\"jobCount\":3,\"globalToasts\":[],\"jobCountBefore\":2}"
+    },
+    {
+      "name": "flow: start toast shown",
+      "ok": true,
+      "detail": "Скачивание началось\n1 папка → /tmp/cf-test/downloads · 8 файлов · 1 ГБ"
+    },
+    {
+      "name": "flow: new job card appears",
+      "ok": true,
+      "detail": "{\"dialogOpen\":false,\"toasts\":[\"Скачивание началось\\n1 папка → /tmp/cf-test/downloads · 8 файлов · 1 ГБ\"],\"jobCount\":3,\"globalToasts\":[],\"jobCountBefore\":2}"
+    },
+    {
+      "name": "flow: new job card shows selected source",
+      "ok": true,
+      "detail": "{\"status\":\"running\",\"title\":\"Документы\"}"
+    },
+    {
+      "name": "console 1440 after start: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 after start: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 after start: no JS log errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console 1440 after start: no API responses >= 400",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "console": {
+    "errors": [],
+    "exceptions": [],
+    "logErrors": []
+  },
+  "apiResponses": [
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/accounts/a1/probe",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/jobs/j1/stop",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/jobs/j1/resume",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/jobs/j1/stop",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/accounts/a1/folders",
+    "200 /api/cloud/sizes",
+    "200 /api/jobs/existing",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/accounts/a1/folders",
+    "200 /api/jobs/existing",
+    "200 /api/cloud/sizes",
+    "200 /api/accounts/a1/files",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/preflight",
+    "200 /api/state",
+    "200 /api/system",
+    "201 /api/jobs",
+    "200 /api/system",
+    "200 /api/state",
+    "200 /api/state",
+    "200 /api/system"
+  ]
+}

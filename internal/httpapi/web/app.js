@@ -3,60 +3,6 @@
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
-/* --- theme ---------------------------------------------------------------- */
-
-/* Тема живёт на корне документа: атрибут уже выставлен inline-скриптом в
-   <head> до первого кадра. Здесь — только переключение и сохранение выбора. */
-const THEME_KEY = 'cloudferry-theme';
-const THEME_LIGHT = 'light';
-const THEME_DARK = 'dark';
-
-function storedTheme() {
-  try {
-    const value = window.localStorage.getItem(THEME_KEY);
-    return value === THEME_LIGHT || value === THEME_DARK ? value : '';
-  } catch {
-    return '';
-  }
-}
-
-function systemTheme() {
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? THEME_DARK : THEME_LIGHT;
-}
-
-function activeTheme() {
-  return document.documentElement.getAttribute('data-theme') === THEME_DARK ? THEME_DARK : THEME_LIGHT;
-}
-
-/* Иконки и подпись тумблера: видимая иконка — действие, а не текущее состояние. */
-function syncThemeUI() {
-  const dark = activeTheme() === THEME_DARK;
-  const label = dark ? 'Светлая тема' : 'Тёмная тема';
-  for (const button of $$('[data-theme-toggle]')) {
-    button.setAttribute('aria-label', label);
-    button.setAttribute('title', label);
-    const sun = button.querySelector('.theme-icon--sun');
-    const moon = button.querySelector('.theme-icon--moon');
-    if (sun) sun.hidden = !dark;
-    if (moon) moon.hidden = dark;
-  }
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', dark ? '#151920' : '#f4f6f9');
-}
-
-function applyTheme(theme, options = {}) {
-  const value = theme === THEME_DARK ? THEME_DARK : THEME_LIGHT;
-  document.documentElement.setAttribute('data-theme', value);
-  if (options.persist !== false) {
-    try { window.localStorage.setItem(THEME_KEY, value); } catch { /* приватный режим */ }
-  }
-  syncThemeUI();
-}
-
-function toggleTheme() {
-  applyTheme(activeTheme() === THEME_DARK ? THEME_LIGHT : THEME_DARK);
-}
-
 /* --- vocabulary ----------------------------------------------------------- */
 
 /* Job statuses: five labels, no synonyms. */
@@ -66,10 +12,8 @@ const JOB_STATUS = {
   verifying: ['Проверяем файлы', 'status-pill--running'],
   done: ['Готово', 'status-pill--ok'],
   failed: ['Не удалось', 'status-pill--failed'],
-  /* canceled — остановка пользователем, interrupted — сбой на стороне
-     сервера. Обе задачи можно продолжить, но причины разные. */
-  interrupted: ['Прервано', 'status-pill--paused'],
-  canceled: ['Остановлено', 'status-pill--paused'],
+  interrupted: ['Пауза', 'status-pill--paused'],
+  canceled: ['Пауза', 'status-pill--paused'],
 };
 const ACTIVE_STATUSES = ['running', 'verifying', 'queued'];
 const PAUSED_STATUSES = ['failed', 'interrupted', 'canceled'];
@@ -117,16 +61,20 @@ let wizard = {
   fields: {},
   methodTouched: false,
 };
-/* Последняя выбранная папка на сервере (в памяти страницы). Назначение
-   нового сценария по умолчанию берётся из backend, а не из этой строки. */
-let preferredDest = '';
 let homeMode = '';
+let dismissedJobs = new Set();
+try {
+  const saved = JSON.parse(localStorage.getItem('cloud-ferry.dismissed-jobs') || '[]');
+  if (Array.isArray(saved)) dismissedJobs = new Set(saved.filter(id => typeof id === 'string'));
+} catch { /* Хранилище браузера может быть недоступно. */ }
+
 let lastStatuses = null;
 let suppressed = new Map();
 let offlineShown = false;
 /* Возвращать ли фокус на чип после закрытия панели аккаунта: при переходе
    в мастер или в диалог выхода фокус ведёт уже другое действие. */
 let accountFocusRestore = true;
+let probeBusy = false;
 let cloudUsage = null;
 let cloudBusy = false;
 let lastCloudAttempt = 0;
@@ -155,17 +103,14 @@ let yandexAuth = {
   tickTimer: null,
 };
 const jobActionBusy = new Set();
-/* Ошибка действия у карточки задачи остаётся рядом с действием, пока её можно
-   исправить: тост не единственный носитель ошибки. */
-let nowActionError = '';
 let focusStartAfterRender = false;
 let pendingFocusKey = '';
-/* Одна сессия диалога «Скачать». Контексты переключают экран, но накопленные
-   узлы дерева, раскрытые ветки, выбор и прокрутка живут в этой же сессии:
-   возврат назад не теряет ни выбранное, ни просмотренное. */
+/* Одна сессия диалога «Новое скачивание».
+   Шаги переключают context, но накопленные узлы дерева, раскрытые ветки,
+   выбор и прокрутка живут в этой же сессии: «Назад» возвращает состояние. */
 let folder = {
-  context: 'flow-source', /* flow-source | flow-dest | flow-review */
-  target: 'cloud', /* cloud | server */
+  context: 'flow-dest', /* flow-dest | flow-source | flow-review */
+  target: 'server', /* server | cloud */
   path: '',
   parent: null,
   roots: [],
@@ -179,8 +124,10 @@ let folder = {
   createOpen: false,
   createBusy: false,
   createUnavailable: false,
-  /* «Что скачать»: папки и отдельные файлы выбираются независимо. */
+  createError: '',
+  /* Шаг 2: папки и отдельные файлы выбираются независимо. */
   all: false,
+  showExisting: false,
   expanded: new Set(),
   nodes: new Map(),
   selected: [],
@@ -192,44 +139,46 @@ let folder = {
   filePanelPath: '',
   files: new Map(),
   filesInflight: new Map(),
+  /* Размеры папок текущего уровня: path → {bytes, files} | {error:true}. */
+  sizes: new Map(),
+  sizePending: new Set(),
   /* Уже скачанные: по одному ответу на видимый уровень. */
   existingPending: new Set(),
   existingFailed: new Set(),
   existingError: '',
   existingDest: '',
-  /* Куда вернуться после вложенного просмотра папки на сервере. */
-  returnTo: '',
   finished: false,
 };
 /* Создание папок появляется вместе с POST /api/fs/dirs. Если сервер этой
    ручки не знает (404/405), кнопку убираем до перезагрузки страницы. */
 let folderCreateUnavailable = false;
+/* POST /api/cloud/sizes мог появиться позже фронтенда: на 404 просто больше
+   не запрашиваем размеры и не показываем их — без ошибок и заглушек. */
+let cloudSizesUnavailable = false;
 /* GET /api/accounts/{id}/files появился позже пикера: если сервер ответил
-   404 не-JSON или 405, ручку считаем отсутствующей и убираем кнопки «Показать
-   файлы» до перезагрузки. 404 нашего API (папка или аккаунт исчезли) —
-   ошибка конкретной панели с «Повторить», а не повод отключать её всю. */
+   404/405, кнопки «Показать файлы» убираем и оставляем прежний пикер. */
 let cloudFilesUnavailable = false;
 let folderToken = 0;
 
-/* «Скачать»: один диалог и один черновик на два шага плюс вложенный выбор
-   папки на сервере из строки «Сохранить в». flowSourceAll — режим «Весь диск»;
-   cloudSelection — выбранные корни папок (до 20), cloudFileSelection — отдельные
-   файлы (до 100); flowDest — подтверждённое назначение; flowDestStatus —
-   результат проверки доступности папки (checking | ready | missing). Выбор
-   хранится в черновике, а не в DOM, поэтому переживает ошибки, переходы и
-   повторную отрисовку. */
+/* «Новое скачивание»: один диалог и один черновик на три шага.
+   flowSourceAll — режим «Весь диск»; cloudSelection — выбранные корни папок
+   (до 20), cloudFileSelection — отдельные файлы (до 100); flowDest —
+   подтверждённая папка на сервере. Выбор хранится в черновике, а не в DOM,
+   поэтому переживает ошибки, переходы и повторную отрисовку. */
 const MAX_SOURCE_FOLDERS = 20;
 const MAX_SOURCE_FILES = 100;
-/* Защита от двойного клика по главной кнопке: первый клик меняет шаг,
-   второй в тот же интервал не должен запускать следующее действие. */
-const FLOW_PRIMARY_GUARD_MS = 400;
-let flowPrimaryGuardUntil = 0;
+let flowStep = 1;
+let excludedFolders = [];
 let flowSourceAll = false;
+let flowShowExisting = false;
 let flowDest = '';
-let flowDestStatus = 'idle'; /* idle | checking | ready | missing */
-let flowDestToken = 0;
+let flowFree = null;
+let flowTotal = null;
 let flowBusy = false;
 let flowOpener = null;
+/* 'dest' | 'source' — шаг открыт по «Изменить» из проверки и возвращает
+   обратно, не пересобирая сценарий с первого шага. */
+let flowEditing = '';
 /* После успешного запуска фокус уходит в «Сейчас», а не на кнопку входа:
    close-событие диалога не должно перебить этот переход. */
 let flowFocusNow = false;
@@ -352,16 +301,12 @@ async function api(path, options = {}) {
     timed.cleanup();
   }
   let data = null;
-  let json = false;
-  if (text) {
-    try { data = JSON.parse(text); json = true; } catch { data = { error: text }; }
-  }
+  try { data = text ? JSON.parse(text) : null; } catch { data = { error: text }; }
   if (!response.ok) {
     const serverText = data && (data.error || data.message);
     const error = new Error(typeof serverText === 'string' && serverText ? serverText : `HTTP ${response.status}`);
     error.status = response.status;
     error.path = path;
-    error.nonJson = !json;
     error.data = data;
     error.field = String((data && (data.field || data.param)) || '');
     throw error;
@@ -506,8 +451,12 @@ function clearServerText(value) {
   return text;
 }
 
+/* 403 от папок на сервере — про путь, а не про вход в облако: сервер отвечает
+   «в эту папку сохранять нельзя» или «папка ведёт за пределы доступной».
+   Такое сообщение надо показать как есть, иначе интерфейс отправит человека
+   заново входить в Диск. Остальные 401/403 — про доступ к облаку. */
 function localFolderRequest(error) {
-  const requestPath = String(error && error.path || '');
+  const requestPath = String((error && error.path) || '');
   return requestPath.startsWith('/api/fs/') || requestPath.startsWith('/api/jobs/existing');
 }
 
@@ -519,16 +468,10 @@ function friendlyError(error) {
   const status = Number(error.status) || 0;
   const message = clearServerText(error.message);
   const genericStatus = !message || /^HTTP \d+$/.test(message);
-  /* 403 папки на сервере — про путь, не про вход в Диск. */
   if ((status === 401 || status === 403) && localFolderRequest(error) && message) return message;
   if (status === 401 || status === 403) return ERROR_TEXT.auth;
   if (status === 429) return ERROR_TEXT.rateLimit;
-  /* 5xx: наш API отвечает понятной фразой в JSON — её и показываем; HTML
-     шлюза (nonJson) остаётся за общим «Сервис недоступен». */
-  if (status >= 500) {
-    if (!error.nonJson && message && !/^HTTP \d+$/.test(message)) return message;
-    return ERROR_TEXT.server;
-  }
+  if (status >= 500) return ERROR_TEXT.server;
   if (status === 409) return genericStatus ? ERROR_TEXT.conflict : message;
   if (status === 404) return genericStatus ? ERROR_TEXT.notFound : message;
   if (status === 0) return message || ERROR_TEXT.network;
@@ -691,11 +634,8 @@ function trimToasts(host) {
   }
 }
 
-/* Успех исчезает примерно через 3–4 с, служебное сообщение — через 5 с;
-   пауза на hover и focus. Ошибка и предупреждение ждут закрытия: важная ошибка
-   должна оставаться у проблемного места, а тост — не единственный её носитель. */
-const TOAST_TIMEOUT_OK = 3400;
-const TOAST_TIMEOUT_INFO = 5000;
+/* Успех скрывается сам через 6 с; пауза на hover и focus. Остальные ждут закрытия. */
+const TOAST_TIMEOUT = 6000;
 
 function showToast(options = {}) {
   const { type = 'info', title, message = '', action = null, id = '', persistent } = options || {};
@@ -704,14 +644,12 @@ function showToast(options = {}) {
   const flowHost = dialogOpen() ? $('#toasts-flow') : null;
   const host = flowHost || $('#toasts');
   if (!host) return null;
-  /* Одинаковый id не размножает уведомление при повторном рендере. */
   if (id) {
     const existing = host.querySelector(`[data-toast-id="${cssEscape(id)}"]`);
     if (existing) return existing;
   }
   if (!flowHost && dialogOpen()) { queueToast({ ...options }); return null; }
-  const autoHide = type === 'ok' ? TOAST_TIMEOUT_OK : (type === 'info' ? TOAST_TIMEOUT_INFO : 0);
-  const keep = persistent !== undefined ? persistent : autoHide === 0;
+  const keep = persistent !== undefined ? persistent : type !== 'ok';
   const item = document.createElement('div');
   item.className = `toast toast--${type}`;
   if (id) item.dataset.toastId = id;
@@ -768,7 +706,7 @@ function showToast(options = {}) {
   }
 
   if (!keep) {
-    remaining = autoHide || TOAST_TIMEOUT_INFO;
+    remaining = TOAST_TIMEOUT;
     deadline = Date.now() + remaining;
     hideTimer = setTimeout(() => close(false), remaining);
     item.addEventListener('pointerenter', pause);
@@ -816,7 +754,8 @@ async function retryConnection(trigger) {
 /* Офлайн — полоса под шапкой, а не отдельный экран: данные в ячейках
    остаются последними известными, фокус никуда не переводится. */
 function setOffline(value) {
-  for (const dot of $$('[data-offline-dot]')) dot.hidden = !value;
+  const dot = $('#offline-dot');
+  if (dot) dot.hidden = !value;
   for (const bar of $$('[data-offline-bar]')) bar.hidden = !value;
   document.body.classList.toggle('is-offline', !!value);
   if (value && !offlineShown) offlineShown = true;
@@ -999,13 +938,12 @@ function showSetup() {
 
 /* --- setup wizard --------------------------------------------------------- */
 
-/* Способы входа. Видны сразу: «Пароль приложения» и «Токен» — запасные и
-   основные способы; «Войти через Яндекс» показываем только если сервер
-   подтвердил, что он настроен и работает. */
+/* Способы входа. «Войти через Яндекс» — основной, когда сервер настроен:
+   пароль приложения и токен остаются запасными и видны ниже. */
 const SETUP_METHODS = {
   yandex: 'Войти через Яндекс',
-  webdav: 'Пароль приложения',
-  'yandex-token': 'Токен',
+  webdav: 'Логин и пароль приложения',
+  'yandex-token': 'Вход по токену',
 };
 
 const YANDEX_DEVICE_URL = 'https://oauth.yandex.ru/device';
@@ -1045,7 +983,7 @@ function loginFields() {
   return `
     <form class="setup-form" id="setup-form" novalidate autocomplete="on">
       <div class="control">
-        <label class="control-label" for="f-user">Логин Яндекса</label>
+        <label class="control-label" for="f-user">Логин</label>
         <input id="f-user" name="username" type="text" autocomplete="username" inputmode="text" spellcheck="false" autocapitalize="none" autocorrect="off" placeholder="Логин на Яндексе" value="${setupFieldValue('user')}">
       </div>
       <div class="control">
@@ -1055,7 +993,7 @@ function loginFields() {
           <button class="field-action" type="button" id="f-pass-toggle" aria-label="Показать пароль" aria-pressed="false" title="Показать пароль">${icon('eye')}</button>
         </div>
       </div>
-      <p class="note" id="webdav-note">Пароль создаётся в <a href="https://id.yandex.ru/security/app-passwords" target="_blank" rel="noreferrer">Яндекс ID → Пароли приложений</a>, тип «Файлы WebDAV».</p>
+      <p class="note" id="webdav-note">Нужен тариф <strong>Яндекс 360</strong>. Пароль приложения создаётся в <a href="https://id.yandex.ru/security/app-passwords" target="_blank" rel="noreferrer">Яндекс ID → Пароли приложений</a> и начинает действовать через 2–3 часа.</p>
       <button class="sr-only" type="submit" tabindex="-1" aria-hidden="true">Подключиться</button>
     </form>`;
 }
@@ -1066,10 +1004,10 @@ function tokenFields() {
     <form class="setup-form" id="setup-form" novalidate autocomplete="off">
       <div class="control control--token">
         <div class="control-head">
-          <label class="control-label" for="f-token">Токен доступа</label>
-          <button class="token-help-toggle" type="button" id="token-help-toggle" aria-expanded="${open ? 'true' : 'false'}" aria-controls="token-help">${icon('code')}Где получить токен?</button>
+          <label class="control-label" for="f-token">Токен</label>
+          <button class="token-help-toggle" type="button" id="token-help-toggle" aria-expanded="${open ? 'true' : 'false'}" aria-controls="token-help">${icon('code')}Как получить токен?</button>
         </div>
-        <textarea id="f-token" name="token" rows="3" spellcheck="false" autocapitalize="none" autocorrect="off" autocomplete="off" aria-describedby="token-required" placeholder="Вставьте токен или полный JSON ответа">${setupFieldValue('token')}</textarea>
+        <textarea id="f-token" name="token" rows="3" spellcheck="false" autocapitalize="none" autocorrect="off" autocomplete="off" aria-describedby="token-required" placeholder="Вставьте токен или JSON из ответа">${setupFieldValue('token')}</textarea>
       </div>
       <p class="note" id="token-required">Нужен <strong>refresh-токен</strong>: обычный access-токен истекает через час, и подключение перестанет работать.</p>
       <div class="token-help" id="token-help"${open ? '' : ' hidden'}>
@@ -1184,35 +1122,30 @@ function methodFields() {
   return wizard.method === 'yandex-token' ? tokenFields() : loginFields();
 }
 
-const SETUP_TITLE = 'Подключить диск';
-
-/* Одна поверхность подключения: заголовок, способы входа видны сразу,
-   под ними — поля выбранного способа. Шагов и экрана «Готово» нет. */
-function setupBody() {
+function setupStepBody() {
   return `
-    <h1 class="setup-title" id="setup-title" tabindex="-1">${SETUP_TITLE}</h1>
-    ${methodSwitch()}
-    <div class="setup-fields" id="setup-fields">${methodFields()}</div>`;
+      <h1 class="setup-title" id="setup-title" tabindex="-1">Подключение</h1>
+      ${methodSwitch()}
+      <div class="setup-fields" id="setup-fields">${methodFields()}</div>`;
 }
 
 function renderSetup(options = {}) {
   const focusTitle = options.focusTitle !== false;
-  $('#setup-body').innerHTML = setupBody();
+  $('#setup-body').innerHTML = setupStepBody();
   $('#setup-error').textContent = '';
   stopValidateHint();
   setSetupFieldsDisabled(false);
+  const actions = $('#setup-actions');
   const next = $('#setup-next');
   setBusy(next, false);
+  if (actions) actions.hidden = false;
   next.hidden = false;
   next.textContent = 'Подключиться';
-  /* У Яндекс-входа главное действие — в теле панели, а не в футере:
-     «Подключиться» здесь ничего не значит, пока нет кода. «Отмена» в
-     карточке остаётся: она возвращает на главный и отменяет поток. */
-  if (wizard.method === 'yandex') next.hidden = true;
-  const back = $('#setup-back');
-  if (back) {
-    back.hidden = false;
-    back.textContent = 'Отмена';
+  if (wizard.method === 'yandex') {
+    /* У Яндекс-входа главное действие — в теле панели, а не в футере:
+       «Подключиться» здесь ничего не значит, пока нет кода. */
+    next.hidden = true;
+    if (yandexAuth.status === 'waiting' && actions) actions.hidden = true;
   }
   /* Live-регион способа заполняем после вставки разметки: пустой узел,
      созданный вместе с панелью, не озвучивается, а изменение — да. */
@@ -1302,17 +1235,10 @@ async function finishConnect(account) {
   try { await loadData(); } catch { /* the wizard stays usable */ }
   await enforceSingleAccount(account.id);
   clearWizardSecrets();
-  resetWizardFields();
-  /* Папку назначения выбираем на экране «Что скачать»: после подключения
-     сразу главный экран, без шага папки и экрана «Готово». */
-  if (!preferredDest) preferredDest = backendDownloadsPath();
+  focusStartAfterRender = true;
+  location.hash = '#/';
   lastCloudAttempt = 0;
   ensureCloudUsage(true);
-  focusStartAfterRender = true;
-  const wasHome = location.hash === '' || location.hash === '#/';
-  location.hash = '#/';
-  if (wasHome) route();
-  showToast({ type: 'ok', title: 'Диск подключён' });
 }
 
 /* --- проверка доступа до создания аккаунта -------------------------------- */
@@ -1466,11 +1392,7 @@ async function runConnect() {
   setupError('');
   saveSetupFields();
   const scope = $('#setup-body');
-  const nextLabel = next ? next.textContent : '';
   setBusy(next, true);
-  /* На отправке честно говорим, что идёт подключение: «Подключиться» уже не
-     действие. Ввод при этом сохраняется и не очищается. */
-  if (next) next.textContent = 'Подключаем…';
   setupBusy = true;
   setSetupFieldsDisabled(true);
   startValidateHint();
@@ -1484,9 +1406,7 @@ async function runConnect() {
     stopValidateHint();
     setupBusy = false;
     setSetupFieldsDisabled(false);
-    const button = $('#setup-next');
-    setBusy(button, false);
-    if (button) button.textContent = nextLabel || 'Подключиться';
+    setBusy($('#setup-next'), false);
     /* Фокус — на поле с ошибкой: скринридер прочитает её из aria-describedby.
        Если ошибка общая, возвращаем фокус на «Подключиться», а не на body. */
     const invalid = scope ? scope.querySelector('.control.has-error input, .control.has-error textarea') : null;
@@ -1515,9 +1435,7 @@ function onSetupBack() {
   setupError('');
   resetWizardFields();
   stopYandexFlow({ cancel: true });
-  resetYandexState();
-  if (location.hash === '#/setup') location.hash = '#/';
-  else route();
+  location.hash = '#/';
 }
 
 /* --- вход через Яндекс: получение кода и опрос ---------------------------- */
@@ -1790,14 +1708,14 @@ function failYandex(message, options = {}) {
 }
 
 /* Подтверждение получено: аккаунт уже создан на сервере, поэтому второй
-   POST /api/accounts не отправляем — сразу переходим на главный экран. */
+   POST /api/accounts не отправляем — переходим к выбору папки. */
 async function completeYandexFlow(account) {
   if (yandexAuth.status !== 'waiting') return;
   yandexAuth.status = 'done';
   yandexAuth.flowId = '';
   yandexAuth.pollSeq += 1;
   clearYandexTimers();
-  setYandexLive('Вход подтверждён. Переходим на главный экран…');
+  setYandexLive('Вход подтверждён.');
   let target = account && account.id ? account : null;
   if (!target) {
     /* Ответ без аккаунта: подключение уже создано, просто перечитываем. */
@@ -1808,7 +1726,7 @@ async function completeYandexFlow(account) {
     showToast({
       type: 'warn', id: 'yandex-account',
       title: 'Вход подтверждён',
-      message: 'Не удалось прочитать подключение. Вернитесь на главный экран и откройте подключение снова.',
+      message: 'Не удалось прочитать подключение. Вернитесь на главный экран и откройте мастер снова.',
     });
     location.hash = '#/';
     return;
@@ -1877,6 +1795,46 @@ async function copyTokenCommand(trigger) {
   }
 }
 
+/* --- тема ----------------------------------------------------------------- */
+
+/* Тема выбрана в <head> до style.css; здесь только переключение и состояние
+   кнопки. Производные данные (meta theme-color, aria-pressed) держим
+   синхронными с data-theme, чтобы скринридер и адресная строка не врали. */
+const THEME_KEY = 'cloudferry-theme';
+const THEME_COLORS = { light: '#f5f4f8', dark: '#16151a' };
+
+function currentTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+}
+
+function syncThemeControls() {
+  const dark = currentTheme() === 'dark';
+  for (const button of $$('.js-theme-toggle')) {
+    button.setAttribute('aria-pressed', dark ? 'true' : 'false');
+    button.setAttribute('aria-label', 'Тёмная тема');
+    button.title = 'Тёмная тема';
+  }
+}
+
+function applyTheme(theme, persist) {
+  const next = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  document.documentElement.style.colorScheme = next;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', THEME_COLORS[next]);
+  if (persist) {
+    try { localStorage.setItem(THEME_KEY, next); } catch { /* приватный режим */ }
+  }
+  syncThemeControls();
+}
+
+for (const button of $$('.js-theme-toggle')) {
+  button.addEventListener('click', () => {
+    applyTheme(currentTheme() === 'dark' ? 'light' : 'dark', true);
+  });
+}
+syncThemeControls();
+
 /* --- header: account panel ------------------------------------------------ */
 
 function renderHeader() {
@@ -1892,13 +1850,10 @@ function renderHeader() {
     return;
   }
   if (wrap) wrap.hidden = false;
-  const label = accountLabel(account);
-  const name = $('#account-chip-name');
-  if (name) name.textContent = label;
   const chip = $('#account-chip');
   if (chip) {
     const access = accountAccess(account);
-    chip.title = `${accountLogin(account) ? `Аккаунт: ${label}` : label} · ${access.label}`;
+    chip.title = 'Настройки';
     chip.dataset.status = access.tone;
   }
 }
@@ -1911,6 +1866,7 @@ function openAccountPanel() {
   const chip = $('#account-chip');
   if (!account || !dialog || dialog.open) return;
   accountFocusRestore = true;
+  setAccountProbeResult('', '');
   renderAccountCell();
   renderAccountPanel();
   dialog.showModal();
@@ -1944,54 +1900,85 @@ function finishAccountDialog() {
   focusSoon(chip);
 }
 
-/* Ёмкость облака: всегда в ГБ, без ТБ (пожелание из ТЗ). Неизвестное
-   значение — не ноль: если сервер не отдал used/total, строки нет. */
-const GB_BYTES = 1024 ** 3;
-const GB_FORMAT = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
-
-function gbText(bytes) {
-  const value = Math.max(0, Number(bytes) || 0);
-  return `${GB_FORMAT.format(Math.round(value / GB_BYTES))}\u00A0ГБ`;
-}
-
-/* «138 ГБ из 2 048 ГБ»; пусто, если ёмкость неизвестна. */
-function capacityShort(usage) {
-  if (!usage) return '';
-  const hasTotal = usage.total != null && Number.isFinite(Number(usage.total)) && Number(usage.total) > 0;
-  const hasUsed = usage.used != null && Number.isFinite(Number(usage.used));
-  if (hasUsed && hasTotal) return `${gbText(usage.used)} из ${gbText(usage.total)}`;
-  if (hasUsed) return gbText(usage.used);
+function usageText(about) {
+  if (!about) return '';
+  const total = Number(about.total) || 0;
+  const used = Number(about.used) || 0;
+  if (total > 0) return `Занято ${humanBytes(used)} из ${humanBytes(total)}`;
+  if (used > 0) return `Занято ${humanBytes(used)}`;
   return '';
 }
 
-/* Строка карточки аккаунта: «Занято 138 ГБ из 2 048 ГБ». */
-function capacityText(usage) {
-  const short = capacityShort(usage);
-  return short ? `Занято ${short}` : '';
+/* Проверка доступа: результат остаётся строкой внутри панели, без тоста.
+   busy-состояние кнопки сохраняет фокус на месте. */
+async function probeAccount(button) {
+  const account = currentAccount();
+  if (!account || probeBusy) return;
+  probeBusy = true;
+  lastCloudAttempt = Date.now();
+  setBusy(button, true);
+  setAccountProbeResult('busy', 'Проверяем доступ к Диску…');
+  const dialog = $('#account-dialog');
+  if (dialog) dialog.setAttribute('aria-busy', 'true');
+  let data = null;
+  let failure = null;
+  try {
+    data = await api(`/api/accounts/${encodeURIComponent(account.id)}/probe`, {
+      method: 'POST', timeout: API_TIMEOUT.external,
+    });
+  } catch (error) {
+    failure = error;
+  }
+  if (!failure) {
+    if (data.knownUser && data.login) {
+      const probed = String(data.login).trim();
+      if (probed) accountLogins.set(account.id, probed);
+    }
+    const about = data.about || {};
+    if (Number(about.total) > 0 || Number(about.used) > 0) {
+      cloudUsage = {
+        used: Number(about.used) || 0,
+        total: Number(about.total) || 0,
+        checkedAt: Date.now(),
+        updatedAt: Date.now(),
+        stale: false,
+        accountId: account.id,
+        fromSystem: false,
+      };
+    }
+    lastCloudAttempt = Date.now();
+  }
+  /* Статус и время проверки приходят из account.checkedAt/status: перечитываем
+     состояние, но сбой обновления не отменяет уже полученный ответ probe. */
+  try { await loadData(); } catch { /* показываем последнее известное */ }
+  renderAccountCell();
+  renderAccountPanel();
+  if (failure) {
+    const fresh = currentAccount();
+    const authExpired = !!fresh && fresh.id === account.id && fresh.status === 'needs-auth';
+    setAccountProbeResult('error', authExpired
+      ? 'Нужно войти заново: Яндекс Диск не принял сохранённый доступ.'
+      : `Не удалось проверить доступ. ${friendlyError(failure)}`);
+  } else {
+    const note = usageText(data.about);
+    setAccountProbeResult('ok', data.warning
+      ? `Доступ есть. ${data.warning}`
+      : `Доступ есть. ${note || 'Занятое место обновлено.'}`);
+  }
+  probeBusy = false;
+  if (dialog) dialog.removeAttribute('aria-busy');
+  if (button && button.isConnected) setBusy(button, false);
 }
 
-/* Выход подтверждается диалогом только когда реально идёт скачивание:
-   без активной задачи объяснять нечего. */
 function openExitDialog() {
   closeAccountPanel(false);
   const dialog = $('#exit-dialog');
   if (!dialog || dialog.open) return;
   const error = $('#exit-error');
   if (error) { error.hidden = true; error.textContent = ''; }
-  const text = $('#exit-text');
-  if (text) text.textContent = 'Активное скачивание остановится.';
   dialog.showModal();
   const title = $('#exit-title');
   if (title) title.focus({ preventScroll: true });
-}
-
-/* «Выйти» в диалоге аккаунта: при активной задаче — подтверждение, иначе
-   сразу удаление подключения. Предупреждение о задаче не показываем зря. */
-function requestLogout() {
-  if (exitBusy) return;
-  if (activeJobs().length) { openExitDialog(); return; }
-  closeAccountPanel(false);
-  confirmExit();
 }
 
 async function confirmExit() {
@@ -2028,11 +2015,7 @@ async function confirmExit() {
         error.hidden = false;
         error.textContent = friendlyError(failed);
       } else {
-        /* Прямой выход без диалога: ошибка — тостом, фокус возвращаем на чип,
-           чтобы он не остался на body. */
-        showToast({ type: 'error', title: 'Не удалось выйти из аккаунта', message: friendlyError(failed) });
-        const chip = $('#account-chip');
-        if (chip && chip.isConnected) focusSoon(chip);
+        showToast({ type: 'error', title: 'Не удалось выйти из Яндекс Диска', message: friendlyError(failed) });
       }
       return;
     }
@@ -2045,9 +2028,9 @@ async function confirmExit() {
     state.jobs = (state.jobs || []).filter((job) => job.accountId !== account.id);
     if (dialog && dialog.open) dialog.close();
     render();
-    showToast({ type: 'ok', title: 'Вы вышли из аккаунта', message: 'Подключить снова можно в любой момент.' });
-    const connect = $('.connect-row');
-    if (connect) connect.focus({ preventScroll: true });
+    showToast({ type: 'ok', title: 'Вы вышли из Яндекс Диска', message: 'Подключить снова можно в любой момент.' });
+    const plus = $('.plus-tile');
+    if (plus) plus.focus({ preventScroll: true });
     await refreshAfterAction();
   } finally {
     exitBusy = false;
@@ -2057,6 +2040,19 @@ async function confirmExit() {
       setDialogCancelBlocked(dialog, false);
     }
   }
+}
+
+/* --- storage informer ----------------------------------------------------- */
+
+function serverRoot() {
+  const roots = Array.isArray(system.roots) ? system.roots : [];
+  const dest = (flowDest || state.downloads || '/downloads').trim();
+  const match = roots.find((root) => {
+    if (!root || !root.path) return false;
+    const base = String(root.path).replace(/\/+$/, '');
+    return dest === base || dest.startsWith(`${base}/`);
+  });
+  return match || roots[0] || null;
 }
 
 /* Сводка /api/system относится к конкретному аккаунту: данные другого
@@ -2069,8 +2065,7 @@ function systemCloudMatchesAccount(account, cloud = system && system.cloud) {
 }
 
 /* Cloud usage comes from GET /api/system (background cache, no per-render
-   network); the probe is only a fallback for when that cache has no numbers.
-   Неизвестное значение остаётся null: ноль — это реальный ноль, а не «нет данных». */
+   network); the probe is only a fallback for when that cache has no numbers. */
 function systemCloudUsage() {
   const cloud = system && system.cloud;
   const account = currentAccount();
@@ -2079,17 +2074,11 @@ function systemCloudUsage() {
   const used = cloud.used == null ? null : Number(cloud.used);
   if (total == null && used == null) return null;
   return {
-    used: Number.isFinite(used) ? used : null,
-    total: Number.isFinite(total) ? total : null,
+    used: Number.isFinite(used) ? used : 0,
+    total: Number.isFinite(total) ? total : 0,
     stale: !!cloud.stale,
     updatedAt: cloud.updatedAt || '',
   };
-}
-
-function usageKnown(used, total) {
-  const hasUsed = used != null && Number.isFinite(Number(used));
-  const hasTotal = total != null && Number.isFinite(Number(total)) && Number(total) > 0;
-  return hasUsed || hasTotal;
 }
 
 /* cloudUsage живёт для одного аккаунта: при смене подключения и при
@@ -2107,7 +2096,7 @@ function ensureCloudUsage(force = false) {
   const systemMatches = systemCloudMatchesAccount(account, systemCloud);
   if (!force) {
     const cached = systemCloudUsage();
-    if (cached && usageKnown(cached.used, cached.total)) {
+    if (cached && (cached.total > 0 || cached.used > 0)) {
       /* Устаревший снимок показываем как последнее известное значение,
          но не считаем его свежим и не блокируем проверку. */
       cloudUsage = {
@@ -2132,38 +2121,79 @@ function ensureCloudUsage(force = false) {
   api(`/api/accounts/${encodeURIComponent(account.id)}/probe`, { method: 'POST', timeout: API_TIMEOUT.external })
     .then((data) => {
       const about = data && data.about;
-      if (!about || !currentAccount() || currentAccount().id !== account.id) return;
-      const used = about.used == null ? null : Number(about.used);
-      const total = about.total == null ? null : Number(about.total);
-      if (!usageKnown(used, total)) return;
-      cloudUsage = {
-        used: Number.isFinite(used) ? used : null,
-        total: Number.isFinite(total) ? total : null,
-        checkedAt: Date.now(),
-        updatedAt: Date.now(),
-        stale: false,
-        accountId: account.id,
-        fromSystem: false,
-      };
+      if (about && currentAccount() && currentAccount().id === account.id) {
+        cloudUsage = {
+          used: Number(about.used) || 0,
+          total: Number(about.total) || 0,
+          checkedAt: Date.now(),
+          updatedAt: Date.now(),
+          stale: false,
+          accountId: account.id,
+          fromSystem: false,
+        };
+      }
     })
-    .catch(() => { /* в карточке остаётся «Ёмкость неизвестна», без тоста */ })
+    .catch(() => { /* «—» in the informer, no toast for the silent check */ })
     .finally(() => {
       cloudBusy = false;
       renderAccount();
     });
 }
 
-/* Папка назначения по умолчанию: её подтверждает backend в /api/state и
-   /api/system. Демо-константу «/downloads/yandex» не подставляем. */
-function backendDownloadsPath() {
-  const roots = Array.isArray(system.roots) ? system.roots : [];
-  const root = roots.find((item) => item && item.path);
-  return displayPath(state.downloads || (root && root.path) || '/downloads');
+/* Пара «138 из 214 ГБ» для аккаунта: число и единица в одной строке. */
+function usageValuePair(used, total) {
+  const units = ['Б', 'КБ', 'МБ', 'ГБ', 'ТБ'];
+  let unit = 0;
+  let base = Math.max(Number(total) || 0, Number(used) || 0);
+  while (base >= 1024 && unit < units.length - 1) { base /= 1024; unit += 1; }
+  const format = (value) => {
+    const number = (Number(value) || 0) / (1024 ** unit);
+    return number.toFixed(unit === 0 ? 0 : 1).replace('.', ',').replace(/,0$/, '');
+  };
+  const totalValue = Math.max(0, Number(total) || 0);
+  return {
+    used: format(used),
+    rest: totalValue > 0 ? `из ${format(totalValue)}\u00A0${units[unit]}` : units[unit],
+  };
 }
 
-/* Назначение проверено и готово: только такое можно подтвердить на проверке. */
-function destinationReady() {
-  return flowDestStatus === 'ready' && !!flowDest;
+/* «138 из 214 ГБ» без слова «Занято»: подпись уже стоит рядом. */
+function cloudUsageShort(usage) {
+  if (!usage) return '';
+  const used = Math.max(0, Number(usage.used) || 0);
+  const total = Math.max(0, Number(usage.total) || 0);
+  if (!(used > 0 || total > 0)) return '';
+  const pair = usageValuePair(used, total);
+  return `${pair.used}\u00A0${pair.rest}`;
+}
+
+/* Свежесть данных Диска: server tick или probe обновляет updatedAt.
+   Пять минут — граница, после которой число помечается как последнее
+   известное, даже если сервер не успел поставить stale. */
+const CLOUD_STALE_MS = 5 * 60 * 1000;
+
+const cloudStamp = (value) => {
+  if (!value) return 0;
+  const ms = typeof value === 'number' ? value : Date.parse(String(value));
+  return Number.isFinite(ms) && ms > 0 ? ms : 0;
+};
+
+function cloudUsageStamp(usage) {
+  if (!usage) return 0;
+  return cloudStamp(usage.updatedAt) || Number(usage.checkedAt) || 0;
+}
+
+function cloudUsageIsStale(usage) {
+  if (!usage) return false;
+  if (usage.stale) return true;
+  const stamp = cloudUsageStamp(usage);
+  return !stamp || Date.now() - stamp > CLOUD_STALE_MS;
+}
+
+function cloudStaleNote(usage) {
+  const stamp = cloudUsageStamp(usage);
+  const when = stamp ? checkedAtText(new Date(stamp).toISOString()) : '';
+  return when && when !== 'не проверялось' ? `последние данные, ${when}` : 'последние данные';
 }
 
 const ACCESS_STATES = {
@@ -2171,6 +2201,20 @@ const ACCESS_STATES = {
   auth: { label: 'Нужен вход', tone: 'auth' },
   unknown: { label: 'Не проверялось', tone: 'unknown' },
 };
+
+/* «Пароль приложения» / «Токен» / «Вход через Яндекс» — то, чем реально
+   подключали аккаунт. */
+const ACCOUNT_METHODS = {
+  webdav: 'Пароль приложения',
+  'yandex-token': 'Токен',
+  'yandex-oauth': 'Вход через Яндекс',
+  yandex: 'Вход через Яндекс',
+};
+
+function accountMethodLabel(account) {
+  if (!account) return '';
+  return ACCOUNT_METHODS[String(account.provider || '')] || 'Подключение к облаку';
+}
 
 function accountAccess(account) {
   if (!account) return ACCESS_STATES.unknown;
@@ -2189,30 +2233,49 @@ function accessPill(access) {
   return `<span class="status-pill${modifier}">${access.label}</span>`;
 }
 
-/* Карточка аккаунта: сервис, логин, статус и занятая облачная ёмкость.
-   Способ входа и место сервера сюда не входят. */
+/* Время последней проверки: «сегодня, 14:32» или дата для старых. */
+function checkedAtText(value) {
+  if (!value) return 'не проверялось';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime()) || date.getFullYear() < 2000) return 'не проверялось';
+  const now = new Date();
+  const sameDay = date.getFullYear() === now.getFullYear()
+    && date.getMonth() === now.getMonth()
+    && date.getDate() === now.getDate();
+  const time = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  return sameDay ? `сегодня, ${time}` : (formatWhen(value) || 'не проверялось');
+}
+
+/* Свободное место сервера — в панели аккаунта и в шаге назначения (там же,
+   где выбирается папка), а не отдельной ячейкой на главном. */
+function serverSpaceText(root) {
+  if (!root || !Number.isFinite(Number(root.free))) return '';
+  const free = Math.max(0, Number(root.free));
+  const total = Math.max(0, Number(root.total) || 0);
+  return total > 0 ? `${humanBytes(free)} из ${humanBytes(total)}` : humanBytes(free);
+}
+
+function destinationPath() {
+  const root = serverRoot();
+  return displayPath(flowDest || state.downloads || (root && root.path) || '/downloads');
+}
+
+/* Главный экран: компактная карточка-вход в панель. Место Диска и статус
+   доступа видны сразу, серверное место живёт в шаге назначения и в панели. */
 function renderAccountCell() {
   const login = $('#account-cell-login');
   if (!login) return;
   const account = currentAccount();
   if (!account) return;
-  const access = accountAccess(account);
-  if (access.tone === 'auth') cloudUsage = null;
-  const service = $('#account-cell-service');
-  if (service) service.textContent = YANDEX_ACCOUNT_NAME;
-  login.textContent = accountLogin(account) || account.name || '—';
-  const status = $('#account-card-status');
-  if (status) status.innerHTML = accessPill(access);
-  const value = $('#account-cell-usage');
-  if (value) {
-    const text = capacityText(cloudUsage);
-    value.textContent = text || 'Ёмкость неизвестна';
-    value.title = text;
-  }
+  /* В карточке на главном только логин: способ входа, доступ и занятое
+     место живут в панели аккаунта. */
+  if (accountAccess(account).tone === 'auth') cloudUsage = null;
+  login.textContent = accountLabel(account);
+  login.nextElementSibling.hidden = login.textContent === 'Яндекс Диск';
 }
 
-/* Диалог аккаунта: только логин и занятая ёмкость. Предупреждение о
-   выходе показываем лишь когда скачивание действительно идёт. */
+/* Панель аккаунта: статичные узлы, поэтому busy и фокус не теряются при
+   каждом обновлении состояния. */
 function renderAccountPanel() {
   const login = $('#account-login');
   if (!login) return;
@@ -2220,16 +2283,72 @@ function renderAccountPanel() {
   if (!account) return;
   const access = accountAccess(account);
   if (access.tone === 'auth') cloudUsage = null;
-  login.textContent = accountLogin(account) || account.name || '—';
-  const capacity = $('#account-capacity');
-  if (capacity) capacity.textContent = capacityShort(cloudUsage) || 'Неизвестно';
-  const note = $('#account-logout-note');
-  if (note) note.hidden = activeJobs().length === 0;
+
+  login.textContent = accountLogin(account) || account.name || 'Яндекс Диск';
+  const method = $('#account-method');
+  if (method) method.textContent = accountMethodLabel(account);
+  const status = $('#account-status');
+  if (status) status.innerHTML = accessPill(access);
+  const checked = $('#account-checked');
+  if (checked) {
+    checked.textContent = account.checkedAt
+      ? `проверено ${checkedAtText(account.checkedAt)}`
+      : 'не проверялось';
+    checked.classList.toggle('is-stale', !account.checkedAt);
+  }
+
+  const usage = cloudUsage;
+  const stale = cloudUsageIsStale(usage);
+  const short = cloudUsageShort(usage);
+  const value = $('#account-disk-value');
+  if (value) {
+    value.textContent = short || '—';
+    value.classList.toggle('is-stale', stale);
+    value.title = usage ? usageText(usage) : '';
+  }
+  const bar = $('#account-disk-bar');
+  if (bar) {
+    const percent = usage && Number(usage.total) > 0
+      ? Math.min(100, Math.round((Number(usage.used) / Number(usage.total)) * 100))
+      : 0;
+    bar.style.width = `${percent}%`;
+  }
+  const note = $('#account-disk-note');
+  if (note) {
+    let text = '';
+    if (access.tone === 'auth') text = 'Войдите заново, чтобы увидеть занятое место.';
+    else if (stale && short) text = cloudStaleNote(usage);
+    else if (!short) text = 'Нажмите «Проверить», чтобы узнать занятое место.';
+    note.textContent = text;
+    note.hidden = !text;
+    note.classList.toggle('is-stale', !!text && stale && short);
+  }
+
+  const root = serverRoot();
+  const serverValue = $('#account-server-value');
+  if (serverValue) {
+    serverValue.textContent = serverSpaceText(root) || '—';
+    serverValue.title = root && root.path ? `Свободно на сервере: ${root.path}` : '';
+  }
+  const serverNote = $('#account-server-note');
+  if (serverNote) {
+    serverNote.textContent = root && Number.isFinite(Number(root.free))
+      ? `Папка назначения: ${destinationPath()}`
+      : 'Свободное место на сервере неизвестно.';
+  }
 }
 
 function renderAccount() {
   renderAccountCell();
   renderAccountPanel();
+}
+
+function setAccountProbeResult(kind, message) {
+  const node = $('#account-probe-result');
+  if (!node) return;
+  node.textContent = message || '';
+  node.hidden = !message;
+  node.className = `account-probe-result${kind ? ` account-probe-result--${kind}` : ''}`;
 }
 
 /* --- cloud source selection ----------------------------------------------- */
@@ -2284,6 +2403,11 @@ function jobSourceText(job) {
 }
 
 /* Источник черновика: «Весь Диск», «2 папки и 3 файла» и т. п. */
+function flowSourceText() {
+  if (flowSourceAll) return wholeDiskLabel(excludedFolders);
+  return selectionLabel(cloudSelection, cloudFileSelection);
+}
+
 function flowSourcePaths() {
   return flowSourceAll ? [] : cloudSelection.slice();
 }
@@ -2295,15 +2419,16 @@ function flowSourceFiles() {
 /* Selection belongs to one account: a new/disconnected cloud starts clean. */
 function syncSelectionAccount() {
   const account = currentAccount();
-  if (!cloudSelection.length && !cloudFileSelection.length) {
+  if (!flowSourceAll && !cloudSelection.length && !cloudFileSelection.length) {
     cloudSelectionAccount = account ? account.id : '';
     return;
   }
   if (!account || account.id !== cloudSelectionAccount) {
     cloudSelection = [];
     cloudFileSelection = [];
+    excludedFolders = [];
     flowSourceAll = false;
-    preferredDest = '';
+    flowShowExisting = false;
     cloudSelectionAccount = account ? account.id : '';
     flowPreflight = {
       key: '', status: 'idle', data: null, error: null, seq: 0, controller: null, startedAt: 0,
@@ -2348,8 +2473,21 @@ function jobSourceLabel(job) {
   const files = jobSourceFiles(job);
   return selectionLabel(paths, files);
 }
-/* Заголовок задачи для строк списка: одна папка — её имя, иначе сводка. */
-function jobTitle(job) { return jobSourceText(job); }
+function jobTitle(job) { return `${jobSourceLabel(job)} → ${displayPath(job.dest)}`; }
+
+function jobMeta(job) {
+  if (job.status === 'queued') return 'Ожидает запуска';
+  if (job.status === 'verifying') return 'Проверяем целостность';
+  const stats = job.stats || {};
+  const parts = [];
+  /* Пока rclone не знает общий объём, процент 0 % выглядит зависанием:
+     честно говорим, что объём ещё считается. */
+  if (job.status === 'running' && !(Number(stats.totalBytes) > 0)) parts.push('Считаем объём…');
+  if (Number(stats.speed) > 0) parts.push(`${humanBytes(stats.speed)}/с`);
+  if (Number(stats.eta) > 0) parts.push(`≈ ${humanEta(stats.eta)}`);
+
+  return parts.join(' · ');
+}
 
 /* Время задания: elapsedTime от rclone, иначе разница отметок. */
 function jobElapsedSeconds(job) {
@@ -2408,48 +2546,34 @@ function humanPair(used, total) {
   return `${format(used)} из ${format(total)}\u00A0${units[unit]}`;
 }
 
-/* Главный экран: блок «Скачивания» с кнопкой «Скачать» и компактная
-   карточка аккаунта. Пустых карточек и пояснений до первого скачивания нет. */
-function homeMarkup() {
-  return `
-    <section class="cell cell--downloads" aria-labelledby="downloads-title">
-      <div class="cell-head">
-        ${icon('transfer')}
-        <h1 class="cell-title" id="downloads-title" tabindex="-1">Скачивания</h1>
-        <span class="now-status" id="downloads-status"></span>
-        <button class="btn btn--primary btn--start" type="button" id="flow-start" data-action="start-flow">${icon('transfer')}<span>Скачать</span></button>
-      </div>
-      <div class="now" id="cell-now" data-mode="idle"></div>
-    </section>
+/* «3 папки · 12,4 из 29,0 ГБ» — понятный объём в «Сейчас». */
+function jobSizeText(job) {
+  const stats = job.stats || {};
+  if (stats.totalBytes > 0) return humanPair(stats.bytes, stats.totalBytes);
+  return stats.bytes > 0 ? humanBytes(stats.bytes) : '';
 
-    <section class="cell cell--account" aria-labelledby="account-card-title">
-      <div class="cell-head">
-        ${icon('cloud')}
-        <h2 class="cell-title" id="account-card-title">Аккаунт</h2>
-        <span class="now-status" id="account-card-status"></span>
-      </div>
-      <div class="cell-body account-cell-body">
-        <p class="account-cell-service" id="account-cell-service">Яндекс Диск</p>
-        <p class="account-cell-login" id="account-cell-login">—</p>
-        <p class="account-cell-usage" id="account-cell-usage">—</p>
-        <button class="btn btn--secondary btn--block" type="button" data-action="account-open" data-focus-key="account-open">Открыть аккаунт</button>
-      </div>
-    </section>`;
 }
 
-/* Первый запуск: заголовок и одна компактная строка «Подключить диск» с
-   плюсом в общей сетке слева. Без центрированной плитки и пустых карточек. */
+function homeMarkup() {
+  return `
+    <section class="drive-row" aria-labelledby="account-cell-login">
+      <span class="drive-symbol">${icon('cloud')}</span>
+      <div class="drive-name"><h2 id="account-cell-login"></h2><small>Яндекс Диск</small></div>
+      <button class="btn btn--primary" id="flow-start" type="button" data-action="start-flow">${icon('transfer')}Скачать</button>
+      <details class="drive-menu"><summary aria-label="Действия с диском" title="Действия с диском">•••</summary>
+        <div class="drive-pop"><button type="button" data-action="exit">Выйти из аккаунта</button></div>
+      </details>
+    </section>
+    <div id="job-list" aria-label="Загрузки"></div>
+    <section id="cell-now" class="cell cell--now" data-mode="idle" aria-labelledby="now-title"></section>`;
+}
+
 function emptyMarkup() {
   return `
-    <section class="cell cell--downloads" aria-labelledby="downloads-title">
-      <div class="cell-head">
-        ${icon('transfer')}
-        <h1 class="cell-title" id="downloads-title" tabindex="-1">Скачивания</h1>
-      </div>
-      <button class="connect-row" type="button" data-action="connect" data-focus-key="connect">
-        <span class="connect-row-icon" aria-hidden="true">${icon('plus')}</span>
-        <span class="connect-row-label">Подключить диск</span>
-        <svg class="icon connect-row-chev" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+    <section class="plus-cell">
+      <button class="plus-tile" type="button" data-action="connect" aria-label="Подключить диск">
+        <span class="plus-icon" aria-hidden="true">${icon('plus')}</span>
+        <span class="plus-title">Подключить диск</span>
       </button>
     </section>`;
 }
@@ -2480,183 +2604,79 @@ function render() {
   }
 }
 
-function nowKey(mode, job, activeCount, account, others) {
-  return [
-    mode,
-    job ? job.id : '',
-    job ? job.status : '',
-    activeCount,
-    account ? account.status : '',
-    (others || []).map((item) => `${item.id}:${item.status}`).join(','),
-  ].join('|');
+function nowKey(mode, job, activeCount, account) {
+  return [mode, job ? job.id : '', job ? job.status : '', activeCount, account ? account.status : ''].join('|');
 }
 
-/* Статус задачи — pill в шапке блока «Скачивания». В активной задаче состояние
-   написано в самой карточке, поэтому pill не дублирует его. */
-function nowStatusMarkup(mode, job) {
-  if (mode === 'active') return '';
-  if (mode === 'paused') {
-    const [label, pill] = statusOf(job);
-    return `<span class="status-pill ${pill}">${escapeHtml(label)}</span>`;
+function nowHead(right = '') {
+  /* tabindex="-1" делает заголовок стабильным якорем фокуса: при смене
+     режима кнопка, на которой был фокус, может исчезнуть. */
+  return `
+    <div class="cell-head">
+      ${icon('clock')}
+      <h2 class="cell-title" id="now-title" tabindex="-1">Сейчас</h2>
+      <span class="now-status">${right}</span>
+    </div>`;
+}
+
+function renderJobList(jobs) {
+  const list = $('#job-list');
+  const stale = new Map(Array.from(list.children, row => [row.dataset.id, row]));
+  for (const job of jobs) {
+    let row = stale.get(job.id);
+    stale.delete(job.id);
+    if (!row) {
+      row = document.createElement('article');
+      row.className = 'cell cell--now job-row';
+      row.dataset.id = job.id;
+      row.innerHTML = `<div class="task-head">${icon('folder')}<h2></h2><button class="btn btn--secondary" type="button"></button></div>
+        <div class="now-body"><progress max="100"></progress><div class="task-stats"><span></span><span></span></div><div class="job-error"></div></div>`;
+      list.append(row);
+    }
+    const paths = [...jobSourcePaths(job), ...jobSourceFiles(job)];
+    const title = paths.length === 1 ? shortPath(paths[0]) : jobSourceLabel(job);
+    row.querySelector('h2').textContent = title;
+    const button = row.querySelector('button');
+    const paused = PAUSED_STATUSES.includes(job.status);
+    const failed = job.status === 'failed';
+    const done = job.status === 'done';
+    const label = done ? 'Убрать из списка' : paused ? (failed ? 'Повторить' : 'Продолжить') : 'Приостановить';
+    if (row.dataset.status !== job.status) {
+      row.dataset.status = job.status;
+      button.hidden = job.status === 'verifying';
+      button.dataset.id = job.id;
+      button.dataset.action = done ? 'dismiss-job' : paused ? 'resume' : 'stop';
+      button.title = label;
+      button.setAttribute('aria-label', label + ' · ' + title);
+      button.innerHTML = icon(done ? 'close' : paused ? 'resume' : 'pause');
+      const error = row.querySelector('.job-error');
+      error.hidden = !failed;
+      if (failed) error.innerHTML = escapeHtml(job.errorAdvice || job.errorTitle || 'Не удалось скачать') + failureListMarkup(job.failures || [], job.failureCount || 0) +
+        (job.failureCount ? `<button class="btn btn--quiet" data-action="copy-failures" data-id="${escapeHtml(job.id)}">Скопировать список</button>` : '');
+    }
+    const progress = row.querySelector('progress');
+    progress.setAttribute('aria-label', title);
+    if (job.stats?.totalBytes > 0 || paused || done) progress.value = percentOf(job);
+    else progress.removeAttribute('value');
+    const facts = row.querySelectorAll('.task-stats span');
+    facts[0].textContent = jobSizeText(job);
+    facts[1].textContent = done ? 'Завершена' : paused ? statusOf(job)[0] : job.status === 'running' && !(job.stats?.bytes > 0) ? 'Начинается' : jobMeta(job);
   }
-  if (mode === 'error') return '<span class="status-pill status-pill--failed">Не удалось</span>';
-  if (mode === 'auth') return '<span class="status-pill status-pill--auth">Нужен вход</span>';
-  if (mode === 'done') return '<span class="status-pill status-pill--ok">Готово</span>';
-  if (mode === 'unknown') {
-    return `<span class="status-pill" title="${escapeHtml(job.status)}">Неизвестный статус</span>`;
+  for (const row of stale.values()) {
+    const hadFocus = row.contains(document.activeElement);
+    row.remove();
+    if (hadFocus) {
+      const target = list.querySelector('button:not([hidden])') || $('#flow-start');
+      target?.focus({ preventScroll: true });
+    }
   }
-  return '';
+  list.hidden = !jobs.length;
 }
 
-/* Действия задачи: только то, что действительно умеет API. Остановка — это
-   остановка, а не пауза; продолжение перезапускает копирование и не
-   перекачивает уже скачанные файлы. */
-function jobActionsMarkup(job, options = {}) {
-  const { compact = false, focusKey = 'stop' } = options;
-  const size = compact ? ' btn--sm' : '';
-  if (job.status === 'running' || job.status === 'queued') {
-    return `<button class="btn btn--secondary${size}" type="button" data-action="stop" data-id="${escapeHtml(job.id)}" data-focus-key="${escapeHtml(focusKey)}">${icon('pause')}Остановить</button>`;
-  }
-  if (PAUSED_STATUSES.includes(job.status)) {
-    const label = job.status === 'failed' ? 'Повторить' : 'Продолжить';
-    return `<button class="btn btn--primary${size}" type="button" data-action="resume" data-id="${escapeHtml(job.id)}" data-focus-key="${escapeHtml(focusKey)}">${icon('resume')}${label}</button>`;
-  }
-  return '';
-}
-
-/* Переданный объём: «13,2 из 31,1 ГБ» или «13,2 ГБ передано», если общий
-   объём сервер ещё не сообщил. Процент не выдумываем. */
-function jobTransferredText(job) {
-  const stats = job.stats || {};
-  const total = Number(stats.totalBytes) || 0;
-  const bytes = Math.max(0, Number(stats.bytes) || 0);
-  if (!(bytes > 0)) return '';
-  if (!(total > 0)) return `${humanBytes(bytes)} передано`;
-  return humanPair(bytes, total);
-}
-
-function jobSpeedTimeText(job) {
-  /* Ожидание и проверка — это название состояния в строке заголовка;
-     дублировать его второй строкой не нужно. */
-  if (job.status === 'queued' || job.status === 'verifying') return '';
-  const stats = job.stats || {};
-  const total = Number(stats.totalBytes) || 0;
-  const parts = [];
-  if (!(total > 0)) {
-    parts.push('Считаем объём…');
-  } else if (percentOf(job) >= 100) {
-    /* 100 % передачи — ещё не завершение: сервер досказывает статус. */
-    parts.push('Передача завершена, ждём подтверждения сервера');
-  } else {
-    if (Number(stats.speed) > 0) parts.push(`${humanBytes(stats.speed)}/с`);
-    if (Number(stats.eta) > 0) parts.push(`≈ ${humanEta(stats.eta)}`);
-  }
-  return parts.join(' · ');
-}
-
-function activeStateTitle(job) {
-  if (job.status === 'queued') return 'Ожидает запуска';
-  if (job.status === 'verifying') return 'Проверяем файлы';
-  const total = Number((job.stats || {}).totalBytes) || 0;
-  if (total > 0 && percentOf(job) >= 100) return 'Завершаем скачивание';
-  return 'Идёт скачивание';
-}
-
-/* Сводка строки другой задачи: «В очереди», «Считаем объём…» или процент
-   с переданным объёмом. */
-function otherJobDetail(job) {
-  if (job.status === 'queued') return 'В очереди';
-  if (job.status === 'verifying') return 'Проверяем файлы';
-  const transferred = jobTransferredText(job);
-  const total = Number((job.stats || {}).totalBytes) || 0;
-  if (!(total > 0)) return [transferred, 'Считаем объём…'].filter(Boolean).join(' · ');
-  return [`${percentOf(job)}\u00A0%`, transferred].filter(Boolean).join(' · ');
-}
-
-/* Остальные активные задачи не скрываем: каждая строка со своим статусом и
-   действием. Основная карточка остаётся компактной. */
-function nowOtherJobsMarkup(others) {
-  if (!others || !others.length) return '';
-  return `<ul class="now-others" aria-label="Другие задачи">
-    ${others.map((job) => `<li class="now-other">
-        <span class="now-other-text">
-          <span class="now-other-title" title="${escapeHtml(jobTitle(job))}">${escapeHtml(jobTitle(job))}</span>
-          <span class="now-other-meta" data-other-meta="${escapeHtml(job.id)}">${escapeHtml(otherJobDetail(job))}</span>
-        </span>
-        ${jobActionsMarkup(job, { compact: true, focusKey: `stop-${job.id}` })}
-      </li>`).join('')}
-  </ul>`;
-}
-
-/* Содержимое блока «Скачивания». В idle тела нет вовсе: до первого
-   скачивания видны только заголовок и кнопка «Скачать». */
-function nowMarkup(mode, job, activeCount, account, others) {
-  if (mode === 'active') {
-    const stats = job.stats || {};
-    const percent = percentOf(job);
-    const total = Number(stats.totalBytes) || 0;
-    const unknown = !(total > 0) && job.status === 'running';
-    const queued = job.status === 'queued';
-    const showPercent = !unknown && !queued;
-    const live = (job.status === 'running' || job.status === 'verifying') && !unknown && !queued;
-    const volume = jobTransferredText(job);
-    const meta = jobSpeedTimeText(job);
-    return `
-      <div class="cell-body now-body">
-        <div class="now-top-row">
-          <p class="now-title" id="now-title">${escapeHtml(activeStateTitle(job))}</p>
-          ${jobActionsMarkup(job)}
-        </div>
-        <p class="now-metrics">
-          <span class="now-percent" id="now-percent">${showPercent ? `${percent}\u00A0%` : ''}</span>
-          <span class="now-volume" id="now-volume">${escapeHtml(volume)}</span>
-        </p>
-        <div class="progress now-progress${live ? ' progress--live' : ''}${unknown || queued ? ' progress--indeterminate' : ''}" id="now-progress" role="progressbar" aria-label="Прогресс скачивания" aria-valuemin="0" aria-valuemax="100"${showPercent ? ` aria-valuenow="${percent}"` : ''} aria-valuetext="${showPercent ? `${percent}\u00A0%` : 'Объём ещё не известен'}"><i id="now-bar" style="width:${showPercent ? percent : 0}%"></i></div>
-        ${meta ? `<p class="now-meta" id="now-meta">${escapeHtml(meta)}</p>` : '<p class="now-meta" id="now-meta" hidden></p>'}
-        <p class="now-facts">
-          <span class="now-size" id="now-size" title="${escapeHtml(jobSourceText(job))}">${escapeHtml(jobSourceLabel(job))}</span>
-          <span class="now-dest" id="now-dest" title="${escapeHtml(displayPath(job.dest))}">→ ${escapeHtml(displayPath(job.dest))}</span>
-        </p>
-        ${nowOtherJobsMarkup(others)}
-        <p class="now-error" id="now-error" role="alert"${nowActionError ? '' : ' hidden'}>${escapeHtml(nowActionError)}</p>
-      </div>`;
-  }
-
-  if (mode === 'paused' || mode === 'error') {
-    const failed = mode === 'error';
-    const interrupted = job.status === 'interrupted';
-    const title = failed
-      ? (job.errorTitle || 'Скачивание не завершено')
-      : (interrupted ? 'Скачивание прервано' : 'Скачивание остановлено');
-    const note = failed
-      ? (job.errorAdvice || 'Проверьте место на сервере и повторите.')
-      : 'Продолжите — уже скачанные файлы не будут скачаны снова.';
-    const failureCount = Math.max(0, Number(job.failureCount) || 0);
-    const failures = Array.isArray(job.failures) ? job.failures.filter(Boolean) : [];
-    const partial = failed ? failureListMarkup(failures, failureCount) : '';
-    const copy = failed && failureCount > 0
-      ? `<button class="btn btn--secondary btn--sm" type="button" data-action="copy-failures" data-id="${escapeHtml(job.id)}" data-focus-key="copy-failures">${icon('copy')}Скопировать список</button>`
-      : '';
-    return `
-      <div class="cell-body">
-        <div class="now-row">
-          <div class="now-text">
-            <p class="now-title" id="now-title">${escapeHtml(title)}</p>
-            <p class="now-note">${escapeHtml(note)}</p>
-          </div>
-        </div>
-        ${partial}
-        <div class="now-actions">
-          ${jobActionsMarkup(job, { focusKey: 'resume' })}
-          ${copy}
-        </div>
-        <p class="now-source" title="${escapeHtml(jobSourceText(job))}">${escapeHtml(jobSourceText(job))}</p>
-        <p class="now-error" id="now-error" role="alert"${nowActionError ? '' : ' hidden'}>${escapeHtml(nowActionError)}</p>
-      </div>`;
-  }
-
+function nowMarkup(mode, job, activeCount, account) {
   if (mode === 'auth') {
     return `
+      ${nowHead('<span class="status-pill status-pill--auth">Нужен вход</span>')}
       <div class="cell-body">
         <div class="now-row">
           <div class="now-text">
@@ -2671,14 +2691,16 @@ function nowMarkup(mode, job, activeCount, account, others) {
   if (mode === 'done') {
     const facts = jobDoneFacts(job);
     return `
+      ${nowHead('<span class="status-pill status-pill--ok">Готово</span>')}
       <div class="cell-body now-done">
         ${facts ? `<p class="now-summary" id="now-summary">${escapeHtml(facts)}</p>` : ''}
-        <p class="now-source" title="${escapeHtml(jobSourceText(job))}">${escapeHtml(jobSourceText(job))}</p>
+
       </div>`;
   }
 
   if (mode === 'unknown') {
     return `
+      ${nowHead(`<span class="status-pill" title="${escapeHtml(job.status)}">Неизвестный статус</span>`)}
       <div class="cell-body">
         <div class="now-row">
           <div class="now-text">
@@ -2687,11 +2709,18 @@ function nowMarkup(mode, job, activeCount, account, others) {
           </div>
           <button class="btn btn--secondary" type="button" data-action="refresh" data-focus-key="refresh">Обновить</button>
         </div>
-        <p class="now-source" title="${escapeHtml(jobSourceText(job))}">${escapeHtml(jobSourceText(job))}</p>
+
       </div>`;
   }
 
-  return '';
+  return `
+    ${nowHead()}
+    <div class="cell-body">
+      <div class="now-text now-text--idle">
+        <p class="now-title">Скачиваний пока нет</p>
+        <p class="now-note">Начните с кнопки «Скачать»: три шага и проверка перед запуском.</p>
+      </div>
+    </div>`;
 }
 
 function renderNow() {
@@ -2702,42 +2731,41 @@ function renderNow() {
   const latest = latestJob();
   let mode = 'idle';
   let job = latest;
-  if (active.length) {
-    mode = 'active';
-    job = active[0];
-  } else if (latest && PAUSED_STATUSES.includes(latest.status)) {
-    mode = latest.status === 'failed' ? 'error' : 'paused';
+  const visible = accountJobs().filter(item =>
+    ACTIVE_STATUSES.includes(item.status) || PAUSED_STATUSES.includes(item.status) ||
+    (item.status === 'done' && !dismissedJobs.has(item.id)));
+
+  renderJobList(visible);
+  if (visible.length && account?.status !== 'needs-auth') {
+    cell.hidden = true;
+    cell.dataset.key = '';
+    return;
   } else if (account && account.status === 'needs-auth') {
     mode = 'auth';
-  } else if (latest && latest.status === 'done') {
-    mode = 'done';
+
   } else if (latest && !KNOWN_JOB_STATUSES.has(latest.status)) {
     mode = 'unknown';
   }
-  const others = mode === 'active' ? active.slice(1) : [];
-  const key = nowKey(mode, job, active.length, account, others);
+  cell.hidden = mode === 'idle';
+  const key = nowKey(mode, job, active.length, account);
   if (cell.dataset.key === key) {
-    if (mode === 'active') updateNowValues(job, others);
+
     return;
   }
   const focused = document.activeElement;
   const focusWasInside = !!(focused && focused !== cell && cell.contains(focused));
   const focusKey = (focusWasInside && focused.dataset ? focused.dataset.focusKey || '' : '') || pendingFocusKey;
   pendingFocusKey = '';
-  nowActionError = '';
   cell.dataset.key = key;
   cell.dataset.mode = mode;
-  /* Статус — в шапке блока «Скачивания»; тело пересобирается отдельно. */
-  const status = $('#downloads-status');
-  if (status) status.innerHTML = nowStatusMarkup(mode, job);
-  cell.innerHTML = nowMarkup(mode, job, active.length, account, others);
+  cell.innerHTML = nowMarkup(mode, job, active.length, account);
   const anchor = () => {
-    const title = $('#downloads-title');
+    const title = cell.querySelector('#now-title');
     if (title) title.focus({ preventScroll: true });
   };
   if (focusKey) {
-    /* После «Остановить» логично вести фокус на «Продолжить», но если
-       такого действия в новом режиме нет — на заголовок региона. */
+    /* После «Приостановить» логично вести фокус на «Продолжить», но если
+       такого действия в новом режиме нет — на заголовок региона, а не body. */
     const fallbackKey = focusKey === 'stop' ? 'resume' : '';
     const target = cell.querySelector(`[data-focus-key="${cssEscape(focusKey)}"]`)
       || (fallbackKey ? cell.querySelector(`[data-focus-key="${cssEscape(fallbackKey)}"]`) : null);
@@ -2748,72 +2776,6 @@ function renderNow() {
        оказаться на body. */
     anchor();
   }
-}
-
-function updateNowValues(job, others) {
-  const percent = percentOf(job);
-  const stats = job.stats || {};
-  const total = Number(stats.totalBytes) || 0;
-  const unknown = !(total > 0) && job.status === 'running';
-  const queued = job.status === 'queued';
-  const showPercent = !unknown && !queued;
-  const title = $('#now-title');
-  if (title) title.textContent = activeStateTitle(job);
-  const percentElement = $('#now-percent');
-  if (percentElement) percentElement.textContent = showPercent ? `${percent}\u00A0%` : '';
-  const volume = $('#now-volume');
-  if (volume) volume.textContent = jobTransferredText(job);
-  const bar = $('#now-bar');
-  if (bar) bar.style.width = showPercent ? `${percent}%` : '0%';
-  const progress = $('#now-progress');
-  if (progress) {
-    progress.classList.toggle('progress--indeterminate', unknown || queued);
-    progress.classList.toggle('progress--live', !unknown && !queued);
-    if (showPercent) {
-      progress.setAttribute('aria-valuenow', String(percent));
-      progress.setAttribute('aria-valuetext', `${percent}\u00A0%`);
-    } else {
-      progress.removeAttribute('aria-valuenow');
-      progress.setAttribute('aria-valuetext', 'Объём ещё не известен');
-    }
-  }
-  const meta = $('#now-meta');
-  if (meta) {
-    const text = jobSpeedTimeText(job);
-    meta.textContent = text;
-    meta.hidden = !text;
-  }
-  const size = $('#now-size');
-  if (size) {
-    size.textContent = jobSourceLabel(job);
-    size.title = jobSourceText(job);
-  }
-  const dest = $('#now-dest');
-  if (dest) {
-    const path = displayPath(job.dest);
-    dest.textContent = `→ ${path}`;
-    dest.title = path;
-  }
-  for (const other of others || []) {
-    const node = cellQuery(`[data-other-meta="${cssEscape(other.id)}"]`);
-    if (node) node.textContent = otherJobDetail(other);
-  }
-}
-
-function cellQuery(selector) {
-  const cell = $('#cell-now');
-  return cell ? cell.querySelector(selector) : null;
-}
-
-/* Ошибка действия — прямо у карточки задачи, а не только тостом. */
-function showNowError(message) {
-  nowActionError = String(message || '');
-  const node = $('#now-error');
-  if (node) {
-    node.textContent = nowActionError;
-    node.hidden = !nowActionError;
-  }
-  if (nowActionError) announce(nowActionError);
 }
 
 /* --- job status notifications -------------------------------------------- */
@@ -2852,8 +2814,8 @@ function notifyJobStatus(job) {
   if (job.status === 'interrupted' || job.status === 'canceled') {
     showToast({
       type: 'warn', id: `job-${job.id}`,
-      title: job.status === 'interrupted' ? 'Скачивание прервано' : 'Скачивание остановлено',
-      message: `${jobSourceLabel(job)} · ${displayPath(job.dest)}. Продолжите — уже скачанные файлы не будут скачаны снова.`,
+      title: 'Скачивание приостановлено',
+      message: `${jobSourceLabel(job)} · ${displayPath(job.dest)}. Продолжите — скачанные файлы не будут скачаны снова.`,
       action: { label: 'Продолжить', onClick: () => resumeJob(job.id, null) },
     });
   }
@@ -2895,14 +2857,13 @@ async function stopJob(id, trigger) {
     throw failed;
   }
   /* Ответ 200 — операция подтверждена. Ниже только обновление UI: его сбой
-     не превращается в «не удалось остановить». */
+     не превращается в «не удалось приостановить». */
   const job = state.jobs.find((item) => item.id === id);
   pendingFocusKey = trigger && trigger.dataset ? (trigger.dataset.focusKey || '') : '';
   try {
-    nowActionError = '';
     showToast({
       type: data.warning ? 'warn' : 'ok',
-      title: data.warning ? 'Скачивание останавливается' : 'Скачивание остановлено',
+      title: data.warning ? 'Скачивание приостановлено не сразу' : 'Скачивание приостановлено',
       message: data.warning || (job ? `${jobSourceLabel(job)} · ${displayPath(job.dest)}` : ''),
     });
     await refreshAfterAction();
@@ -2929,12 +2890,11 @@ async function resumeJob(id, trigger) {
   const job = state.jobs.find((item) => item.id === id);
   pendingFocusKey = trigger && trigger.dataset ? (trigger.dataset.focusKey || '') : '';
   try {
-    nowActionError = '';
     showToast({
       type: 'ok', title: 'Скачивание продолжено',
       message: job
-        ? `${jobSourceLabel(job)} · ${displayPath(job.dest)}. Уже скачанные файлы не будут скачаны снова.`
-        : 'Уже скачанные файлы не будут скачаны снова.',
+        ? `${jobSourceLabel(job)} · ${displayPath(job.dest)}. Скачанные файлы не будут скачаны снова.`
+        : 'Скачанные файлы не будут скачаны снова.',
     });
     await refreshAfterAction();
   } finally {
@@ -2983,22 +2943,23 @@ async function copyFailures(id, trigger) {
   }
 }
 
-/* --- «Скачать»: один диалог, «Что скачать» и «Проверьте выбор» ------------ */
+/* --- «Новое скачивание»: один диалог, три шага ---------------------------- */
 
-/* Шаги диалога: короткий заголовок и номер для «N из 2». «Папка на сервере» —
-   вложенный просмотр из строки «Сохранить в», поэтому номера у него нет. */
+/* Шаги диалога: короткий заголовок и номер для «N из 3». Название операции
+   «Новое скачивание» показывается в шапке один раз. Контекст setup — тот же
+   диалог в роли пикера папки в мастере, поэтому там номера нет. */
 const FLOW_STEPS = {
-  'flow-source': { step: 1, title: 'Что скачать' },
-  'flow-dest': { step: 0, title: 'Папка на сервере' },
-  'flow-review': { step: 2, title: 'Проверьте выбор' },
+  'flow-dest': { step: 1, title: 'Куда сохранить' },
+  'flow-source': { step: 2, title: 'Что скачать' },
+  'flow-review': { step: 3, title: 'Проверьте выбор' },
 };
-const FLOW_TOTAL_STEPS = 2;
 /* Сколько ждём оценку, прежде чем честно сказать «Оценка ещё идёт». */
 const ESTIMATE_SLOW_MS = 20000;
 let reviewWaitTimer = 0;
 /* /files отдаёт максимум 200 файлов; count — размер ответа, не всего списка. */
 const CLOUD_FILES_LIMIT = 200;
-/* «+N» на проверке раскрывает остальные чипы выбора. */
+const CLOUD_SIZES_BATCH = 20;
+/* «+N» на шаге 3 раскрывает остальные чипы выбора. */
 let reviewShowAll = false;
 
 /* Голосовые уведомления внутри диалога: #live снаружи модального окна inert,
@@ -3018,15 +2979,16 @@ function flowAnnounce(text) {
 /* --- сессия диалога -------------------------------------------------------- */
 
 function folderSession(context, opener) {
-  const source = !context || context === 'flow-source';
   return {
-    context: context || 'flow-source',
-    target: source ? 'cloud' : 'server',
+    context,
+    target: context === 'flow-source' ? 'cloud' : 'server',
     path: '',
     parent: null,
     roots: [],
     entries: [],
     loaded: false,
+    free: null,
+    total: null,
     writable: true,
     loading: false,
     error: null,
@@ -3035,7 +2997,8 @@ function folderSession(context, opener) {
     createBusy: false,
     createUnavailable: folderCreateUnavailable,
     all: false,
-    menuOpen: false,
+    showExisting: false,
+    excluded: [],
     confirmPath: '',
     confirmFocus: false,
     expanded: new Set(),
@@ -3049,24 +3012,33 @@ function folderSession(context, opener) {
     filePanelPath: '',
     files: new Map(),
     filesInflight: new Map(),
+    sizes: new Map(),
+    sizePending: new Set(),
     existingPending: new Set(),
     existingFailed: new Set(),
     existingError: '',
     existingDest: '',
-    returnTo: '',
     finished: false,
   };
 }
 
+function initialDestinationPath() {
+  const raw = String(flowDest || state.downloads || '/downloads').trim();
+  return raw.startsWith('/') ? raw : `/${raw}`;
+}
+
 /* Сброс черновика — только после успешного старта и при смене аккаунта.
-   Закрытие X черновик не очищает: повторный вход начинается с выбора. */
+   Закрытие X черновик не очищает: повторный вход начинается с шага 1. */
 function resetFlowDraft() {
-  flowPrimaryGuardUntil = 0;
+  excludedFolders = [];
+  flowStep = 1;
   flowSourceAll = false;
+  flowShowExisting = false;
   flowDest = '';
-  flowDestStatus = 'idle';
-  flowDestToken += 1;
+  flowFree = null;
+  flowTotal = null;
   flowBusy = false;
+  flowEditing = '';
   flowLaunchToken = '';
   flowLaunchKey = '';
   reviewShowAll = false;
@@ -3077,7 +3049,7 @@ function resetFlowDraft() {
   cloudSelectionAccount = account ? account.id : '';
   flowPreflight = { key: '', status: 'idle', data: null, error: null, seq: 0, controller: null, startedAt: 0 };
   resetExistingCache();
-  folder = folderSession('flow-source', null);
+  folder = folderSession('flow-dest', null);
 }
 
 /* --- запуск флоу ----------------------------------------------------------- */
@@ -3094,140 +3066,22 @@ function openFlowStart(trigger) {
     return;
   }
   flowOpener = trigger instanceof HTMLElement ? trigger : $('#flow-start');
-  /* Оценка прошлой сессии не должна мелькать в новой. */
-  cancelPreflight();
-  flowPreflight = { key: '', status: 'idle', data: null, error: null, seq: 0, controller: null, startedAt: 0 };
+  flowStep = 1;
+  /* Новый вход: фильтр «уже скачанные» выключен, ответы проверки сбрасываем,
+     а назначение и выбор папок/файлов остаются в памяти страницы. */
+  flowShowExisting = false;
+  flowEditing = '';
   resetExistingCache();
-  /* Пока идёт проверка, строка уже показывает ожидаемое назначение: без
-     этого «Выберите папку» мелькает перед известным путём. */
-  flowDest = displayPath(preferredDest || backendDownloadsPath());
-  flowDestStatus = 'checking';
-  folder = folderSession('flow-source', flowOpener);
+  folder = folderSession('flow-dest', flowOpener);
+  folder.path = flowDest || initialDestinationPath();
   folder.selected = cloudSelection.slice();
   folder.selectedFiles = cloudFileSelection.slice();
+  folder.excluded = excludedFolders.slice();
   folder.all = !!flowSourceAll;
   const dialog = $('#folder-dialog');
   if (dialog && !dialog.open) dialog.showModal();
+  flowDest = folder.path;
   showFlowStep('flow-source');
-  resolveDestination();
-}
-
-/* --- назначение: папка backend по умолчанию, последняя выбранная — после
-       проверки доступности ------------------------------------------------ */
-
-function renderDestinationSummary() {
-  const path = $('#flow-dest-path');
-  const edit = $('#flow-dest-edit');
-  const summary = $('#flow-dest-summary');
-  if (!path || !edit) return;
-  const missing = !flowDest;
-  path.textContent = missing ? 'Выберите папку' : displayPath(flowDest);
-  path.title = missing ? '' : displayPath(flowDest);
-  path.classList.toggle('dest-summary-path--missing', missing);
-  path.classList.toggle('dest-summary-path--pending', flowDestStatus === 'checking');
-  edit.textContent = missing ? 'Выбрать' : 'Изменить';
-  if (flowDestStatus === 'checking') edit.setAttribute('aria-disabled', 'true');
-  else edit.removeAttribute('aria-disabled');
-  if (summary) summary.dataset.status = flowDestStatus;
-}
-
-/* Проверка одной папки: ответ подтверждает и существование, и запись. */
-async function probeDestination(path) {
-  try {
-    const data = await api(`/api/fs/folders?path=${encodeURIComponent(path)}`, { timeout: API_TIMEOUT.folders });
-    const resolved = data && data.path != null ? displayPath(data.path) : displayPath(path);
-    return { ok: true, path: resolved, writable: !data || data.writable !== false };
-  } catch (error) {
-    return { ok: false, error };
-  }
-}
-
-/* Новый сценарий: назначение по умолчанию — папка из backend; последняя
-   выбранная папка используется только после проверки доступности, иначе
-   честно показываем «Выберите папку» и даём открыть выбор. */
-async function resolveDestination() {
-  const token = ++flowDestToken;
-  const remembered = displayPath(preferredDest || '');
-  const fallback = backendDownloadsPath();
-  const candidate = remembered || fallback;
-  flowDestStatus = 'checking';
-  flowDest = candidate;
-  renderDestinationSummary();
-  renderFlowFooter();
-  let result = await probeDestination(candidate);
-  if (token !== flowDestToken) return;
-  if (result.ok && result.writable) {
-    flowDest = result.path;
-    flowDestStatus = 'ready';
-  } else if (remembered && displayPath(remembered) !== displayPath(fallback)) {
-    /* Последняя папка стала недоступна: откатываемся к папке backend. */
-    result = await probeDestination(fallback);
-    if (token !== flowDestToken) return;
-    if (result.ok && result.writable) {
-      flowDest = result.path;
-      flowDestStatus = 'ready';
-      preferredDest = '';
-    } else {
-      flowDest = '';
-      flowDestStatus = 'missing';
-    }
-  } else {
-    flowDest = '';
-    flowDestStatus = 'missing';
-    preferredDest = '';
-  }
-  renderDestinationSummary();
-  renderFlowFooter();
-  /* Облачные папки могут загрузиться раньше проверки назначения. Тогда
-     первый запрос «что уже есть на сервере» уходил без готового пути и
-     теги «Папка есть на сервере» не появлялись до смены режима. Сверяемся
-     ещё раз, когда путь подтверждён. */
-  if (folder.context === 'flow-source' && !folder.finished) syncExistingDestination();
-  if (flowDestStatus === 'missing') {
-    flowAnnounce('Папка на сервере не найдена — выберите её вручную');
-  } else {
-    flowAnnounce(`Сохранить в: ${flowDest}`);
-  }
-}
-
-/* --- вложенный просмотр «Папка на сервере» --------------------------------- */
-
-function openDestinationPicker(returnTo) {
-  if (!folder || folder.finished || flowBusy) return;
-  folder.returnTo = returnTo === 'flow-review' ? 'flow-review' : 'flow-source';
-  folder.createOpen = false;
-  folder.error = null;
-  folder.loaded = false;
-  showFlowStep('flow-dest');
-  const start = flowDestStatus === 'ready' && flowDest ? flowDest : backendDownloadsPath();
-  loadFolder(start, false);
-}
-
-/* «Выбрать эту папку» — единственное действие, которое меняет назначение.
-   Переход внутрь или вверх по каталогам назначение не трогает. */
-function chooseDestination() {
-  if (flowBusy || folder.createBusy || folder.loading || folder.error || !folder.path || folder.writable === false) return;
-  folder.createOpen = false;
-  clearFolderCreateError();
-  flowDestToken += 1;
-  flowDest = displayPath(folder.path);
-  flowDestStatus = flowDest ? 'ready' : 'missing';
-  if (destinationReady()) preferredDest = flowDest;
-  const back = folder.returnTo === 'flow-review' ? 'flow-review' : 'flow-source';
-  folder.returnTo = '';
-  showFlowStep(back);
-  flowAnnounce(`Сохранить в: ${flowDest}`);
-}
-
-/* «Назад» и крестик во вложенном просмотре отменяют просмотр: назначение
-   остаётся прежним, облачный выбор не меняется. */
-function cancelDestinationPreview() {
-  if (flowBusy) return;
-  folder.createOpen = false;
-  clearFolderCreateError();
-  const back = folder.returnTo === 'flow-review' ? 'flow-review' : 'flow-source';
-  folder.returnTo = '';
-  showFlowStep(back);
 }
 
 /* --- переключение шагов ---------------------------------------------------- */
@@ -3235,16 +3089,27 @@ function cancelDestinationPreview() {
 function showFlowStep(context) {
   folder.context = context;
   folder.target = context === 'flow-source' ? 'cloud' : 'server';
-  folder.menuOpen = false;
+
   folder.confirmPath = '';
   folder.confirmFocus = false;
   folder.status = '';
-  folder.alert = '';
-  updateFlowChrome();
-  if (context === 'flow-source') {
-    renderSourceBar();
-    renderSourceTree();
+  const info = FLOW_STEPS[context] || FLOW_STEPS['flow-dest'];
+  flowStep = info.step || 1;
+
+  if (context === 'flow-dest') {
+    updateFlowChrome();
+    renderDestinationView();
     renderFlowFooter();
+    if (!folder.loaded && !folder.loading && !folder.error) loadFolder(folder.path || initialDestinationPath(), false);
+  } else if (context === 'flow-source') {
+    updateFlowChrome();
+    folder.selected = folder.selected.length ? folder.selected : cloudSelection.slice();
+    folder.selectedFiles = folder.selectedFiles.length ? folder.selectedFiles : cloudFileSelection.slice();
+    folder.excluded = excludedFolders.slice();
+    folder.all = !!flowSourceAll;
+    folder.showExisting = !!flowShowExisting;
+    if (!folder.existingDest) folder.existingDest = flowDest;
+    renderFlow();
     const root = folder.nodes.get('');
     if (!root || (!root.loaded && !root.loading)) loadCloudNode('');
     else {
@@ -3253,69 +3118,51 @@ function showFlowStep(context) {
     }
     const tree = $('#flow-source-tree');
     if (tree) tree.scrollTop = folder.treeScroll || 0;
-    flowAnnounce(folder.all ? 'Что скачать. Выбран весь диск' : 'Что скачать');
-  } else if (context === 'flow-dest') {
-    renderDestinationView();
-    renderFlowFooter();
-    flowAnnounce('Папка на сервере');
+    flowAnnounce('Что скачать');
   } else if (context === 'flow-review') {
-    clearReviewError();
     const key = flowPreflightKey();
     if (flowPreflight.key !== key) {
       cancelPreflight();
       flowPreflight = { key, status: 'idle', data: null, error: null, seq: 0, controller: null, startedAt: 0 };
     }
-    renderReview();
-    renderFlowFooter();
+    renderFlow();
     ensurePreflight();
-    flowAnnounce('Проверьте выбор');
+    flowAnnounce('Перед скачиванием');
+  } else {
+    renderFlow();
   }
-  /* Каждый экран начинается сверху: прокрутка прошлого не переносится. */
+
+  /* Каждый шаг начинается сверху: прокрутка прошлого шага не переносится. */
   const content = $('#flow-content');
   if (content) content.scrollTop = 0;
-  const heading = $('#flow-step-title');
+  /* Фокус — на коротком заголовке шага, а не на названии операции. */
+  const heading = $('#flow-title');
   if (heading) heading.focus({ preventScroll: true });
 }
 
 /* --- каркас: шапка, секции, футер ----------------------------------------- */
 
 function updateFlowChrome() {
-  const context = folder.context || 'flow-source';
-  const info = FLOW_STEPS[context] || FLOW_STEPS['flow-source'];
+  const context = folder.context || 'flow-dest';
+  const info = FLOW_STEPS[context] || FLOW_STEPS['flow-dest'];
   const title = $('#flow-title');
   const stepTitle = $('#flow-step-title');
-  const position = $('#flow-step-pos');
-  const tools = $('#flow-step-tools');
-  const manual = $('#flow-select-manual');
-  const dialog = $('#folder-dialog');
+  const stepHead = $('#flow-step-head');
   const foot = $('#flow-foot');
-  if (title) title.textContent = 'Скачивание';
-  if (stepTitle) {
-    stepTitle.textContent = context === 'flow-source' && folder.all ? 'Выбран весь диск' : info.title;
+  const dialog = $('#folder-dialog');
+  if (title) title.textContent = context === 'flow-source' ? 'Что скачать' : context === 'flow-review' ? 'Перед скачиванием' : 'Куда сохранить';
+  if (stepHead) stepHead.hidden = true;
+  if (stepTitle) stepTitle.textContent = info.title;
+  for (const number of [1, 2, 3]) {
+    const section = document.getElementById(`flow-step-${number}`);
+    if (section) section.hidden = number !== (info.step || 1);
   }
-  if (position) {
-    position.hidden = !info.step;
-    position.textContent = info.step ? `${info.step} из ${FLOW_TOTAL_STEPS}` : '';
-  }
-  if (tools) tools.hidden = context !== 'flow-source';
-  if (manual) manual.hidden = !(context === 'flow-source' && folder.all);
-  const sections = {
-    'flow-source': document.getElementById('flow-step-source'),
-    'flow-dest': document.getElementById('flow-step-dest'),
-    'flow-review': document.getElementById('flow-step-review'),
-  };
-  for (const section of Object.values(sections)) {
-    if (section) section.hidden = true;
-  }
-  const active = sections[context] || sections['flow-source'];
-  if (active) active.hidden = false;
   if (foot) foot.dataset.context = context;
   if (dialog) {
     dialog.dataset.context = context;
     dialog.dataset.step = info.step ? String(info.step) : '';
     dialog.removeAttribute('aria-describedby');
   }
-  renderDestinationSummary();
 }
 
 function renderFlow() {
@@ -3337,6 +3184,14 @@ function renderFlow() {
   }
 }
 
+function selectedFolderRoots() {
+  return folder.selected.slice().sort();
+}
+
+function selectedFileItems() {
+  return folder.selectedFiles.slice().sort();
+}
+
 function setFlowAlert(message) {
   folder.alert = message || '';
   renderFlowFooter();
@@ -3349,7 +3204,7 @@ function flowSelectionEmpty() {
 }
 
 function renderFlowFooter() {
-  const context = folder.context || 'flow-source';
+  const context = folder.context || 'flow-dest';
   const back = $('#folder-back');
   const primary = $('#folder-choose');
   const noteNode = $('#flow-foot-note');
@@ -3358,39 +3213,31 @@ function renderFlowFooter() {
   let noteText = '';
   let noteTone = '';
   back.textContent = 'Назад';
-  if (context === 'flow-source') {
-    back.hidden = true;
+  if (context === 'flow-dest') {
+    back.hidden = flowEditing !== 'dest';
     back.disabled = false;
-    primary.textContent = 'Проверить выбор';
-    primary.disabled = flowBusy || folderBusy() || flowSelectionEmpty() || !destinationReady();
-    if (folder.alert) {
-      noteText = folder.alert;
-      noteTone = 'alert';
-    } else if (flowDestStatus === 'checking') {
-      noteText = 'Проверяем папку на сервере…';
-      noteTone = 'status';
-    } else if (flowDestStatus === 'missing') {
-      noteText = 'Выберите папку на сервере — кнопка «Выбрать» в строке «Сохранить в».';
-      noteTone = 'alert';
-    }
-  } else if (context === 'flow-dest') {
-    back.hidden = false;
-    back.disabled = !!folder.createBusy;
-    primary.textContent = 'Выбрать эту папку';
+    primary.textContent = flowEditing === 'dest' ? 'Сохранить папку' : 'Выбрать эту папку';
     primary.disabled = !!folder.loading || !!folder.error || !folder.path || folder.writable === false;
-    if (folder.writable === false && !folder.loading && !folder.error) {
-      noteText = 'В эту папку нельзя сохранить: она доступна только для чтения.';
-      noteTone = 'alert';
-    }
-  } else {
+  } else if (context === 'flow-source') {
+    back.hidden = flowEditing !== 'source';
+    back.disabled = false;
+    primary.textContent = 'Далее';
+    primary.disabled = folderBusy() || flowSelectionEmpty();
+    noteText = folder.alert || '';
+    noteTone = folder.alert ? 'alert' : '';
+  } else if (context === 'flow-review') {
     back.hidden = false;
     back.disabled = flowBusy;
-    const missing = !destinationReady();
-    primary.textContent = flowBusy ? 'Запускаем…' : 'Скачать';
-    primary.disabled = flowBusy || missing || estimateView().kind === 'nofit';
-    noteText = folder.status || (missing ? 'Выберите папку на сервере.' : '');
-    noteTone = folder.status ? 'status' : 'alert';
+    const nofit = flowPreflight.status === 'ready'
+      && flowPreflight.data
+      && flowPreflight.data.fits === false;
+    primary.textContent = 'Скачать';
+    primary.disabled = flowBusy || nofit;
+    noteText = folder.status || '';
+    noteTone = folder.status ? 'status' : '';
   }
+  /* Зона над кнопками на шаге выбора зарезервирована под лимит: футер не
+     прыгает, а сообщение не теряется среди строк. */
   if (noteNode) {
     noteNode.hidden = !noteText;
     noteNode.dataset.empty = noteText ? 'false' : 'true';
@@ -3483,7 +3330,7 @@ function renderDestinationView() {
     } else if (!folder.entries.length) {
       body.innerHTML = `<div class="folder-state folder-state--empty">
         <p class="folder-state-title">В этой папке нет подпапок</p>
-        <p class="folder-detail">${folderCreateAvailable() ? 'Сюда можно сохранить файлы или создать новую папку.' : 'Сюда можно сохранить файлы.'}</p>
+        <p class="folder-detail">Сюда можно сохранить файлы или создать новую папку.</p>
       </div>`;
     } else {
       body.innerHTML = `<div class="folder-list">${folder.entries.map((entry) => {
@@ -3518,6 +3365,8 @@ async function loadFolder(path, focusAfter) {
     folder.entries = Array.isArray(data.entries)
       ? data.entries.filter((entry) => entry && (entry.name || entry.path))
       : [];
+    folder.free = data.free != null && Number.isFinite(Number(data.free)) ? Number(data.free) : null;
+    folder.total = data.total != null && Number.isFinite(Number(data.total)) ? Number(data.total) : null;
     folder.writable = data.writable !== false;
     folder.error = null;
     folder.loaded = true;
@@ -3678,17 +3527,15 @@ async function createFolder() {
     const created = data && data.path ? String(data.path) : target;
     folder.createBusy = false;
     folder.createOpen = false;
-    /* Остаёмся в текущей папке и обновляем её список: созданная папка не
-       выбирается автоматически, её нужно открыть и подтвердить явно. */
-    await loadFolder(folder.path || folderRootPath(), false);
+    await loadFolder(created, false);
     updateFolderCreateUI();
-    showToast({ type: 'ok', title: `Папка «${name}» создана`, message: 'Откройте её и нажмите «Выбрать эту папку».' });
-    const row = document.querySelector(`[data-folder-path="${cssEscape(displayPath(created))}"]`);
-    if (row) row.focus({ preventScroll: true });
-    else {
-      const path = $('#folder-path');
-      if (path) path.focus({ preventScroll: true });
-    }
+    showToast({ type: 'ok', title: `Папка «${name}» создана`, message: 'Можно сохранить файлы сюда.' });
+    /* После создания сразу предлагаем подтвердить папку, а не оставляем
+       фокус на текстовом пути: следующее действие — «Выбрать эту папку». */
+    const primary = $('#folder-choose');
+    const path = $('#folder-path');
+    if (primary && !primary.disabled) primary.focus({ preventScroll: true });
+    else if (path) path.focus({ preventScroll: true });
   } catch (error) {
     folder.createBusy = false;
     if (error && (error.status === 404 || error.status === 405)) {
@@ -3728,12 +3575,16 @@ function tagId(path) {
   return `folder-tag-${encodeURIComponent(path)}`;
 }
 
+function wholeDiskLabel(excluded) {
+  return excluded.length ? 'Весь диск, кроме ' + excluded.map(path => '«' + path + '»').join(', ') : 'Весь диск';
+}
+
 function folderCovered(path) {
   return !folder.all && folder.selected.some((ancestor) => ancestor !== path && path.startsWith(`${ancestor}/`));
 }
 
 function folderNodeChecked(path) {
-  if (folder.all) return true;
+  if (folder.all) return !folder.excluded.some(root => path === root || path.startsWith(root + '/'));
   if (folder.selected.includes(path)) return true;
   return folderCovered(path);
 }
@@ -3747,25 +3598,26 @@ function descendantFolderSelected(path) {
 }
 
 function folderIsIndeterminate(path) {
-  if (folder.all || folderCovered(path) || folderNodeChecked(path)) return false;
+  if (folder.all) return folder.excluded.some(root => root.startsWith(path + '/'));
+  if (folderCovered(path) || folderNodeChecked(path)) return false;
   return descendantFolderSelected(path) || selectedFilesUnder(path) > 0;
 }
 
 /* Тег — только факт с сервера. Обещания «будет перекачано» нет: правило
    пропуска/перезаписи существующих файлов задаёт сервер. */
 function folderTagMarkup(path, entry) {
-  if (folder.all || !entry) return '';
+  if (!entry) return '';
   const id = tagId(path);
   const tag = (modifier, text) => `<span class="folder-tag folder-tag--${modifier}" id="${escapeHtml(id)}">${text}</span>`;
   if (folderCovered(path)) return tag('covered', 'Входит в выбранную папку');
-  if (entry.exists && entry.entries > 0) return tag('done', 'Папка есть на сервере');
+  if (entry.exists && entry.entries > 0) return tag('done', 'Есть на сервере');
   if (entry.exists) return tag('empty', 'Пустая папка на сервере');
   return '';
 }
 
 function folderAriaLabel(path, name, options) {
   const { covered } = options;
-  if (folder.all) return `Папка «${name}»: выбран весь диск`;
+  if (folder.all) return name;
   if (covered) return `Папка «${name}» — входит в выбранную папку`;
   if (folderIsIndeterminate(path)) return `Папка «${name}»: часть содержимого выбрана. Выбрать всю папку`;
   return `Скачать папку «${name}»`;
@@ -3781,29 +3633,37 @@ function folderConfirmMarkup(path, name) {
   </div>`;
 }
 
-function cloudNodeMarkup(path) {
+function cloudNodeMarkup(path, depth) {
   const name = displayPath(shortPath(path) || path);
   const entry = existingEntry(path);
+  const downloaded = existingIsDownloaded(entry);
   const covered = folderCovered(path);
-  const checked = folderNodeChecked(path);
-  const disabled = folder.all || covered;
+  const indeterminate = folderIsIndeterminate(path);
+  const checked = folderNodeChecked(path) && !indeterminate;
+  const disabled = covered || folder.all;
   const expanded = folder.expanded.has(path);
   const node = folder.nodes.get(path);
   const canExpand = !node || !node.loaded || (node.dirs && node.dirs.length > 0);
   const tag = folderTagMarkup(path, entry);
   const describedBy = tag ? tagId(path) : '';
+  /* Фильтр меняет только видимость. Выбранное и сфокусированное не прячем,
+     иначе строка исчезает из-под курсора и фокус уходит на body. */
+  const keep = !!folder.keepVisiblePath
+    && (path === folder.keepVisiblePath || folder.keepVisiblePath.startsWith(`${path}/`));
+  const hiddenByFilter = downloaded && !folder.showExisting && !checked && !indeterminate && !keep;
   const expandButton = (canExpand || expanded)
     ? `<button class="folder-expand" type="button" data-expand="${escapeHtml(path)}" aria-expanded="${expanded}"${expanded ? ` aria-controls="${escapeHtml(childrenId(path))}"` : ''} aria-label="${expanded ? 'Скрыть папки внутри' : 'Показать папки внутри'} «${escapeHtml(name)}»">${icon('chevron')}</button>`
     : '';
   const filesOpen = folder.filePanelPath === path;
-  const filesButton = cloudFilesAvailable()
-    ? `<button class="folder-files-toggle" type="button" data-preview="${escapeHtml(path)}" aria-expanded="${filesOpen}"${filesOpen ? ` aria-controls="${escapeHtml(filesPanelId(path))}"` : ''} aria-label="${filesOpen ? 'Скрыть файлы' : 'Показать файлы'} в папке «${escapeHtml(name)}»">${icon('eye')}</button>`
+  const filesButton = !folder.all && cloudFilesAvailable()
+    ? `<button class="folder-files-toggle" type="button" data-preview="${escapeHtml(path)}" aria-expanded="${filesOpen}" aria-controls="${escapeHtml(filesPanelId(path))}" aria-label="${filesOpen ? 'Скрыть файлы' : 'Показать файлы'} в папке «${escapeHtml(name)}»">${icon('eye')}</button>`
     : '';
-  const children = expanded ? cloudNodeChildren(path) : '';
-  const panel = filesOpen ? filesPanelMarkup(path) : '';
+  const meta = cloudSizesUnavailable ? '' : folderSizeText(path);
+  const children = expanded ? cloudNodeChildren(path, depth) : '';
+  const panel = !folder.all && filesOpen ? filesPanelMarkup(path) : '';
   const confirm = folder.confirmPath === path ? folderConfirmMarkup(path, name) : '';
   const title = displayCloudPath(path);
-  return `<li class="folder-node">
+  return `<li class="folder-node" style="--depth:${depth}"${hiddenByFilter ? ' hidden' : ''}>
     <div class="folder-node-row${checked ? ' is-selected' : ''}">
       <label class="folder-node-main${disabled ? ' is-disabled' : ''}" data-row-path="${escapeHtml(path)}">
         <input class="folder-check" type="checkbox" data-path="${escapeHtml(path)}"${checked ? ' checked' : ''}${disabled ? ' disabled aria-disabled="true"' : ''} aria-label="${escapeHtml(folderAriaLabel(path, name, { covered }))}"${describedBy ? ` aria-describedby="${escapeHtml(describedBy)}"` : ''}>
@@ -3814,6 +3674,7 @@ function cloudNodeMarkup(path) {
             <span class="folder-row-name" title="${escapeHtml(title)}">${escapeHtml(name)}</span>
             ${tag}
           </span>
+          ${meta ? `<span class="folder-row-meta">${escapeHtml(meta)}</span>` : ''}
         </span>
       </label>
       <div class="folder-row-actions">${filesButton}${expandButton}</div>
@@ -3824,87 +3685,46 @@ function cloudNodeMarkup(path) {
   </li>`;
 }
 
-function cloudNodeChildren(path) {
+function cloudNodeChildren(path, depth) {
   const node = folder.nodes.get(path);
+  const innerDepth = depth + 1;
   const wrap = (inner) => `<ul class="folder-children" id="${escapeHtml(childrenId(path))}">${inner}</ul>`;
   if (!node || node.loading) {
-    return wrap(`<li class="folder-node-state">${skeletonMarkup(2)}<span>Загружаем папки…</span></li>`);
+    return wrap(`<li class="folder-node-state" style="--depth:${innerDepth}">${skeletonMarkup(2)}<span>Загружаем папки…</span></li>`);
   }
   if (node.error) {
-    return wrap(`<li class="folder-node-state"><span>${escapeHtml(friendlyError(node.error))}</span><button class="btn btn--ghost btn--sm" type="button" data-retry-node="${escapeHtml(path)}">Повторить</button></li>`);
+    return wrap(`<li class="folder-node-state" style="--depth:${innerDepth}"><span>${escapeHtml(friendlyError(node.error))}</span><button class="btn btn--ghost btn--sm" type="button" data-retry-node="${escapeHtml(path)}">Повторить</button></li>`);
   }
   if (!node.dirs.length) {
-    return wrap('<li class="folder-node-state">В этой папке нет подпапок</li>');
+    return wrap(`<li class="folder-node-state" style="--depth:${innerDepth}">В этой папке нет подпапок</li>`);
   }
-  return wrap(node.dirs.map((entry) => cloudNodeMarkup(entry.path)).join(''));
+  return wrap(node.dirs.map((entry) => cloudNodeMarkup(entry.path, innerDepth)).join(''));
 }
 
 function renderSourceBar() {
   if (folder.context !== 'flow-source') return;
-  const more = $('#folder-more');
-  if (more) {
-    more.setAttribute('aria-expanded', folder.menuOpen ? 'true' : 'false');
-    more.classList.toggle('is-mode', !!folder.all);
+  const filterRow = $('#folder-show-existing-row');
+  if (filterRow) filterRow.hidden = existingUnavailable;
+  const toggle = $('#folder-show-existing');
+  if (toggle) toggle.checked = !!folder.showExisting;
+  const all = $('#select-disk');
+  all.checked = folder.all && !folder.excluded.length;
+  all.indeterminate = folder.all ? false : !flowSelectionEmpty();
+  const unavailable = $('#folder-existing-note');
+  if (unavailable) {
+    unavailable.hidden = !existingUnavailable;
+    unavailable.textContent = existingUnavailable ? 'Проверка недоступна на этом сервере' : '';
   }
-  const menu = $('#folder-menu');
-  if (menu) menu.hidden = !folder.menuOpen;
-  const action = $('#folder-menu-action');
-  if (action) action.textContent = folder.all ? 'Выбрать отдельно' : 'Выбрать весь диск';
   const errorBox = $('#folder-existing-error');
   const errorText = $('#folder-existing-error-text');
   const retry = $('#folder-existing-retry');
-  const errorVisible = !!folder.existingError && !existingUnavailable && !folder.all;
+  const errorVisible = !!folder.existingError && !existingUnavailable;
   if (errorBox) errorBox.hidden = !errorVisible;
   if (errorText) {
     errorText.textContent = errorVisible ? 'Не удалось проверить, что уже скачано.' : '';
     errorText.title = errorVisible ? folder.existingError : '';
   }
   if (retry) retry.disabled = !errorVisible || folder.existingPending.size > 0;
-}
-
-/* Меню «Ещё»: открытие ничего не переключает, режим меняет только пункт. */
-function sourceMenuItems() {
-  return $$('#folder-menu [role="menuitem"]');
-}
-
-function openSourceMenu() {
-  if (folder.menuOpen) return;
-  folder.menuOpen = true;
-  renderSourceBar();
-  const first = sourceMenuItems()[0];
-  if (first) first.focus({ preventScroll: true });
-}
-
-function closeSourceMenu(focusTrigger = false) {
-  if (!folder.menuOpen) return;
-  folder.menuOpen = false;
-  renderSourceBar();
-  if (focusTrigger) {
-    const trigger = $('#folder-more');
-    if (trigger) trigger.focus({ preventScroll: true });
-  }
-}
-
-/* «Весь диск» — режим, а не потеря ручного выбора: папки и файлы остаются
-   в сессии, поэтому возврат восстанавливает прежний выбор. Заголовок и
-   «Выбрать отдельно» явно показывают режим. */
-function setSourceMode(all) {
-  folder.menuOpen = false;
-  if (folder.all === !!all) { renderSourceBar(); return; }
-  folder.all = !!all;
-  flowSourceAll = folder.all;
-  folder.alert = '';
-  renderSourceBar();
-  renderSourceTree();
-  updateFlowChrome();
-  renderFlowFooter();
-  if (folder.all) {
-    flowAnnounce('Весь диск: скачаются все папки и файлы');
-  } else {
-    syncExistingDestination();
-    requestExistingForLoadedLevels();
-    flowAnnounce('Выбор папок и файлов вручную');
-  }
 }
 
 function sourceFocusSelector() {
@@ -3937,7 +3757,7 @@ function renderSourceTree() {
   if (!tree) return;
   const focusSelector = sourceFocusSelector();
   const scroll = tree.scrollTop;
-  folder.keepVisiblePath = focusedTreePath() || folder.confirmPath || folder.filePanelPath || '';
+  folder.keepVisiblePath = focusedTreePath() || folder.confirmPath || '';
   const root = folder.nodes.get('');
   if (!root || root.loading) {
     tree.innerHTML = loadingState('Загружаем папки…', 4);
@@ -3950,10 +3770,10 @@ function renderSourceTree() {
   } else if (!root.dirs.length) {
     tree.innerHTML = `<div class="folder-state folder-state--empty">
       <p class="folder-state-title">В облаке нет папок</p>
-      ${folder.all ? '' : '<p class="folder-detail">Можно выбрать весь диск в меню «Ещё» — скачаются все файлы.</p>'}
+      ${folder.all ? '' : '<p class="folder-detail">Чтобы скачать файлы из корня, отметьте «Весь диск».</p>'}
     </div>`;
   } else {
-    let html = `<ul class="folder-tree">${root.dirs.map((entry) => cloudNodeMarkup(entry.path)).join('')}</ul>`;
+    let html = `<ul class="folder-tree">${root.dirs.map((entry) => cloudNodeMarkup(entry.path, 0)).join('')}</ul>`;
     const truncated = Array.from(folder.nodes.values()).some((node) => node && node.truncated);
     if (truncated) html += `<p class="folder-truncated">Показаны первые ${pluralFolders(500)}</p>`;
     tree.innerHTML = html;
@@ -3972,6 +3792,7 @@ function renderSourceTree() {
       selectAll.disabled = fullyCovered || !visible.length;
     }
   }
+  renderSourceBar();
   folder.keepVisiblePath = '';
   tree.scrollTop = scroll;
   if (folder.confirmFocus && folder.confirmPath) {
@@ -4056,7 +3877,16 @@ function confirmFolderSelection(path) {
 }
 
 function toggleFolderSelection(path, checked) {
-  if (!path || folder.all) return;
+  if (!path) return;
+  /* «Весь диск» выбирается целиком: backend не принимает список исключений
+     (POST /api/preflight и /api/jobs отвечают 400 на чужое поле), поэтому
+     под режимом «весь диск» папки показаны отмеченными и заблокированы.
+     Снять одну папку нельзя — иначе интерфейс обещал бы то, чего сервер
+     не умеет. */
+  if (folder.all) {
+    renderFlow();
+    return;
+  }
   folder.confirmPath = '';
   folder.confirmFocus = false;
   if (checked) {
@@ -4153,6 +3983,7 @@ async function loadCloudNode(path) {
       truncated: !!data.truncated,
     });
     renderFlow();
+    requestCloudSizes(dirs.map((entry) => entry.path));
     requestExisting(dirs.map((entry) => entry.path));
   } catch (error) {
     if (token !== folderToken) return;
@@ -4226,7 +4057,7 @@ function filesPanelMarkup(path) {
     </label>`);
     children.push(`<ul class="file-list">${entry.files.map((file) => fileMarkup(path, file)).join('')}</ul>`);
     if (entry.truncated) {
-      const shown = Math.max(entry.files.length, Number(entry.count) || entry.files.length);
+      const shown = Math.max(entry.files.length, Number(entry.limit) || CLOUD_FILES_LIMIT);
       children.push(`<p class="files-note">Показаны первые ${shown} файлов. Чтобы скачать всё, выберите папку.</p>`);
       if (!covered) {
         children.push(`<button class="btn btn--quiet btn--sm files-choose" type="button" data-select-folder="${escapeHtml(path)}">Выбрать папку</button>`);
@@ -4290,7 +4121,7 @@ async function requestCloudFiles(path) {
     entry.status = 'loaded';
   } catch (error) {
     if (!isCurrent()) return;
-    if (error && (error.status === 405 || (error.status === 404 && error.nonJson === true))) {
+    if (error && (error.status === 404 || error.status === 405)) {
       cloudFilesUnavailable = true;
       cancelCloudFiles();
       folder.files.clear();
@@ -4354,6 +4185,62 @@ function retryFilePanel(path) {
   requestCloudFiles(path);
 }
 
+/* --- размеры папок в облаке ---------------------------------------------- */
+
+function folderSizeText(path) {
+  if (cloudSizesUnavailable) return '';
+  const entry = folder.sizes && folder.sizes.get(path);
+  if (!entry) return '\u2026';
+  if (entry.error) return '';
+  return `${formatFiles(entry.files)} · ${humanBytes(entry.bytes)}`;
+}
+
+async function requestCloudSizes(paths) {
+  if (cloudSizesUnavailable) return;
+  const account = currentAccount();
+  if (!account) return;
+  const pending = (Array.isArray(paths) ? paths : []).filter((path) => (
+    path && !folder.sizes.has(path) && !folder.sizePending.has(path)
+  ));
+  if (!pending.length) return;
+  const token = folderToken;
+  for (const path of pending) folder.sizePending.add(path);
+  const chunks = [];
+  for (let index = 0; index < pending.length; index += CLOUD_SIZES_BATCH) {
+    chunks.push(pending.slice(index, index + CLOUD_SIZES_BATCH));
+  }
+  try {
+    for (const chunk of chunks) {
+      try {
+        const data = await api('/api/cloud/sizes', {
+          method: 'POST',
+          timeout: API_TIMEOUT.folders,
+          body: JSON.stringify({ accountId: account.id, paths: chunk }),
+        });
+        if (token !== folderToken) return;
+        const entries = Array.isArray(data && data.entries) ? data.entries : [];
+        for (const entry of entries) {
+          if (!entry || !entry.path) continue;
+          const path = cloudApiPath(entry.path);
+          if (!path) continue;
+          if (entry.error) folder.sizes.set(path, { error: true });
+          else folder.sizes.set(path, { bytes: Number(entry.bytes) || 0, files: Number(entry.files) || 0 });
+        }
+      } catch (error) {
+        if (token !== folderToken) return;
+        if (error && (error.status === 404 || error.status === 405)) {
+          cloudSizesUnavailable = true;
+          break;
+        }
+        for (const path of chunk) folder.sizes.set(path, { error: true });
+      }
+    }
+  } finally {
+    for (const path of pending) folder.sizePending.delete(path);
+    if (token === folderToken && folder.context === 'flow-source') renderSourceTree();
+  }
+}
+
 /* --- что уже скачано в назначение ----------------------------------------- */
 
 function existingScopeKey() {
@@ -4385,9 +4272,13 @@ function existingKey(dest, path) {
 }
 
 function existingEntry(path) {
-  if (existingUnavailable || folder.all || !destinationReady() || !path) return null;
+  if (existingUnavailable || !flowDest || !path) return null;
   if (!syncExistingCache()) return null;
   return existingCache.get(existingKey(flowDest, path)) || null;
+}
+
+function existingIsDownloaded(entry) {
+  return !!entry && entry.exists && entry.entries > 0;
 }
 
 function syncExistingDestination() {
@@ -4400,7 +4291,7 @@ function syncExistingDestination() {
 }
 
 async function requestExisting(paths, { retry = false } = {}) {
-  if (existingUnavailable || folder.all || folder.context !== 'flow-source' || !destinationReady()) return;
+  if (existingUnavailable || folder.context !== 'flow-source' || !flowDest) return;
   const account = currentAccount();
   const dest = flowDest;
   if (!account || !dest) return;
@@ -4451,6 +4342,8 @@ async function requestExisting(paths, { retry = false } = {}) {
         if (error && (error.status === 404 || error.status === 405)) {
           existingUnavailable = true;
           existingCache.clear();
+          folder.showExisting = false;
+          flowShowExisting = false;
           folder.existingFailed.clear();
           folder.existingError = '';
           if (!existingNoticeShown) {
@@ -4492,7 +4385,7 @@ function retryExisting() {
 }
 
 function requestExistingForLoadedLevels() {
-  if (existingUnavailable || folder.all || folder.context !== 'flow-source') return;
+  if (existingUnavailable || folder.context !== 'flow-source') return;
   for (const node of folder.nodes.values()) {
     if (!node || !node.loaded || !Array.isArray(node.dirs) || !node.dirs.length) continue;
     requestExisting(node.dirs.map((entry) => entry.path));
@@ -4501,26 +4394,72 @@ function requestExistingForLoadedLevels() {
 
 /* --- переходы между шагами ------------------------------------------------ */
 
-/* Выбор сессии → черновик. Ручной выбор сохраняется и в режиме «Весь диск»:
-   он понадобится при возврате к «Выбрать отдельно» и при следующем открытии. */
 function syncSelectionFromFolder() {
   const account = currentAccount();
+  excludedFolders = folder.all ? folder.excluded.slice().sort() : [];
   flowSourceAll = !!folder.all;
-  cloudSelection = folder.selected.slice().sort();
-  cloudFileSelection = folder.selectedFiles.slice().sort();
+  flowShowExisting = !!folder.showExisting;
+  cloudSelection = folder.all ? [] : folder.selected.slice().sort();
+  cloudFileSelection = folder.all ? [] : folder.selectedFiles.slice().sort();
   cloudSelectionAccount = account ? account.id : '';
 }
 
-/* «Что скачать» → «Проверьте выбор»: фиксируем источник и запускаем оценку. */
-function flowToReview() {
-  if (folderBusy() || flowBusy) return;
-  const account = currentAccount();
-  if (!account) return;
-  if (!destinationReady()) {
-    setFlowAlert('Выберите папку на сервере — кнопка «Выбрать» в строке «Сохранить в».');
-    renderDestinationSummary();
+/* Шаг 1 → 2: фиксируем назначение, переносим сохранённый выбор в сессию.
+   При входе из проверки тот же шаг возвращает к сводке с «Сохранить папку». */
+function flowConfirmDestination() {
+  if (folder.loading || folder.error || !folder.path || folder.writable === false) return;
+  flowDest = displayPath(folder.path);
+  flowFree = Number.isFinite(Number(folder.free)) ? Number(folder.free) : null;
+  flowTotal = Number.isFinite(Number(folder.total)) ? Number(folder.total) : null;
+  if (flowEditing === 'dest') {
+    flowEditing = '';
+    showFlowStep('flow-review');
     return;
   }
+  flowStep = 2;
+  folder.excluded = excludedFolders.slice();
+  folder.all = !!flowSourceAll;
+  folder.showExisting = !!flowShowExisting;
+  folder.selected = cloudSelection.slice();
+  folder.selectedFiles = cloudFileSelection.slice();
+  folder.alert = '';
+  showFlowStep('flow-source');
+}
+
+/* Шаг 2 → 1: выбор и раскрытые ветки остаются в сессии диалога. */
+/* «Назад» из режима «Изменить» — отмена правки: сводка остаётся прежней,
+   а незавершённый черновик не подменяет подтверждённые значения. */
+function cancelFlowEdit() {
+  if (flowEditing === 'source') {
+    folder.selected = cloudSelection.slice();
+    folder.selectedFiles = cloudFileSelection.slice();
+    folder.alert = '';
+  } else if (flowEditing === 'dest') {
+    folder.path = flowDest || initialDestinationPath();
+    folder.parent = null;
+    folder.entries = [];
+    folder.loaded = false;
+    folder.error = null;
+  }
+  flowEditing = '';
+  showFlowStep('flow-review');
+}
+
+function flowBackToDest() {
+  if (folder.context !== 'flow-source') return;
+  const tree = $('#flow-source-tree');
+  if (tree) folder.treeScroll = tree.scrollTop;
+  syncSelectionFromFolder();
+  folder.alert = '';
+  flowStep = 1;
+  showFlowStep('flow-dest');
+}
+
+/* Шаг 2 → 3: подтверждаем источник и запускаем проверку. */
+function flowToReview() {
+  if (folderBusy()) return;
+  const account = currentAccount();
+  if (!account) return;
   if (!folder.all && !folder.selected.length && !folder.selectedFiles.length) {
     setFlowAlert('Выберите папки или файлы.');
     const first = document.querySelector('#flow-source-tree .folder-check:not([disabled])');
@@ -4528,9 +4467,9 @@ function flowToReview() {
     return;
   }
   syncSelectionFromFolder();
-  const tree = $('#flow-source-tree');
-  if (tree) folder.treeScroll = tree.scrollTop;
   folder.alert = '';
+  flowEditing = '';
+  flowStep = 3;
   showFlowStep('flow-review');
 }
 
@@ -4541,6 +4480,7 @@ function flowPreflightKey() {
   return [
     account ? account.id : '',
     flowSourceAll ? 'all' : 'selected',
+    JSON.stringify(excludedFolders),
     cloudSelection.slice().sort().join('\n'),
     cloudFileSelection.slice().sort().join('\n'),
     displayPath(flowDest),
@@ -4555,30 +4495,12 @@ function preflightTimeout(error) {
   return status === 408 || status === 504;
 }
 
-/* 400/404 — ошибка выбора или пропавшее подключение: повтор не поможет.
-   502/503/504 и обрыв сети — временный сбой сервера, «Повторить» уместен. */
-function preflightRetryable(error) {
-  if (!error) return false;
-  if (error.kind === 'timeout' || error.kind === 'network') return true;
-  const status = Number(error.status) || 0;
-  if (status === 0) return true;
-  if (status === 408 || status === 429) return true;
-  return status >= 500;
-}
-
 function cancelPreflight() {
   clearTimeout(reviewWaitTimer);
   reviewWaitTimer = 0;
-  if (!flowPreflight) return;
-  if (flowPreflight.controller) {
+  if (flowPreflight && flowPreflight.controller) {
     try { flowPreflight.controller.abort(); } catch { /* запрос уже завершён */ }
     flowPreflight.controller = null;
-  }
-  /* Закрытие окна и смена выбора не должны оставить оценку в loading
-     и применить ответ уже закрытой сессии. */
-  if (flowPreflight.status === 'loading') {
-    flowPreflight.status = 'idle';
-    flowPreflight.seq += 1;
   }
 }
 
@@ -4596,6 +4518,7 @@ function ensurePreflight({ retry = false } = {}) {
   }
   if (flowPreflight.status === 'loading') return;
   if (!retry && flowPreflight.status === 'ready') return;
+  if (flowPreflight.controller) cancelPreflight();
   const seq = flowPreflight.seq + 1;
   const controller = typeof AbortController === 'function' ? new AbortController() : null;
   const startedAt = Date.now();
@@ -4610,10 +4533,7 @@ function ensurePreflight({ retry = false } = {}) {
     startedAt,
   };
   reviewWaitTimer = setTimeout(() => {
-    if (folder.context === 'flow-review' && flowPreflight.status === 'loading') {
-      renderReview();
-      renderFlowFooter();
-    }
+    if (folder.context === 'flow-review' && flowPreflight.status === 'loading') renderReview();
   }, Math.max(0, ESTIMATE_SLOW_MS - (Date.now() - startedAt)) + 60);
   renderReview();
   renderFlowFooter();
@@ -4660,8 +4580,6 @@ function ensurePreflight({ retry = false } = {}) {
           : 'Не удалось оценить объём');
       } else if (view.kind === 'nofit') {
         flowAnnounce(`Не хватает ${humanBytes(estimateShortage(view))}`);
-      } else if (view.partial) {
-        flowAnnounce(`Учтено ${formatFiles(view.files)} · ${humanBytes(view.bytes)}. Часть файлов не удалось оценить`);
       } else {
         flowAnnounce(`Объём: ${formatFiles(view.files)} · ${humanBytes(view.bytes)}`);
       }
@@ -4670,8 +4588,6 @@ function ensurePreflight({ retry = false } = {}) {
 }
 
 /* Одно место, где решается, что показать в строках «К скачиванию». */
-/* Одно место, где решается, что показать в строке «Объём». Оценка не
-   блокирует запуск: пока она идёт, серверу достаточно выбора и назначения. */
 function estimateView() {
   const cached = flowPreflight;
   if (cached.status === 'idle' || cached.status === 'loading') {
@@ -4682,20 +4598,16 @@ function estimateView() {
       files: 0,
       bytes: 0,
       free: 0,
-      partial: false,
     };
   }
   if (cached.status === 'error') {
-    return { kind: 'error', timeout: preflightTimeout(cached.error), files: 0, bytes: 0, free: 0, partial: false };
+    return { kind: 'error', timeout: preflightTimeout(cached.error), files: 0, bytes: 0, free: 0 };
   }
   const data = cached.data || {};
   const files = Math.max(0, Number(data.files) || 0);
   const bytes = Math.max(0, Number(data.bytes) || 0);
   const free = Math.max(0, Number(data.free) || 0);
-  /* Частичный результат: сервер сам сообщает, что часть файлов не оценена.
-     Без этого флага объём считается полным. */
-  const partial = data.partial === true || (Number(data.unknownFiles) || 0) > 0;
-  return { kind: data.fits === false ? 'nofit' : 'ready', files, bytes, free, partial };
+  return { kind: data.fits === false ? 'nofit' : 'ready', files, bytes, free };
 }
 
 function estimateShortage(view) {
@@ -4704,30 +4616,28 @@ function estimateShortage(view) {
   return Math.max(0, (Number(view.bytes) || 0) - usable);
 }
 
+function knownFree(view) {
+  if (view.kind === 'ready' || view.kind === 'nofit') {
+    if (Number(view.free) > 0) return Number(view.free);
+  }
+  return Number(flowFree) > 0 ? Number(flowFree) : 0;
+}
+
 function estimateValueMarkup() {
   const view = estimateView();
   if (view.kind === 'loading') {
-    return `<span class="review-value review-value--muted review-value--total" id="review-estimate" tabindex="-1">Считаем объём…</span>
-      ${view.slow ? '<span class="review-sub">Оценка ещё идёт — можно скачать без неё</span>' : ''}`;
+    let html = '<span class="review-value review-value--muted review-value--total" id="review-estimate" tabindex="-1">Считаем объём…</span>';
+    if (view.slow) html += '<span class="review-sub">Оценка ещё идёт</span>';
+    return html;
   }
   if (view.kind === 'error') {
-    const detail = view.timeout ? 'Сервер не ответил вовремя.' : serverMessage(flowPreflight.error);
-    const retry = preflightRetryable(flowPreflight.error)
-      ? '<button class="btn btn--quiet btn--sm review-retry" type="button" id="review-retry">Повторить</button>'
-      : '';
-    return `<span class="review-value review-value--muted review-value--total" id="review-estimate" tabindex="-1">Объём не удалось определить</span>
-      ${detail ? `<span class="review-sub">${escapeHtml(detail)}</span>` : ''}
-      ${retry}`;
+    const title = view.timeout ? 'Оценка не завершилась за 10 минут' : 'Не удалось оценить объём';
+    return `<span class="review-value review-value--muted review-value--total" id="review-estimate" tabindex="-1">${escapeHtml(title)}</span>
+      <button class="btn btn--quiet btn--sm review-retry" type="button" id="review-retry">Повторить</button>`;
   }
   let html = `<span class="review-value review-value--total" id="review-estimate" tabindex="-1">${escapeHtml(formatFiles(view.files))} · ${escapeHtml(humanBytes(view.bytes))}</span>`;
   if (view.kind === 'nofit') {
-    /* Известная нехватка места: проблема и сразу действие смены назначения. */
-    html += `<span class="review-short">${icon('warning', 'review-short-icon')}Не хватает ${escapeHtml(humanBytes(estimateShortage(view)))}</span>
-      <span class="review-sub">Измените папку на сервере или выбор — сервер оставляет запас свободного места.</span>
-      <button class="btn btn--quiet btn--sm review-retry" type="button" data-edit="dest">Изменить папку</button>`;
-  } else if (view.partial) {
-    html += `<span class="review-sub">Часть файлов не удалось оценить</span>
-      <button class="btn btn--quiet btn--sm review-retry" type="button" id="review-retry">Повторить оценку</button>`;
+    html += `<span class="review-short">${icon('warning', 'review-short-icon')}Не хватает ${escapeHtml(humanBytes(estimateShortage(view)))}</span>`;
   }
   if (view.files === 0 && view.bytes === 0) {
     html += '<span class="review-sub">Файлов не найдено — возможно, выбранные папки пусты.</span>';
@@ -4754,29 +4664,25 @@ function reviewChips(folders, files) {
 function captureReviewFocus(scope) {
   const active = document.activeElement;
   if (!active || !scope.contains(active)) return '';
-  const edit = active.closest ? active.closest('[data-edit]') : null;
-  if (edit) return `[data-edit="${cssEscape(edit.dataset.edit || '')}"]`;
   if (active.id === 'review-retry') return '#review-retry';
   if (active.id === 'review-show-all') return '#review-show-all';
   if (active.id === 'review-estimate') return '#review-estimate';
   return '';
 }
 
-/* «Проверьте выбор»: три строки без повторяющих описаний и общего алёрта.
-   «Изменить» у источника и назначения возвращает на нужный экран. */
 function renderReview() {
   const body = $('#review-body');
   if (!body || folder.context !== 'flow-review') return;
   const focusSelector = captureReviewFocus(body);
   const folders = flowSourceAll ? [] : cloudSelection;
   const files = flowSourceAll ? [] : cloudFileSelection;
-  const sourceValue = flowSourceAll ? 'Весь диск' : selectionLabel(folders, files);
-  const missingDest = !destinationReady();
-  const destValue = missingDest ? 'Папка не выбрана' : displayPath(flowDest);
+  const sourceValue = flowSourceAll ? wholeDiskLabel(excludedFolders) : selectionLabel(folders, files);
+  const view = estimateView();
+  const free = knownFree(view);
   body.innerHTML = `
     <dl class="review-list">
       <div class="review-row">
-        <dt>Что скачать</dt>
+        <dt>Источник</dt>
         <dd>
           <div class="review-line">
             <span class="review-value review-value--source">${escapeHtml(sourceValue)}</span>
@@ -4786,17 +4692,21 @@ function renderReview() {
         </dd>
       </div>
       <div class="review-row">
-        <dt>Сохранить в</dt>
+        <dt>Папка на сервере</dt>
         <dd>
           <div class="review-line">
-            <span class="review-path${missingDest ? ' review-path--missing' : ''}" title="${escapeHtml(destValue)}">${escapeHtml(destValue)}</span>
-            <button class="review-change" type="button" data-edit="dest">${missingDest ? 'Выбрать' : 'Изменить'}</button>
+            <span class="review-path" title="${escapeHtml(flowDest)}">${escapeHtml(flowDest)}</span>
+            <button class="review-change" type="button" data-edit="dest">Изменить</button>
           </div>
         </dd>
       </div>
       <div class="review-row">
-        <dt>Объём</dt>
+        <dt>К скачиванию</dt>
         <dd class="review-estimate">${estimateValueMarkup()}</dd>
+      </div>
+      <div class="review-row">
+        <dt>Свободно</dt>
+        <dd><span class="review-value">${free > 0 ? escapeHtml(humanBytes(free)) : '—'}</span></dd>
       </div>
     </dl>`;
   let target = focusSelector ? body.querySelector(focusSelector) : null;
@@ -4836,19 +4746,17 @@ async function startTransfer() {
     reviewError('Доступ к облаку истёк. Войдите заново и повторите скачивание.');
     return;
   }
-  if (!destinationReady()) {
+  if (!flowDest) {
     reviewError('Выберите папку на сервере и вернитесь к проверке.');
     return;
   }
-  const estimate = estimateView();
-  if (estimate.kind === 'nofit') {
+  if (estimateView().kind === 'nofit') {
     reviewError('Свободного места не хватает. Измените папку или выбор.');
     return;
   }
   const primary = $('#folder-choose');
   const back = $('#folder-back');
-  /* Оценка не обязательна: объём дописывается в сообщение, только если он
-     действительно известен. Без оценки сервер сам проверит перенос. */
+  const estimate = estimateView();
   const facts = estimate.kind === 'ready' || estimate.kind === 'nofit'
     ? ` · ${formatFiles(estimate.files)} · ${humanBytes(estimate.bytes)}`
     : '';
@@ -4859,6 +4767,7 @@ async function startTransfer() {
      задачу. Смена выбора или успешный старт дают новый ключ. */
   const token = launchToken(flowPreflightKey());
   flowBusy = true;
+  folder.status = 'Запускаем…';
   renderFlowFooter();
   flowAnnounce('Запускаем скачивание');
   if (primary) {
@@ -5013,9 +4922,6 @@ function releaseStart() {
 
 function finishTransfer(dialog, sourcePaths, sourceFiles, destPath, facts, replayed) {
   flowFocusNow = true;
-  /* Успешная задача запоминает папку: следующий сценарий начнёт с неё,
-     проверив доступность. */
-  preferredDest = displayPath(destPath);
   resetFlowDraft();
   if (dialog && dialog.open) dialog.close();
   showToast({
@@ -5024,35 +4930,18 @@ function finishTransfer(dialog, sourcePaths, sourceFiles, destPath, facts, repla
     message: `${selectionLabel(sourcePaths, sourceFiles)} → ${displayPath(destPath)}${facts}`,
   });
   refreshAfterAction().catch(() => {}).then(() => {
-    const title = $('#downloads-title');
+    const title = $('#now-title');
     if (title) title.focus({ preventScroll: true });
   });
 }
 
 /* --- закрытие ------------------------------------------------------------- */
 
-/* Запуск уже отправлен: X/Esc не должны молчать, иначе кажется, что окно
-   зависло. Объясняем, что ответ ещё идёт, и оставляем окно открытым. */
-function explainFlowBusy() {
-  const text = 'Дождитесь ответа сервера — окно закроется само.';
-  flowAnnounce(`Скачивание запускается. ${text}`);
-  showToast({
-    id: 'flow-busy', type: 'info', title: 'Скачивание уже запускается',
-    message: text, persistent: false,
-  });
-}
-
 function requestCloseFlow() {
   const dialog = $('#folder-dialog');
   if (!dialog || !dialog.open) return;
-  if (flowBusy) { explainFlowBusy(); return; }
-  /* Крестик вложенного просмотра отменяет просмотр, а не весь сценарий:
-     назначение остаётся прежним, облачный выбор не меняется. */
-  if (folder.context === 'flow-dest') {
-    cancelDestinationPreview();
-    return;
-  }
-  /* Закрытие X/Esc не очищает черновик: выбор сохраняем в модуле. */
+  if (flowBusy) return;
+  /* Закрытие X/Esc не очищает черновик: выбор шага 2 сохраняем в модуле. */
   if (folder.context === 'flow-source') {
     const tree = $('#flow-source-tree');
     if (tree) folder.treeScroll = tree.scrollTop;
@@ -5074,13 +4963,11 @@ function finishFolderDialog() {
   resumeAfterDialog();
   if (!folder || folder.finished) return;
   folder.finished = true;
-  cancelPreflight();
   const opener = folder.opener;
   cancelCloudFiles();
   folderToken += 1;
-  flowDestToken += 1; /* поздний ответ проверки не тронет закрытый сценарий */
   /* Черновик флоу остаётся в памяти; сбрасываем только сессию диалога. */
-  folder = folderSession('flow-source', null);
+  folder = folderSession('flow-dest', null);
   if (flowFocusNow) {
     flowFocusNow = false;
     return;
@@ -5092,12 +4979,8 @@ function finishFolderDialog() {
 /* --- общий обработчик кнопок футера --------------------------------------- */
 
 function flowChooseAction() {
-  /* Двойной клик: первый уже сменил шаг, второй в тот же интервал не должен
-     попасть в следующее действие (например, сразу запустить скачивание). */
-  if (Date.now() < flowPrimaryGuardUntil) return;
-  flowPrimaryGuardUntil = Date.now() + FLOW_PRIMARY_GUARD_MS;
   if (folder.context === 'flow-dest') {
-    chooseDestination();
+    flowConfirmDestination();
     return;
   }
   if (folder.context === 'flow-source') {
@@ -5110,12 +4993,26 @@ function flowChooseAction() {
 }
 
 function flowBackAction() {
-  if (flowBusy) return;
   if (folder.context === 'flow-dest') {
-    cancelDestinationPreview();
+    if (flowEditing === 'dest') {
+      cancelFlowEdit();
+      return;
+    }
+    requestCloseFlow();
+    return;
+  }
+  if (folder.context === 'flow-source') {
+    if (flowEditing === 'source') {
+      cancelFlowEdit();
+      return;
+    }
+    flowBackToDest();
     return;
   }
   if (folder.context === 'flow-review') {
+    if (flowBusy) return;
+    flowEditing = '';
+    flowStep = 2;
     showFlowStep('flow-source');
   }
 }
@@ -5132,6 +5029,22 @@ $('#home-view').addEventListener('click', async (event) => {
 
   if (action === 'connect' || action === 'reconnect') {
     location.hash = '#/setup';
+    return;
+  }
+
+  if (action === 'dismiss-job') {
+    const job = accountJobs().find(item => item.id === id);
+    if (!job || job.status !== 'done') return;
+    dismissedJobs.add(id);
+    try { localStorage.setItem('cloud-ferry.dismissed-jobs', JSON.stringify([...dismissedJobs])); }
+    catch { /* Скрытие продолжает работать до перезагрузки страницы. */ }
+    renderNow();
+    return;
+  }
+
+  if (action === 'exit') {
+    trigger.closest('details').open = false;
+    openExitDialog();
     return;
   }
 
@@ -5171,16 +5084,33 @@ $('#home-view').addEventListener('click', async (event) => {
     if (action === 'stop') await stopJob(id, trigger);
     else if (action === 'resume') await resumeJob(id, trigger);
   } catch (error) {
-    /* Ошибка остановки/продолжения остаётся у карточки: действие рядом,
-       пользователь может повторить его без поиска тоста. */
-    showNowError(friendlyError(error));
+    const retry = action === 'stop'
+      ? () => stopJob(id, null)
+      : () => resumeJob(id, null);
+    showToast({
+      type: 'error',
+      title: action === 'stop' ? 'Не удалось приостановить скачивание' : 'Не удалось продолжить скачивание',
+      message: friendlyError(error),
+      action: { label: 'Повторить', onClick: retry },
+    });
   }
 });
 
-/* Панель аккаунта: чип — единственный вход, Esc и крестик возвращают
-   фокус на него. Выход — внутри панели, без отдельной «Проверить». */
+/* Панель аккаунта: чип — единственный вход, Esc и «Закрыть» возвращают
+   фокус на него. Проверка и выход живут внутри панели, не в меню. */
+document.addEventListener('click', (event) => {
+  const menu = document.querySelector('.drive-menu[open]');
+  if (menu && !menu.contains(event.target)) menu.open = false;
+});
+document.addEventListener('keydown', (event) => {
+  const menu = document.querySelector('.drive-menu[open]');
+  if (event.key === 'Escape' && menu) {
+    menu.open = false;
+    menu.querySelector('summary').focus();
+  }
+});
 $('#account-chip')?.addEventListener('click', () => openAccountPanel());
-$('#account-logout')?.addEventListener('click', requestLogout);
+$('#account-probe')?.addEventListener('click', () => probeAccount($('#account-probe')));
 
 $('#account-dialog')?.addEventListener('keydown', (event) => keepDialogFocus(event.currentTarget, event));
 $('#account-dialog')?.addEventListener('close', () => { finishAccountDialog(); });
@@ -5252,21 +5182,6 @@ window.addEventListener('pageshow', (event) => {
   refreshYandexAvailability();
 });
 
-/* Переключатель темы: предпочтение переживает reload, форму и задачи не
-   трогает — меняется только атрибут на корне документа. */
-for (const button of $$('[data-theme-toggle]')) {
-  button.addEventListener('click', () => toggleTheme());
-}
-/* Пока явного выбора нет, следуем системной теме без записи в localStorage. */
-if (window.matchMedia) {
-  const systemQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  const followSystem = () => {
-    if (!storedTheme()) applyTheme(systemQuery.matches ? THEME_DARK : THEME_LIGHT, { persist: false });
-  };
-  if (typeof systemQuery.addEventListener === 'function') systemQuery.addEventListener('change', followSystem);
-  else if (typeof systemQuery.addListener === 'function') systemQuery.addListener(followSystem);
-}
-
 /* dialogs */
 /* Chrome может не присылать close после Esc-закрытия, поэтому очистку и возврат
    фокуса выполняем явно для каждого пути закрытия; close — запасной. */
@@ -5293,9 +5208,8 @@ function resumeAfterDialog() {
 
 function finishExitDialog() {
   resumeAfterDialog();
-  const chip = $('#account-chip');
-  if (!chip || !chip.isConnected || $('#account-wrap').hidden) return;
-  focusSoon(chip);
+  const menuTrigger = document.querySelector('.drive-menu summary');
+  if (menuTrigger) focusSoon(menuTrigger);
 }
 
 /* Модальный диалог сам удерживает фокус, но Chrome делает остановку на body
@@ -5330,7 +5244,7 @@ function closeDialog(dialog) {
   if (!dialog || !dialog.open) return false;
   if (dialog.id === 'exit-dialog' && exitBusy) return false;
   if (dialog.id === 'folder-dialog') {
-    if (flowBusy) { explainFlowBusy(); return false; }
+    if (flowBusy) return false;
     requestCloseFlow();
     return true;
   }
@@ -5373,18 +5287,15 @@ $('#exit-dialog')?.addEventListener('cancel', (event) => {
 /* --- события флоу «Новое скачивание» -------------------------------------- */
 
 /* Esc: сначала закрывает открытую форму создания папки, затем диалог.
-   Во время запуска задачи Esc не закрывает окно, но объясняет почему. */
+   Во время запуска задачи Esc игнорируется (X/«Назад» — aria-disabled). */
 function handleFlowEscape() {
-  if (flowBusy) { explainFlowBusy(); return; }
-  if (folder.menuOpen) {
-    closeSourceMenu(true);
-    return;
-  }
+  if (flowBusy) return;
+
   if (folder.confirmPath) {
     cancelFolderConfirm(folder.confirmPath);
     return;
   }
-  if (folder.createOpen) {
+  if (folder.createOpen && folder.context !== 'flow-source') {
     closeFolderCreate();
     return;
   }
@@ -5438,7 +5349,7 @@ $('#folder-new-name')?.addEventListener('keydown', (event) => {
 /* Шаг 1: список папок на сервере и повтор загрузки. */
 $('#flow-dest-body')?.addEventListener('click', (event) => {
   if (event.target.closest('[data-folder-retry]')) {
-    loadFolder(folder.path || backendDownloadsPath(), true);
+    loadFolder(folder.path || initialDestinationPath(), true);
     return;
   }
   const row = event.target.closest('[data-folder-path]');
@@ -5457,6 +5368,19 @@ $('#flow-source-tree')?.addEventListener('click', (event) => {
   if (confirmNo) {
     cancelFolderConfirm(confirmNo.dataset.confirmCancel || '');
     return;
+  }
+  /* Смешанная галка означает частичный выбор. Клик по ней не расширяет
+     выбор молча — сначала компактное подтверждение на всю папку. Chrome
+     меняет checked до события click, поэтому смотрим на модель выбора. */
+  const checkbox = event.target.closest('.folder-check');
+  if (checkbox && !checkbox.disabled) {
+    const path = checkbox.dataset.path || '';
+    if (!folder.all && !folderNodeChecked(path) && folderIsIndeterminate(path)) {
+      event.preventDefault();
+      checkbox.checked = false;
+      requestFolderConfirm(path);
+      return;
+    }
   }
   const filesClose = event.target.closest('[data-files-close]');
   if (filesClose) {
@@ -5498,12 +5422,10 @@ $('#flow-source-tree')?.addEventListener('change', (event) => {
   const target = event.target;
   if (target.matches('.folder-check')) {
     const path = target.dataset.path || '';
-    /* Строка — <label>: клик по имени тоже переключает чекбокс. Если папка
-       была в смешанном состоянии, возвращаем галку и сначала подтверждаем
-       выбор всей ветки — иначе новый файл в папке скачается незаметно. */
-    if (target.checked && !folder.all && !folderNodeChecked(path) && folderIsIndeterminate(path)) {
+    /* Запоздавший change от клика по смешанной галке: выбор уже подтверждается
+       отдельным действием, тихо расширять его нельзя. */
+    if (folder.confirmPath === path && target.checked) {
       target.checked = false;
-      requestFolderConfirm(path);
       return;
     }
     toggleFolderSelection(path, target.checked);
@@ -5518,48 +5440,28 @@ $('#flow-source-tree')?.addEventListener('change', (event) => {
   }
 });
 
-/* Меню «Ещё» / «Весь диск»: открытие меню режим не меняет. */
-$('#folder-more')?.addEventListener('click', () => {
-  if (folder.menuOpen) closeSourceMenu(true);
-  else openSourceMenu();
+$('#select-disk').addEventListener('change', event => {
+  folder.all = event.target.checked;
+  folder.excluded = [];
+  folder.selected = [];
+  folder.selectedFiles = [];
+  folder.alert = '';
+  folder.confirmPath = '';
+  renderFlow();
+  requestExistingForLoadedLevels();
 });
-$('#folder-more')?.addEventListener('keydown', (event) => {
-  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-  event.preventDefault();
-  if (!folder.menuOpen) openSourceMenu();
-  else {
-    const first = sourceMenuItems()[0];
-    if (first) first.focus({ preventScroll: true });
-  }
-});
-$('#folder-menu-action')?.addEventListener('click', () => {
-  const next = !folder.all;
-  setSourceMode(next);
-  const trigger = $('#folder-more');
-  if (trigger) trigger.focus({ preventScroll: true });
-});
-$('#folder-menu')?.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    event.stopPropagation();
-    closeSourceMenu(true);
-    return;
-  }
-  if (event.key === 'Tab') { closeSourceMenu(true); return; }
-  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-  const items = sourceMenuItems();
-  if (!items.length) return;
-  event.preventDefault();
-  const index = items.indexOf(document.activeElement);
-  const next = event.key === 'ArrowDown'
-    ? (index + 1) % items.length
-    : (index <= 0 ? items.length - 1 : index - 1);
-  items[next].focus({ preventScroll: true });
-});
-document.addEventListener('click', (event) => {
-  if (!folder.menuOpen) return;
-  if (event.target.closest && event.target.closest('#source-menu-wrap')) return;
-  closeSourceMenu(false);
+
+/* «Показать уже скачанные» — только видимость. Выбор и payload не меняются:
+   снятая галка прячет известные совпадения, но не трогает отметки. */
+$('#folder-show-existing')?.addEventListener('change', (event) => {
+  if (folder.context !== 'flow-source') return;
+  folder.showExisting = !!event.target.checked;
+  flowShowExisting = folder.showExisting;
+  folder.confirmPath = '';
+  renderSourceBar();
+  renderSourceTree();
+  renderFlowFooter();
+  flowAnnounce(folder.showExisting ? 'Показаны уже скачанные' : 'Уже скачанные скрыты');
 });
 
 $('#folder-existing-retry')?.addEventListener('click', retryExisting);
@@ -5583,24 +5485,12 @@ $('#review-body')?.addEventListener('click', (event) => {
   if (!edit) return;
   clearReviewError();
   if (edit.dataset.edit === 'source') {
+    flowEditing = 'source';
     showFlowStep('flow-source');
     return;
   }
-  openDestinationPicker('flow-review');
-});
-
-/* Смена назначения из строки «Сохранить в» и явный возврат к ручному выбору
-   в режиме «Весь диск». */
-$('#flow-dest-edit')?.addEventListener('click', () => {
-  if (folder.context !== 'flow-source' && folder.context !== 'flow-review') return;
-  if (flowBusy || $('#flow-dest-edit').getAttribute('aria-disabled') === 'true') return;
-  openDestinationPicker(folder.context);
-});
-$('#flow-select-manual')?.addEventListener('click', () => {
-  if (folder.context !== 'flow-source' || !folder.all) return;
-  setSourceMode(false);
-  const primary = $('#folder-choose');
-  if (primary) primary.focus({ preventScroll: true });
+  flowEditing = 'dest';
+  showFlowStep('flow-dest');
 });
 
 $('#exit-confirm')?.addEventListener('click', confirmExit);
@@ -5615,7 +5505,6 @@ window.addEventListener('hashchange', () => {
 /* --- boot ----------------------------------------------------------------- */
 
 (async function boot() {
-  syncThemeUI();
   try {
     await loadData();
     hideBoot();

@@ -1,0 +1,152 @@
+{
+  "problems": [],
+  "report": [
+    {
+      "name": "main: flow opens",
+      "ok": true,
+      "detail": "{\"context\":\"flow-source\",\"open\":true}"
+    },
+    {
+      "name": "main: back reaches destination step",
+      "ok": true,
+      "detail": "{\"context\":\"flow-dest\",\"path\":\"/tmp/cf-test/downloads\",\"rows\":[\"/tmp/cf-test/downloads/yandex\",\"/tmp/cf-test/downloads/Архив\",\"/tmp/cf-test/downloads/Фотографии\"],\"createVisible\":true}"
+    },
+    {
+      "name": "main: create folder button visible on destination step",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "main: destination dirs from /api/fs/folders",
+      "ok": true,
+      "detail": "[\"/tmp/cf-test/downloads/yandex\",\"/tmp/cf-test/downloads/Архив\",\"/tmp/cf-test/downloads/Фотографии\"]"
+    },
+    {
+      "name": "main: POST /api/fs/dirs created and opened folder",
+      "ok": true,
+      "detail": "{\"path\":\"/tmp/cf-test/downloads/Браузер\",\"rows\":[],\"toast\":\"Папка «Браузер» создана\\nМожно сохранить файлы сюда.\",\"error\":\"\"}"
+    },
+    {
+      "name": "main: new folder listed after create",
+      "ok": true,
+      "detail": "{\"path\":\"/tmp/cf-test/downloads\",\"rows\":[\"/tmp/cf-test/downloads/yandex\",\"/tmp/cf-test/downloads/Архив\",\"/tmp/cf-test/downloads/Браузер\",\"/tmp/cf-test/downloads/Фотографии\"]}"
+    },
+    {
+      "name": "main: whole disk checks all folders",
+      "ok": true,
+      "detail": "[{\"path\":\"Видео\",\"checked\":true,\"disabled\":true},{\"path\":\"Документы\",\"checked\":true,\"disabled\":true},{\"path\":\"Музыка\",\"checked\":true,\"disabled\":true},{\"path\":\"Фотографии\",\"checked\":true,\"disabled\":true}]"
+    },
+    {
+      "name": "main: folders disabled under whole disk (no exclusions supported by backend)",
+      "ok": true,
+      "detail": "[{\"path\":\"Видео\",\"checked\":true,\"disabled\":true},{\"path\":\"Документы\",\"checked\":true,\"disabled\":true},{\"path\":\"Музыка\",\"checked\":true,\"disabled\":true},{\"path\":\"Фотографии\",\"checked\":true,\"disabled\":true}]"
+    },
+    {
+      "name": "main: unchecking a folder under whole disk does not exclude it",
+      "ok": true,
+      "detail": "{\"checked\":true,\"disabled\":true}"
+    },
+    {
+      "name": "main: review opens with whole disk",
+      "ok": true,
+      "detail": "{\"context\":\"flow-review\",\"error\":\"\"}"
+    },
+    {
+      "name": "main: preflight succeeds for whole disk",
+      "ok": true,
+      "detail": "Источник\nВесь диск\nИзменить\nПапка на сервере\n/tmp/cf-test/downloads\nИзменить\nК скачиванию\n8 файлов · 1 ГБ\nСвободно\n92 ГБ"
+    },
+    {
+      "name": "main: POST /api/preflight accepted (no unknown fields)",
+      "ok": true,
+      "detail": "[{\"url\":\"http://127.0.0.1:8877/api/preflight\",\"status\":200,\"type\":\"Fetch\",\"requestId\":\"11604.22\"}]"
+    },
+    {
+      "name": "console main flow: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console main flow: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "main: no 400 from preflight",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup: empty state shows connect tile",
+      "ok": true,
+      "detail": "{\"appHidden\":false,\"text\":\"Cloud Ferry\\nПодключить диск\",\"plus\":true}"
+    },
+    {
+      "name": "setup: empty state has no invented numbers",
+      "ok": true,
+      "detail": "\"Cloud Ferry\\nПодключить диск\""
+    },
+    {
+      "name": "setup: connection step shown",
+      "ok": true,
+      "detail": "{\"hash\":\"#/setup\",\"setupHidden\":false,\"title\":\"Подключение\",\"methods\":[\"webdav\",\"yandex-token\"],\"next\":\"Подключиться\",\"stepText\":\"Подключение\"}"
+    },
+    {
+      "name": "setup: yandex method hidden without server OAuth app",
+      "ok": true,
+      "detail": "[\"webdav\",\"yandex-token\"]"
+    },
+    {
+      "name": "setup: step label from design (step 0)",
+      "ok": true,
+      "detail": "Подключение"
+    },
+    {
+      "name": "setup: connect returns to main screen",
+      "ok": true,
+      "detail": "{\"hash\":\"#/\",\"appHidden\":false,\"setupHidden\":true,\"account\":\"browser-test\",\"error\":\"\"}"
+    },
+    {
+      "name": "setup: account login from POST /api/accounts",
+      "ok": true,
+      "detail": "{\"hash\":\"#/\",\"appHidden\":false,\"setupHidden\":true,\"account\":\"browser-test\",\"error\":\"\"}"
+    },
+    {
+      "name": "setup: POST /api/accounts/validate called",
+      "ok": true,
+      "detail": "[\"200 /api/state\",\"200 /api/system\",\"200 /api/oauth/yandex/status\",\"200 /api/state\",\"200 /api/system\",\"200 /api/accounts/validate\",\"201 /api/accounts\",\"200 /api/state\",\"200 /api/system\",\"200 /api/accounts/ee4f6c0946d0/probe\",\"200 /api/state\",\"200 /api/system\"]"
+    },
+    {
+      "name": "setup: POST /api/accounts created account",
+      "ok": true,
+      "detail": "[\"200 /api/state\",\"200 /api/system\",\"200 /api/oauth/yandex/status\",\"200 /api/state\",\"200 /api/system\",\"200 /api/accounts/validate\",\"201 /api/accounts\",\"200 /api/state\",\"200 /api/system\",\"200 /api/accounts/ee4f6c0946d0/probe\",\"200 /api/state\",\"200 /api/system\"]"
+    },
+    {
+      "name": "console setup: no console.error",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "console setup: no uncaught exceptions",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup: no HTTP errors during connect",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "setup: after connect wizard step stays 0 (steps 1-2 unreachable)",
+      "ok": true,
+      "detail": "[\"Подключение\"]"
+    }
+  ],
+  "api": [
+    "200 /api/preflight",
+    "200 /api/state",
+    "200 /api/system",
+    "200 /api/state",
+    "200 /api/system"
+  ]
+}

@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f3f5f9">
+  <title>Cloud Ferry</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='7' fill='%230066d6'/%3E%3Cpath d='M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="page-glow" aria-hidden="true"></div>
+
+  <noscript>
+    <div class="noscript" role="alert">
+      <p>Для работы Cloud Ferry нужен JavaScript. Включите его в настройках браузера и обновите страницу.</p>
+    </div>
+  </noscript>
+
+  <!-- Загрузка — скелет оболочки: шапка и контуры ячеек на своих местах,
+       поэтому после ответа API макет не прыгает. -->
+  <div id="boot-view" class="shell shell--boot" aria-busy="true" aria-label="Загрузка Cloud Ferry">
+    <header class="shell-head">
+      <span class="brand">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z"/></svg>
+        </span>
+        <span class="brand-name">Cloud Ferry</span>
+      </span>
+      <div class="shell-actions">
+        <span class="skeleton skeleton--chip" aria-hidden="true"></span>
+      </div>
+    </header>
+
+    <div class="offline-bar" data-offline-bar hidden>
+      <svg class="offline-bar-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.4 5.4 3.6 17.2A1.9 1.9 0 0 0 5.25 20h13.5a1.9 1.9 0 0 0 1.65-2.8L13.6 5.4a1.85 1.85 0 0 0-3.2 0Z"/><path d="M12 9.6v4M12 16.6h.01"/></svg>
+      <p class="offline-bar-text"><span role="status" aria-live="polite">Нет связи с сервером</span><span class="offline-bar-note">Проверьте, что приложение запущено</span></p>
+      <button class="btn btn--secondary btn--sm js-offline-retry" type="button">Повторить</button>
+    </div>
+
+    <div class="dashboard dashboard--boot" aria-hidden="true">
+      <section class="cell cell--now skeleton-cell">
+        <div class="skeleton-cell-head"><span class="skeleton skeleton--dot"></span><span class="skeleton skeleton--line skeleton--w30"></span></div>
+        <div class="skeleton-cell-body"><span class="skeleton skeleton--line skeleton--w80"></span><span class="skeleton skeleton--line skeleton--w60"></span><span class="skeleton skeleton--line skeleton--w40"></span></div>
+      </section>
+      <section class="cell cell--start skeleton-cell">
+        <div class="skeleton-cell-head"><span class="skeleton skeleton--dot"></span><span class="skeleton skeleton--line skeleton--w25"></span></div>
+        <div class="skeleton-cell-body"><span class="skeleton skeleton--line skeleton--w70"></span><span class="skeleton skeleton--line skeleton--w45"></span><span class="skeleton skeleton--pill"></span></div>
+      </section>
+      <section class="cell cell--account skeleton-cell">
+        <div class="skeleton-cell-head"><span class="skeleton skeleton--dot"></span><span class="skeleton skeleton--line skeleton--w30"></span></div>
+        <div class="skeleton-cell-body"><span class="skeleton skeleton--line skeleton--w65"></span><span class="skeleton skeleton--line skeleton--w50"></span><span class="skeleton skeleton--line skeleton--w35"></span></div>
+      </section>
+    </div>
+    <p class="sr-only" role="status">Загрузка данных</p>
+  </div>
+
+  <section id="setup-view" class="setup" hidden>
+    <div class="offline-bar" data-offline-bar hidden>
+      <svg class="offline-bar-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.4 5.4 3.6 17.2A1.9 1.9 0 0 0 5.25 20h13.5a1.9 1.9 0 0 0 1.65-2.8L13.6 5.4a1.85 1.85 0 0 0-3.2 0Z"/><path d="M12 9.6v4M12 16.6h.01"/></svg>
+      <p class="offline-bar-text"><span role="status" aria-live="polite">Нет связи с сервером</span><span class="offline-bar-note">Проверьте, что приложение запущено</span></p>
+      <button class="btn btn--secondary btn--sm js-offline-retry" type="button">Повторить</button>
+    </div>
+
+    <div class="setup-brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z"/></svg>
+      </span>
+      <span>Cloud Ferry</span>
+    </div>
+
+    <div class="setup-card">
+      <p class="sr-only" id="setup-step-text"></p>
+      <div class="setup-steps" id="setup-steps" aria-hidden="true"></div>
+      <div id="setup-body"></div>
+      <p class="setup-hint" id="setup-error" role="alert"></p>
+      <div class="setup-actions" id="setup-actions">
+        <button class="btn btn--secondary" id="setup-back" type="button">Отмена</button>
+        <p class="setup-status" id="setup-status" role="status" aria-live="polite"></p>
+        <button class="btn btn--primary" id="setup-next" type="button">Подключиться</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="app-view" class="shell" hidden>
+    <header class="shell-head">
+      <a class="brand" href="#/">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 18a4.2 4.2 0 0 1-.4-8.38A5.6 5.6 0 0 1 17.6 10.6 3.7 3.7 0 0 1 17 18H7.2Z"/></svg>
+        </span>
+        <h1 class="brand-name">Cloud Ferry</h1>
+      </a>
+      <div class="shell-actions">
+        <span id="offline-dot" class="offline-dot" title="Нет связи с сервером" hidden><span class="sr-only">Нет связи с сервером</span></span>
+        <div class="account" id="account-wrap" hidden>
+          <button class="account-chip" id="account-chip" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="account-dialog">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 7h8m4 0h4M4 17h3m4 0h9"/><circle cx="14" cy="7" r="2.5"/><circle cx="9" cy="17" r="2.5"/></svg><span class="sr-only">Настройки</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="offline-bar" data-offline-bar hidden>
+      <svg class="offline-bar-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.4 5.4 3.6 17.2A1.9 1.9 0 0 0 5.25 20h13.5a1.9 1.9 0 0 0 1.65-2.8L13.6 5.4a1.85 1.85 0 0 0-3.2 0Z"/><path d="M12 9.6v4M12 16.6h.01"/></svg>
+      <p class="offline-bar-text"><span role="status" aria-live="polite">Нет связи с сервером</span><span class="offline-bar-note">Показаны последние данные</span></p>
+      <button class="btn btn--secondary btn--sm js-offline-retry" type="button">Повторить</button>
+    </div>
+
+    <main id="home-view" class="dashboard"></main>
+  </div>
+
+  <!-- Один диалог на все три шага «Нового скачивания»: шапка и футер —
+       строки flex-каркаса, прокручивается только тело (flow v3). -->
+  <dialog id="folder-dialog" class="modal modal--flow" aria-labelledby="flow-title">
+    <div class="flow-head" id="flow-head">
+      <h2 class="modal-title" id="flow-title" tabindex="-1">Новое скачивание</h2>
+      <button class="btn btn--ghost btn--icon flow-close" type="button" data-dialog-close aria-label="Закрыть">
+        <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11m0-11-11 11"/></svg>
+      </button>
+    </div>
+
+    <div class="flow-content" id="flow-content">
+      <div class="flow-step-head" id="flow-step-head">
+        <h3 class="flow-step-title" id="flow-step-title" tabindex="-1">Куда сохранить</h3>
+        <span class="flow-step-pos" id="flow-step-pos" hidden></span>
+      </div>
+
+      <section class="flow-step" id="flow-step-1" data-flow-step="1" aria-labelledby="flow-step-title">
+        <div class="dest-nav" id="flow-dest-nav">
+          <button class="btn btn--quiet btn--icon dest-up" type="button" id="folder-up" aria-label="На уровень выше" title="На уровень выше">
+            <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>
+          </button>
+          <span class="dest-path-value" id="folder-path" tabindex="-1"></span>
+          <button class="btn btn--quiet folder-new" type="button" id="folder-create">
+            <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Создать папку</span>
+          </button>
+        </div>
+        <form class="folder-create" id="folder-create-panel" novalidate hidden>
+          <div class="folder-create-field">
+            <input id="folder-new-name" name="folderName" type="text" placeholder="Название папки" aria-label="Название папки" autocomplete="off" spellcheck="false" autocapitalize="none" maxlength="255">
+          </div>
+          <div class="folder-create-actions">
+            <button class="btn btn--secondary btn--sm" type="submit" id="folder-create-submit">Создать</button>
+            <button class="btn btn--quiet btn--sm" type="button" id="folder-create-cancel">Отмена</button>
+          </div>
+          <p class="control-error folder-create-error" id="folder-create-error" hidden></p>
+        </form>
+        <div class="folder-body" id="flow-dest-body"></div>
+      </section>
+
+      <section class="flow-step" id="flow-step-2" data-flow-step="2" aria-labelledby="flow-step-title" hidden>
+        <div class="source-bar">
+          <label class="filter-toggle" for="folder-show-existing" id="folder-show-existing-row">
+            <span class="filter-title">Показать папки на сервере</span>
+            <span class="switch-control">
+              <input id="folder-show-existing" type="checkbox" role="switch">
+              <span class="switch-track" aria-hidden="true"></span>
+            </span>
+          </label>
+          <label class="disk-toggle"><input type="checkbox" id="select-disk"> Весь диск</label>
+        </div>
+        <p class="folder-existing-note" id="folder-existing-note" role="status" hidden></p>
+        <div class="folder-existing-error" id="folder-existing-error" hidden>
+          <span class="folder-existing-error-text" id="folder-existing-error-text" title=""></span>
+          <button class="btn btn--secondary btn--sm" type="button" id="folder-existing-retry">Повторить</button>
+        </div>
+        <div class="source-tree" id="flow-source-tree" role="group" aria-label="Папки облака"></div>
+      </section>
+
+      <section class="flow-step" id="flow-step-3" data-flow-step="3" aria-labelledby="flow-step-title" hidden>
+        <div class="review-body" id="review-body"></div>
+        <p class="form-error flow-inline-error" id="review-error" role="alert" tabindex="-1" hidden></p>
+      </section>
+    </div>
+
+    <p class="sr-only" id="flow-live" role="status" aria-live="polite" aria-atomic="true"></p>
+    <div class="toasts toasts--flow" id="toasts-flow"></div>
+
+    <div class="modal-foot flow-foot" id="flow-foot">
+      <p class="flow-foot-note" id="flow-foot-note" hidden>
+        <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.4 5.4 3.6 17.2A1.9 1.9 0 0 0 5.25 20h13.5a1.9 1.9 0 0 0 1.65-2.8L13.6 5.4a1.85 1.85 0 0 0-3.2 0Z"/><path d="M12 9.6v4M12 16.6h.01"/></svg>
+        <span id="flow-foot-note-text"></span>
+      </p>
+      <div class="flow-foot-row">
+        <button class="btn btn--secondary flow-back" type="button" id="folder-back" hidden>Назад</button>
+        <button class="btn btn--primary flow-primary" type="button" id="folder-choose">Выбрать эту папку</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="exit-dialog" class="modal modal--confirm" aria-labelledby="exit-title" aria-describedby="exit-text">
+    <div class="modal-head">
+      <h2 class="modal-title" id="exit-title" tabindex="-1">Выйти из аккаунта?</h2>
+    </div>
+    <p class="modal-text" id="exit-text">Активное скачивание остановится.</p>
+    <p class="form-error modal-error" id="exit-error" role="alert" hidden></p>
+    <div class="modal-actions modal-actions--end">
+      <button class="btn btn--secondary" type="button" data-dialog-close>Остаться</button>
+      <button class="btn btn--danger" type="button" id="exit-confirm">Выйти</button>
+    </div>
+  </dialog>
+
+  <!-- П3 «Аккаунт и место»: панель, а не отдельный экран. Логин, способ входа,
+       доступ, занятое на Диске и свободное на сервере — в одном месте.
+       Опасный «Выйти» отделён внизу и подтверждается отдельным диалогом. -->
+  <dialog id="account-dialog" class="modal modal--account" role="dialog" aria-modal="true" aria-labelledby="account-title">
+    <div class="modal-head">
+      <div class="modal-heading">
+        
+        <h2 class="modal-title" id="account-title" tabindex="-1">Настройки</h2>
+        
+      </div>
+      <button class="btn btn--ghost btn--icon" type="button" data-dialog-close aria-label="Закрыть">
+        <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11m0-11-11 11"/></svg>
+      </button>
+    </div>
+
+    <div class="account-body">
+      <dl class="account-facts">
+        <div class="account-fact">
+          <dt>Логин</dt>
+          <dd id="account-login">—</dd>
+        </div>
+        <div class="account-fact">
+          <dt>Способ входа</dt>
+          <dd id="account-method">—</dd>
+        </div>
+        <div class="account-fact">
+          <dt>Доступ</dt>
+          <dd class="account-access">
+            <span id="account-status"></span>
+            <span class="account-checked" id="account-checked">не проверялось</span>
+          </dd>
+        </div>
+      </dl>
+
+      <section class="account-meter" aria-labelledby="account-disk-title">
+        <div class="account-meter-head">
+          <h3 class="account-meter-title" id="account-disk-title">Занято на Яндекс Диске</h3>
+          <span class="account-meter-value" id="account-disk-value">—</span>
+        </div>
+        <span class="meter-bar" aria-hidden="true"><i id="account-disk-bar"></i></span>
+        <p class="account-meter-note" id="account-disk-note" hidden></p>
+      </section>
+
+      <section class="account-server" aria-labelledby="account-server-title">
+        <div class="account-server-head">
+          <h3 class="account-server-title" id="account-server-title">Свободно на Umbrel</h3>
+          <span class="account-server-value" id="account-server-value">—</span>
+        </div>
+        <p class="account-server-note" id="account-server-note">Куда сохраняются файлы: /downloads</p>
+      </section>
+
+      <div class="account-actions">
+        <button class="btn btn--primary" type="button" id="account-probe">Проверить</button>
+        
+      </div>
+      <p class="account-probe-result" id="account-probe-result" role="status" aria-live="polite" hidden></p>
+    </div>
+
+  </dialog>
+
+  <div id="toasts" class="toasts"></div>
+  <p id="live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+  <script src="/app.js"></script>
+</body>
+</html>

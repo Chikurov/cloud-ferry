@@ -1,0 +1,29 @@
+{
+  "posts": [
+    {
+      "accountId": "a1",
+      "sourcePaths": [
+        "Фотографии"
+      ],
+      "sourceFiles": [],
+      "destPath": "/downloads",
+      "mode": "copy",
+      "clientToken": "6776c6cd-3e1c-42c1-bbf1-8685582152f9"
+    },
+    {
+      "accountId": "a1",
+      "sourcePaths": [
+        "Фотографии"
+      ],
+      "sourceFiles": [],
+      "destPath": "/downloads",
+      "mode": "copy",
+      "clientToken": "6776c6cd-3e1c-42c1-bbf1-8685582152f9"
+    }
+  ],
+  "dialogOpen": false,
+  "toasts": [
+    "Скачивание началось 1 папка → /downloads · 12 483 файла · 910,6 МБ"
+  ],
+  "nowText": ""
+}
