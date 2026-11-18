@@ -17,10 +17,6 @@ const JOB_STATUS = {
 };
 const ACTIVE_STATUSES = ['running', 'verifying', 'queued'];
 const PAUSED_STATUSES = ['failed', 'interrupted', 'canceled'];
-/* Проверка целостности доступна только для задачи, которая уже не пишет
-   файлы: у идущего переноса получатель ещё меняется. Ровно эти статусы
-   принимает POST /api/jobs/{id}/check; canceled сервер отклоняет. */
-const CHECKABLE_STATUSES = ['done', 'failed', 'interrupted'];
 const KNOWN_JOB_STATUSES = new Set(Object.keys(JOB_STATUS));
 
 /* One icon set: 24 grid, stroke 1.6, round caps, currentColor. */
@@ -107,11 +103,6 @@ let yandexAuth = {
   tickTimer: null,
 };
 const jobActionBusy = new Set();
-/* Состояние проверки файлов живёт до перерисовки: строка «Проверяем…» и
-   inline-ошибка 502 относятся к карточке, а не к странице. job.check из
-   состояния всегда важнее: сохранённый результат показывается без кнопки. */
-const jobCheckBusy = new Set();
-const jobCheckErrors = new Map(); /* id → 'failed' (502 и прочие ответы сервера) */
 let focusStartAfterRender = false;
 let pendingFocusKey = '';
 /* Одна сессия диалога «Новое скачивание».
@@ -246,11 +237,6 @@ function formatFiles(count) {
   return `${FILE_COUNT_FORMAT.format(value)}\u00A0${fileWord(value)}`;
 }
 
-/* Только число: для строк проверки, где рядом стоит своя подпись. */
-function formatCount(count) {
-  return FILE_COUNT_FORMAT.format(Math.max(0, Number(count) || 0));
-}
-
 /* --- helpers -------------------------------------------------------------- */
 
 /* Таймаут на каждый запрос: зависший fetch иначе навсегда оставляет кнопку
@@ -265,10 +251,6 @@ const API_TIMEOUT = {
   /* POST /api/preflight перебирает дерево в облаке: сервер отводит ему до
      10 минут, поэтому таймаут клиента не должен обрывать подсчёт раньше. */
   preflight: 600000,
-  /* Проверка файлов сравнивает деревья на сервере: сервер отводит ей до
-     двух часов, клиент ждёт не меньше десяти минут — иначе большая задача
-     превращалась бы в ложную «потерю связи». */
-  check: 600000,
 };
 const API_TIMEOUT_DEFAULT = 30000;
 
@@ -2214,40 +2196,37 @@ function cloudStaleNote(usage) {
   return when && when !== 'не проверялось' ? `последние данные, ${when}` : 'последние данные';
 }
 
+/* Доступ в панели — ровно два состояния: «Доступно» и «Ошибка».
+   «Не проверялось» и время проверки не показываем; состояние берём из
+   account.status и сводки /api/system. */
 const ACCESS_STATES = {
   ok: { label: 'Доступно', tone: 'ok' },
-  auth: { label: 'Нужен вход', tone: 'auth' },
-  unknown: { label: 'Не проверялось', tone: 'unknown' },
+  error: { label: 'Ошибка', tone: 'error' },
 };
 
-/* «Пароль приложения» / «Токен» / «Вход через Яндекс» — то, чем реально
-   подключали аккаунт. */
-const ACCOUNT_METHODS = {
-  webdav: 'Пароль приложения',
-  'yandex-token': 'Токен',
-  'yandex-oauth': 'Вход через Яндекс',
-  yandex: 'Вход через Яндекс',
-};
+function systemNeedsAuth(account) {
+  const systemCloud = system && system.cloud;
+  return !!systemCloud && systemCloudMatchesAccount(account, systemCloud)
+    && systemCloud.status === 'needs-auth';
+}
 
-function accountMethodLabel(account) {
-  if (!account) return '';
-  return ACCOUNT_METHODS[String(account.provider || '')] || 'Подключение к облаку';
+function accountNeedsReauth(account) {
+  return !!account && (account.status === 'needs-auth' || systemNeedsAuth(account));
 }
 
 function accountAccess(account) {
-  if (!account) return ACCESS_STATES.unknown;
-  const systemCloud = system && system.cloud;
-  const systemMatches = systemCloudMatchesAccount(account, systemCloud);
-  if (account.status === 'needs-auth'
-    || (systemMatches && systemCloud && systemCloud.status === 'needs-auth')) return ACCESS_STATES.auth;
+  if (!account) return ACCESS_STATES.error;
+  if (accountNeedsReauth(account)) return ACCESS_STATES.error;
   if (account.status === 'ok') return ACCESS_STATES.ok;
-  return ACCESS_STATES.unknown;
+  const systemCloud = system && system.cloud;
+  if (systemCloudMatchesAccount(account, systemCloud) && systemCloud && systemCloud.status === 'ok') {
+    return ACCESS_STATES.ok;
+  }
+  return ACCESS_STATES.error;
 }
 
 function accessPill(access) {
-  const modifier = access.tone === 'ok'
-    ? ' status-pill--ok'
-    : (access.tone === 'auth' ? ' status-pill--auth' : ' status-pill--unknown');
+  const modifier = access.tone === 'ok' ? ' status-pill--ok' : ' status-pill--error';
   return `<span class="status-pill${modifier}">${access.label}</span>`;
 }
 
@@ -2278,16 +2257,16 @@ function destinationPath() {
   return displayPath(flowDest || state.downloads || (root && root.path) || '/downloads');
 }
 
-/* Главный экран: компактная карточка-вход в панель. Место Диска и статус
-   доступа видны сразу, серверное место живёт в шаге назначения и в панели. */
+/* Главный экран: компактная карточка-вход в панель. Доступ и место живут
+   в панели аккаунта, в карточке — только логин. */
 function renderAccountCell() {
   const login = $('#account-cell-login');
   if (!login) return;
   const account = currentAccount();
   if (!account) return;
-  /* В карточке на главном только логин: способ входа, доступ и занятое
-     место живут в панели аккаунта. */
-  if (accountAccess(account).tone === 'auth') cloudUsage = null;
+  /* В карточке на главном только логин: доступ и занятое место живут в
+     панели аккаунта. */
+  if (accountNeedsReauth(account)) cloudUsage = null;
   login.textContent = accountLabel(account);
   login.nextElementSibling.hidden = login.textContent === 'Яндекс Диск';
 }
@@ -2300,20 +2279,18 @@ function renderAccountPanel() {
   const account = currentAccount();
   if (!account) return;
   const access = accountAccess(account);
-  if (access.tone === 'auth') cloudUsage = null;
+  const needsAuth = accountNeedsReauth(account);
+  if (needsAuth) cloudUsage = null;
 
   login.textContent = accountLogin(account) || account.name || 'Яндекс Диск';
-  const method = $('#account-method');
-  if (method) method.textContent = accountMethodLabel(account);
   const status = $('#account-status');
   if (status) status.innerHTML = accessPill(access);
-  const checked = $('#account-checked');
-  if (checked) {
-    checked.textContent = account.checkedAt
-      ? `проверено ${checkedAtText(account.checkedAt)}`
-      : 'не проверялось';
-    checked.classList.toggle('is-stale', !account.checkedAt);
-  }
+  /* Действие зависит от состояния: истёкший доступ лечится только повторным
+     входом, остальные ошибки — проверкой доступа. */
+  const probeLink = $('#account-probe');
+  if (probeLink) probeLink.hidden = needsAuth || access.tone === 'ok';
+  const reconnect = $('#account-reconnect');
+  if (reconnect) reconnect.hidden = !needsAuth;
 
   const usage = cloudUsage;
   const stale = cloudUsageIsStale(usage);
@@ -2334,7 +2311,7 @@ function renderAccountPanel() {
   const note = $('#account-disk-note');
   if (note) {
     let text = '';
-    if (access.tone === 'auth') text = 'Войдите заново, чтобы увидеть занятое место.';
+    if (needsAuth) text = 'Войдите заново, чтобы увидеть занятое место.';
     else if (stale && short) text = cloudStaleNote(usage);
     else if (!short) text = 'Нажмите «Проверить», чтобы узнать занятое место.';
     note.textContent = text;
@@ -2637,108 +2614,41 @@ function nowHead(right = '') {
     </div>`;
 }
 
-/* --- проверка файлов в карточке задачи ------------------------------------ */
+/* --- неоконченная задача: строка и повтор -------------------------------- */
 
-/* Сохранённый результат: compact-сводка operations/check. Счётчики
-   расхождений считаются отдельно, чтобы «Все файлы на месте» не появлялось
-   при любом ненулевом значении. matched приходит от сервера; если его нет
-   (пустое значение), «Проверено» показывает хотя бы известные файлы. */
-function jobCheckProblems(check) {
-  return Math.max(0, Number(check.differ) || 0)
-    + Math.max(0, Number(check.missingOnDst) || 0)
-    + Math.max(0, Number(check.broken) || 0);
+/* Проверки целостности в интерфейсе больше нет. У задачи, которая не
+   завершилась успешно, показываем одну строку — сколько файлов не скачалось,
+   — и тонкую ссылку «Повторить», продолжающую скачивание с того же места.
+   Если rclone не сообщил об ошибках файлов (например, задача просто встала
+   на паузу), строка честно говорит, что скачивание прервалось. */
+function jobFailureMarkup(job) {
+  if (!job || (job.status !== 'failed' && job.status !== 'interrupted')) return '';
+  const errors = Math.max(0, Number(job.stats && job.stats.errors) || 0);
+  const text = errors > 0
+    ? `Не удалось скачать ${formatFiles(errors)}`
+    : 'Скачивание прервалось';
+  return `<span class="job-failure-text">${icon('warning')}${escapeHtml(text)}</span>
+      <button class="btn btn--link" type="button" data-action="resume" data-id="${escapeHtml(job.id)}">Повторить</button>`;
 }
 
-function jobCheckTime(check) {
-  const text = checkedAtText(check && check.checkedAt);
-  return text && text !== 'не проверялось' ? text : '';
-}
-
-function jobCheckResultMarkup(job) {
-  const check = job.check || {};
-  const problems = jobCheckProblems(check);
-  const total = Math.max(0, Number(check.matched) || 0) + problems;
-  const when = jobCheckTime(check);
-  if (!problems) {
-    const meta = [total > 0 ? `Проверено: ${formatFiles(total)}` : '', when].filter(Boolean).join(' · ');
-    return `<div class="job-check-result job-check-result--ok" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">
-      <span class="job-check-headline">${icon('check')}Все файлы на месте</span>
-      ${meta ? `<span class="job-check-meta">${escapeHtml(meta)}</span>` : ''}
-    </div>`;
-  }
-  const detail = `Нет на сервере: ${formatCount(check.missingOnDst)}`
-    + ` · Отличаются: ${formatCount(check.differ)}`
-    + ` · Ошибки: ${formatCount(check.broken)}`;
-  const summary = `Проверено: ${formatFiles(total)}${when ? `<span class="job-check-meta"> · ${escapeHtml(when)}</span>` : ''}`;
-  return `<div class="job-check-result job-check-result--warn" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">
-    <span class="job-check-headline">${icon('warning')}${summary}</span>
-    <span class="job-check-detail">${escapeHtml(detail)}</span>
-  </div>`;
-}
-
-function jobCheckActionMarkup(job, label = 'Проверить файлы') {
-  return `<button class="btn btn--secondary btn--sm job-check-action" type="button" data-action="check" data-id="${escapeHtml(job.id)}">${icon('check')}${label}</button>`;
-}
-
-function jobCheckBusyMarkup(job) {
-  /* aria-disabled не убирает кнопку из порядка фокуса: фокус остаётся на
-     месте, пока идёт запрос. Повторное нажатие гасит обработчик. */
-  return `<button class="btn btn--secondary btn--sm job-check-action" type="button" data-action="check" data-id="${escapeHtml(job.id)}" aria-busy="true" aria-disabled="true" aria-label="Проверяем файлы">
-    <span class="job-check-spinner" aria-hidden="true"></span>Проверяем…</button>`;
-}
-
-function jobCheckErrorMarkup(job) {
-  return `<div class="job-check-error" role="status" aria-live="polite">
-    <span class="job-check-error-text">${icon('warning')}Не удалось проверить файлы</span>
-    <button class="btn btn--secondary btn--sm job-check-retry" type="button" data-action="check" data-id="${escapeHtml(job.id)}">Повторить</button>
-  </div>`;
-}
-
-/* Строка проверки в карточке: результат из job.check, «Проверяем…», ошибка
-   с «Повторить» или действие. Для идущих задач строки нет. */
-function jobCheckMarkup(job) {
-  if (!job) return '';
-  if (job.check) return jobCheckResultMarkup(job);
-  if (!CHECKABLE_STATUSES.includes(job.status)) return '';
-  if (jobCheckBusy.has(job.id)) return jobCheckBusyMarkup(job);
-  if (jobCheckErrors.has(job.id)) return jobCheckErrorMarkup(job);
-  return jobCheckActionMarkup(job);
-}
-
-function jobCheckKey(job) {
-  const check = job.check;
-  const counts = check
-    ? [check.matched, check.differ, check.missingOnDst, check.broken, check.checkedAt].join(':')
-    : '';
-  return [
-    job.status,
-    jobCheckBusy.has(job.id) ? 'busy' : '',
-    jobCheckErrors.get(job.id) || '',
-    counts,
-  ].join('|');
-}
-
-/* Обновление по месту: строка не пересоздаётся на каждом опросе, а
-   aria-live-регион не перечитывает один и тот же результат. */
-function renderJobCheck(row, job) {
-  const host = row.querySelector('.job-check');
+/* Обновление по месту: карточка не пересоздаётся на каждом опросе, а
+   aria-live-регион не перечитывает одну и ту же строку. */
+function renderJobFailure(row, job) {
+  const host = row.querySelector('.job-failure');
   if (!host) return;
-  if (!CHECKABLE_STATUSES.includes(job.status) && !job.check) {
-    jobCheckBusy.delete(job.id);
-    jobCheckErrors.delete(job.id);
-  }
-  const key = jobCheckKey(job);
+  const errors = Math.max(0, Number(job.stats && job.stats.errors) || 0);
+  const key = [job.status, errors].join('|');
   if (host.dataset.key === key) return;
   const active = document.activeElement;
   const hadFocus = !!active && active !== host && host.contains(active);
   host.dataset.key = key;
-  const markup = jobCheckMarkup(job);
+  const markup = jobFailureMarkup(job);
   host.innerHTML = markup;
   host.hidden = !markup;
   if (hadFocus) {
-    /* После действия фокус не должен падать на body: ведём его на новое
-       действие или на сам результат (он объявляется через aria-live). */
-    const next = host.querySelector('button:not([disabled])') || host.querySelector('.job-check-result');
+    /* «Повторить» продолжает скачивание: строка исчезает, фокус ведём на
+       главное действие карточки, чтобы он не упал на body. */
+    const next = host.querySelector('button') || row.querySelector('.task-head button:not([hidden])');
     if (next) next.focus({ preventScroll: true });
   }
 }
@@ -2754,7 +2664,7 @@ function renderJobList(jobs) {
       row.className = 'cell cell--now job-row';
       row.dataset.id = job.id;
       row.innerHTML = `<div class="task-head">${icon('folder')}<h2></h2><button class="btn btn--secondary" type="button"></button></div>
-        <div class="now-body"><progress max="100"></progress><div class="task-stats"><span></span><span></span></div><div class="job-error"></div><div class="job-check" hidden></div></div>`;
+        <div class="now-body"><progress max="100"></progress><div class="task-stats"><span></span><span></span></div><div class="job-error"></div><div class="job-failure" role="status" hidden></div></div>`;
       list.append(row);
     }
     const paths = [...jobSourcePaths(job), ...jobSourceFiles(job)];
@@ -2785,7 +2695,7 @@ function renderJobList(jobs) {
     const facts = row.querySelectorAll('.task-stats span');
     facts[0].textContent = jobSizeText(job);
     facts[1].textContent = done ? 'Завершена' : paused ? statusOf(job)[0] : job.status === 'running' && !(job.stats?.bytes > 0) ? 'Начинается' : jobMeta(job);
-    renderJobCheck(row, job);
+    renderJobFailure(row, job);
   }
   for (const row of stale.values()) {
     const hadFocus = row.contains(document.activeElement);
@@ -3024,74 +2934,6 @@ async function resumeJob(id, trigger) {
     await refreshAfterAction();
   } finally {
     pendingFocusKey = '';
-  }
-}
-
-/* Проверка файлов: POST доступен только завершённой задаче и только один
-   раз. 409 значит «уже проверяли» — показываем сохранённый результат без
-   тоста об ошибке; 502 — inline-ошибка у карточки, статус задачи не меняется;
-   потеря связи — не ошибка проверки, общая полоса и следующий опрос. */
-async function checkJob(id, trigger) {
-  const job = accountJobs().find((item) => item.id === id);
-  if (!job || job.check || !CHECKABLE_STATUSES.includes(job.status)) return;
-  if (jobCheckBusy.has(id)) return;
-  jobCheckBusy.add(id);
-  jobCheckErrors.delete(id);
-  renderNow();
-  let result = null;
-  let failure = null;
-  try {
-    result = await api(`/api/jobs/${encodeURIComponent(id)}/check`, {
-      method: 'POST',
-      timeout: API_TIMEOUT.check,
-    });
-  } catch (error) {
-    failure = error;
-  } finally {
-    jobCheckBusy.delete(id);
-  }
-
-  if (failure) {
-    const status = Number(failure.status) || 0;
-    if (status === 409) {
-      /* Проверку уже запустили (или она уже была): тихо подтягиваем состояние
-         и показываем job.check, если он там есть. */
-      await refreshCheckState();
-    } else if (status === 0) {
-      /* Связь, а не проверка: не рисуем ошибку у карточки. После
-         восстановления опрос сам принесёт сохранённый результат. */
-      setOffline(true);
-      announce('Нет связи. Проверка не запущена.');
-      renderNow();
-    } else {
-      jobCheckErrors.set(id, 'failed');
-      renderNow();
-      announce('Не удалось проверить файлы');
-    }
-    return;
-  }
-
-  /* 200 — сервер подтвердил проверку. Результат показываем сразу, даже если
-     обновление /api/state ниже не удастся. */
-  const saved = state.jobs.find((item) => item.id === id);
-  if (saved && result) saved.check = result;
-  renderNow();
-  try {
-    await loadData();
-    render();
-  } catch {
-    /* Результат уже на экране; состояние задачи не откатываем. */
-  }
-}
-
-/* Обновление после 409 без предупреждений: 409 — не ошибка для пользователя. */
-async function refreshCheckState() {
-  try {
-    await loadData();
-    render();
-  } catch {
-    setOffline(true);
-    renderNow();
   }
 }
 
@@ -5276,16 +5118,15 @@ $('#home-view').addEventListener('click', async (event) => {
     }
     if (action === 'stop') await stopJob(id, trigger);
     else if (action === 'resume') await resumeJob(id, trigger);
-    else if (action === 'check') await checkJob(id, trigger);
   } catch (error) {
     const retry = action === 'stop'
       ? () => stopJob(id, null)
-      : action === 'resume' ? () => resumeJob(id, null) : () => checkJob(id, null);
+      : () => resumeJob(id, null);
     showToast({
       type: 'error',
       title: action === 'stop'
         ? 'Не удалось приостановить скачивание'
-        : action === 'resume' ? 'Не удалось продолжить скачивание' : 'Не удалось проверить файлы',
+        : 'Не удалось продолжить скачивание',
       message: friendlyError(error),
       action: { label: 'Повторить', onClick: retry },
     });
@@ -5293,7 +5134,8 @@ $('#home-view').addEventListener('click', async (event) => {
 });
 
 /* Панель аккаунта: чип — единственный вход, Esc и «Закрыть» возвращают
-   фокус на него. Проверка и выход живут внутри панели, не в меню. */
+   фокус на него. Выход из аккаунта живёт только в меню «•••» на главном,
+   в панели — проверка доступа и места. */
 document.addEventListener('click', (event) => {
   const menu = document.querySelector('.drive-menu[open]');
   if (menu && !menu.contains(event.target)) menu.open = false;
@@ -5307,6 +5149,9 @@ document.addEventListener('keydown', (event) => {
 });
 $('#account-chip')?.addEventListener('click', () => openAccountPanel());
 $('#account-probe')?.addEventListener('click', () => probeAccount($('#account-probe')));
+/* Проверка места в ячейке «Свободно на Umbrel»: probe обновляет занятое на
+   Диске, loadData внутри него — свободное на сервере (/api/system). */
+$('#account-server-probe')?.addEventListener('click', () => probeAccount($('#account-server-probe')));
 
 $('#account-dialog')?.addEventListener('keydown', (event) => keepDialogFocus(event.currentTarget, event));
 $('#account-dialog')?.addEventListener('close', () => { finishAccountDialog(); });

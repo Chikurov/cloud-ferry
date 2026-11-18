@@ -1,0 +1,2933 @@
+{
+  "generatedAt": "2026-11-18T20:04:12.307Z",
+  "base": "http://127.0.0.1:8897",
+  "checks": [
+    {
+      "name": "empty/light/1440: плитка первого запуска найдена",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "empty/light/1440: .plus-tile — flex",
+      "ok": true,
+      "detail": "flex"
+    },
+    {
+      "name": "empty/light/1440: .plus-tile align-items:center",
+      "ok": true,
+      "detail": "center"
+    },
+    {
+      "name": "empty/light/1440: текст по центру иконки",
+      "ok": true,
+      "detail": "icon=169.0 title=169.0"
+    },
+    {
+      "name": "empty/light/1440: data-theme=light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "empty/light/1440: фон темы light",
+      "ok": true,
+      "detail": "rgb(245, 244, 248)"
+    },
+    {
+      "name": "empty/light/1440: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "empty/light/1440: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "empty/light/1440: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "empty/light/1440: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "empty/light/1440: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "empty/light/1440: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "empty/light/1440: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "empty/dark/1440: плитка первого запуска найдена",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "empty/dark/1440: .plus-tile — flex",
+      "ok": true,
+      "detail": "flex"
+    },
+    {
+      "name": "empty/dark/1440: .plus-tile align-items:center",
+      "ok": true,
+      "detail": "center"
+    },
+    {
+      "name": "empty/dark/1440: текст по центру иконки",
+      "ok": true,
+      "detail": "icon=169.0 title=169.0"
+    },
+    {
+      "name": "empty/dark/1440: data-theme=dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "empty/dark/1440: фон темы dark",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "empty/dark/1440: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "empty/dark/1440: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "empty/dark/1440: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "empty/dark/1440: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "empty/dark/1440: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "empty/dark/1440: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "empty/dark/1440: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "empty/light/390: плитка первого запуска найдена",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "empty/light/390: .plus-tile — flex",
+      "ok": true,
+      "detail": "flex"
+    },
+    {
+      "name": "empty/light/390: .plus-tile align-items:center",
+      "ok": true,
+      "detail": "center"
+    },
+    {
+      "name": "empty/light/390: текст по центру иконки",
+      "ok": true,
+      "detail": "icon=165.1 title=165.1"
+    },
+    {
+      "name": "empty/light/390: data-theme=light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "empty/light/390: фон темы light",
+      "ok": true,
+      "detail": "rgb(245, 244, 248)"
+    },
+    {
+      "name": "empty/light/390: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "empty/light/390: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "empty/light/390: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "empty/light/390: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "empty/light/390: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "empty/light/390: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "empty/light/390: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "empty/dark/390: плитка первого запуска найдена",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "empty/dark/390: .plus-tile — flex",
+      "ok": true,
+      "detail": "flex"
+    },
+    {
+      "name": "empty/dark/390: .plus-tile align-items:center",
+      "ok": true,
+      "detail": "center"
+    },
+    {
+      "name": "empty/dark/390: текст по центру иконки",
+      "ok": true,
+      "detail": "icon=165.1 title=165.1"
+    },
+    {
+      "name": "empty/dark/390: data-theme=dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "empty/dark/390: фон темы dark",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "empty/dark/390: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "empty/dark/390: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "empty/dark/390: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "empty/dark/390: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "empty/dark/390: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "empty/dark/390: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "empty/dark/390: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "failed/light/1440: задача failed",
+      "ok": true,
+      "detail": "failed"
+    },
+    {
+      "name": "failed/light/1440: строка неудачной задачи видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "failed/light/1440: текст «Не удалось скачать 3 файла»",
+      "ok": true,
+      "detail": "Не удалось скачать 3 файла Повторить"
+    },
+    {
+      "name": "failed/light/1440: ссылка «Повторить»",
+      "ok": true,
+      "detail": "Повторить"
+    },
+    {
+      "name": "failed/light/1440: ссылка с btn--link",
+      "ok": true,
+      "detail": "btn btn--link"
+    },
+    {
+      "name": "failed/light/1440: data-action=\"resume\"",
+      "ok": true,
+      "detail": "resume"
+    },
+    {
+      "name": "failed/light/1440: data-theme=light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "failed/light/1440: фон темы light",
+      "ok": true,
+      "detail": "rgb(245, 244, 248)"
+    },
+    {
+      "name": "failed/light/1440: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "failed/light/1440: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "failed/light/1440: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "failed/light/1440: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "failed/light/1440: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "failed/light/1440: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "failed/light/1440: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "failed/light/1440: после «Повторить» задача в очереди",
+      "ok": true,
+      "detail": "queued"
+    },
+    {
+      "name": "failed/light/1440: строка после повтора скрыта",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "name": "failed/light/1440: у идущей задачи действие «Приостановить»",
+      "ok": true,
+      "detail": "stop"
+    },
+    {
+      "name": "failed/light/1440: POST /resume 200",
+      "ok": true,
+      "detail": "[{\"url\":\"http://127.0.0.1:8897/api/jobs/j1/resume\",\"status\":200,\"type\":\"Fetch\",\"requestId\":\"22073.8\"}]"
+    },
+    {
+      "name": "failed/light/1440: консоль без ошибок после повтора",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "failed/dark/1440: задача failed",
+      "ok": true,
+      "detail": "failed"
+    },
+    {
+      "name": "failed/dark/1440: строка неудачной задачи видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "failed/dark/1440: текст «Не удалось скачать 3 файла»",
+      "ok": true,
+      "detail": "Не удалось скачать 3 файла Повторить"
+    },
+    {
+      "name": "failed/dark/1440: ссылка «Повторить»",
+      "ok": true,
+      "detail": "Повторить"
+    },
+    {
+      "name": "failed/dark/1440: ссылка с btn--link",
+      "ok": true,
+      "detail": "btn btn--link"
+    },
+    {
+      "name": "failed/dark/1440: data-action=\"resume\"",
+      "ok": true,
+      "detail": "resume"
+    },
+    {
+      "name": "failed/dark/1440: data-theme=dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "failed/dark/1440: фон темы dark",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "failed/dark/1440: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "failed/dark/1440: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "failed/dark/1440: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "failed/dark/1440: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "failed/dark/1440: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "failed/dark/1440: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "failed/dark/1440: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "failed/dark/1440: после «Повторить» задача в очереди",
+      "ok": true,
+      "detail": "queued"
+    },
+    {
+      "name": "failed/dark/1440: строка после повтора скрыта",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "name": "failed/dark/1440: у идущей задачи действие «Приостановить»",
+      "ok": true,
+      "detail": "stop"
+    },
+    {
+      "name": "failed/dark/1440: POST /resume 200",
+      "ok": true,
+      "detail": "[{\"url\":\"http://127.0.0.1:8897/api/jobs/j1/resume\",\"status\":200,\"type\":\"Fetch\",\"requestId\":\"22075.8\"}]"
+    },
+    {
+      "name": "failed/dark/1440: консоль без ошибок после повтора",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "failed/light/390: задача failed",
+      "ok": true,
+      "detail": "failed"
+    },
+    {
+      "name": "failed/light/390: строка неудачной задачи видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "failed/light/390: текст «Не удалось скачать 3 файла»",
+      "ok": true,
+      "detail": "Не удалось скачать 3 файла Повторить"
+    },
+    {
+      "name": "failed/light/390: ссылка «Повторить»",
+      "ok": true,
+      "detail": "Повторить"
+    },
+    {
+      "name": "failed/light/390: ссылка с btn--link",
+      "ok": true,
+      "detail": "btn btn--link"
+    },
+    {
+      "name": "failed/light/390: data-action=\"resume\"",
+      "ok": true,
+      "detail": "resume"
+    },
+    {
+      "name": "failed/light/390: data-theme=light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "failed/light/390: фон темы light",
+      "ok": true,
+      "detail": "rgb(245, 244, 248)"
+    },
+    {
+      "name": "failed/light/390: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "failed/light/390: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "failed/light/390: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "failed/light/390: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "failed/light/390: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "failed/light/390: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "failed/light/390: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "failed/light/390: после «Повторить» задача в очереди",
+      "ok": true,
+      "detail": "queued"
+    },
+    {
+      "name": "failed/light/390: строка после повтора скрыта",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "name": "failed/light/390: у идущей задачи действие «Приостановить»",
+      "ok": true,
+      "detail": "stop"
+    },
+    {
+      "name": "failed/light/390: POST /resume 200",
+      "ok": true,
+      "detail": "[{\"url\":\"http://127.0.0.1:8897/api/jobs/j1/resume\",\"status\":200,\"type\":\"Fetch\",\"requestId\":\"22076.8\"}]"
+    },
+    {
+      "name": "failed/light/390: консоль без ошибок после повтора",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "failed/dark/390: задача failed",
+      "ok": true,
+      "detail": "failed"
+    },
+    {
+      "name": "failed/dark/390: строка неудачной задачи видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "failed/dark/390: текст «Не удалось скачать 3 файла»",
+      "ok": true,
+      "detail": "Не удалось скачать 3 файла Повторить"
+    },
+    {
+      "name": "failed/dark/390: ссылка «Повторить»",
+      "ok": true,
+      "detail": "Повторить"
+    },
+    {
+      "name": "failed/dark/390: ссылка с btn--link",
+      "ok": true,
+      "detail": "btn btn--link"
+    },
+    {
+      "name": "failed/dark/390: data-action=\"resume\"",
+      "ok": true,
+      "detail": "resume"
+    },
+    {
+      "name": "failed/dark/390: data-theme=dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "failed/dark/390: фон темы dark",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "failed/dark/390: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "failed/dark/390: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "failed/dark/390: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "failed/dark/390: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "failed/dark/390: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "failed/dark/390: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "failed/dark/390: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "failed/dark/390: после «Повторить» задача в очереди",
+      "ok": true,
+      "detail": "queued"
+    },
+    {
+      "name": "failed/dark/390: строка после повтора скрыта",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "name": "failed/dark/390: у идущей задачи действие «Приостановить»",
+      "ok": true,
+      "detail": "stop"
+    },
+    {
+      "name": "failed/dark/390: POST /resume 200",
+      "ok": true,
+      "detail": "[{\"url\":\"http://127.0.0.1:8897/api/jobs/j1/resume\",\"status\":200,\"type\":\"Fetch\",\"requestId\":\"22082.8\"}]"
+    },
+    {
+      "name": "failed/dark/390: консоль без ошибок после повтора",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "interrupted/light/1440: задача interrupted",
+      "ok": true,
+      "detail": "interrupted"
+    },
+    {
+      "name": "interrupted/light/1440: строка прерванной задачи видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "interrupted/light/1440: текст «Скачивание прервалось»",
+      "ok": true,
+      "detail": "Скачивание прервалось Повторить"
+    },
+    {
+      "name": "interrupted/light/1440: ссылка «Повторить»",
+      "ok": true,
+      "detail": "Скачивание прервалось Повторить"
+    },
+    {
+      "name": "interrupted/light/1440: data-theme=light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "interrupted/light/1440: фон темы light",
+      "ok": true,
+      "detail": "rgb(245, 244, 248)"
+    },
+    {
+      "name": "interrupted/light/1440: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "interrupted/light/1440: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "interrupted/light/1440: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "interrupted/light/1440: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "interrupted/light/1440: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "interrupted/light/1440: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "interrupted/light/1440: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "interrupted/dark/1440: задача interrupted",
+      "ok": true,
+      "detail": "interrupted"
+    },
+    {
+      "name": "interrupted/dark/1440: строка прерванной задачи видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "interrupted/dark/1440: текст «Скачивание прервалось»",
+      "ok": true,
+      "detail": "Скачивание прервалось Повторить"
+    },
+    {
+      "name": "interrupted/dark/1440: ссылка «Повторить»",
+      "ok": true,
+      "detail": "Скачивание прервалось Повторить"
+    },
+    {
+      "name": "interrupted/dark/1440: data-theme=dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "interrupted/dark/1440: фон темы dark",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "interrupted/dark/1440: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "interrupted/dark/1440: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "interrupted/dark/1440: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "interrupted/dark/1440: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "interrupted/dark/1440: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "interrupted/dark/1440: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "interrupted/dark/1440: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "interrupted/light/390: задача interrupted",
+      "ok": true,
+      "detail": "interrupted"
+    },
+    {
+      "name": "interrupted/light/390: строка прерванной задачи видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "interrupted/light/390: текст «Скачивание прервалось»",
+      "ok": true,
+      "detail": "Скачивание прервалось Повторить"
+    },
+    {
+      "name": "interrupted/light/390: ссылка «Повторить»",
+      "ok": true,
+      "detail": "Скачивание прервалось Повторить"
+    },
+    {
+      "name": "interrupted/light/390: data-theme=light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "interrupted/light/390: фон темы light",
+      "ok": true,
+      "detail": "rgb(245, 244, 248)"
+    },
+    {
+      "name": "interrupted/light/390: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "interrupted/light/390: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "interrupted/light/390: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "interrupted/light/390: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "interrupted/light/390: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "interrupted/light/390: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "interrupted/light/390: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "interrupted/dark/390: задача interrupted",
+      "ok": true,
+      "detail": "interrupted"
+    },
+    {
+      "name": "interrupted/dark/390: строка прерванной задачи видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "interrupted/dark/390: текст «Скачивание прервалось»",
+      "ok": true,
+      "detail": "Скачивание прервалось Повторить"
+    },
+    {
+      "name": "interrupted/dark/390: ссылка «Повторить»",
+      "ok": true,
+      "detail": "Скачивание прервалось Повторить"
+    },
+    {
+      "name": "interrupted/dark/390: data-theme=dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "interrupted/dark/390: фон темы dark",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "interrupted/dark/390: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "interrupted/dark/390: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "interrupted/dark/390: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "interrupted/dark/390: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "interrupted/dark/390: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "interrupted/dark/390: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "interrupted/dark/390: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/1440: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "settings/light/1440: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "settings/light/1440: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "settings/light/1440: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "settings/light/1440: диалог настроек открыт",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/1440: нет «Способ входа»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/1440: нет узла #account-method",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/1440: нет «не проверялось»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/1440: нет узла #account-checked",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/1440: нет блока .account-actions",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/1440: нет блока выхода .account-danger",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/1440: в настройках нет выхода из аккаунта",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/1440: доступ «Доступно»",
+      "ok": true,
+      "detail": "Доступно"
+    },
+    {
+      "name": "settings/light/1440: pill «Доступно» — зелёный",
+      "ok": true,
+      "detail": "status-pill status-pill--ok"
+    },
+    {
+      "name": "settings/light/1440: ссылка «Проверить» у доступа скрыта при ok",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/1440: «Войти заново» скрыта при ok",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/1440: ссылка «Проверить» в «Свободно на Umbrel» видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/1440: подпись ссылки «Проверить»",
+      "ok": true,
+      "detail": "Проверить"
+    },
+    {
+      "name": "settings/light/1440: ссылка с btn--link",
+      "ok": true,
+      "detail": "btn btn--link"
+    },
+    {
+      "name": "settings/light/1440: внизу настроек нет кнопок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "settings/light/1440: data-theme=light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "settings/light/1440: фон темы light",
+      "ok": true,
+      "detail": "rgb(245, 244, 248)"
+    },
+    {
+      "name": "settings/light/1440: probe вызван ссылкой",
+      "ok": true,
+      "detail": "0→1"
+    },
+    {
+      "name": "settings/light/1440: /api/system обновлён ссылкой",
+      "ok": true,
+      "detail": "1→3"
+    },
+    {
+      "name": "settings/light/1440: занятое на Диске обновилось",
+      "ok": true,
+      "detail": "100 из 200 ГБ → 102 из 200 ГБ"
+    },
+    {
+      "name": "settings/light/1440: свободное на Umbrel обновилось",
+      "ok": true,
+      "detail": "900 ГБ из 2 ТБ → 905 ГБ из 2 ТБ"
+    },
+    {
+      "name": "settings/light/1440: результат проверки показан",
+      "ok": true,
+      "detail": "Доступ есть. Занято 102 ГБ из 200 ГБ"
+    },
+    {
+      "name": "settings/light/1440: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "settings/light/1440: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "settings/light/1440: dialog внутри ширины окна",
+      "ok": true,
+      "detail": "{\"left\":490,\"right\":950,\"top\":265,\"bottom\":635}"
+    },
+    {
+      "name": "settings/light/1440: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/1440: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "settings/dark/1440: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "settings/dark/1440: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "settings/dark/1440: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "settings/dark/1440: диалог настроек открыт",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/1440: нет «Способ входа»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/1440: нет узла #account-method",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/1440: нет «не проверялось»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/1440: нет узла #account-checked",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/1440: нет блока .account-actions",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/1440: нет блока выхода .account-danger",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/1440: в настройках нет выхода из аккаунта",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/1440: доступ «Доступно»",
+      "ok": true,
+      "detail": "Доступно"
+    },
+    {
+      "name": "settings/dark/1440: pill «Доступно» — зелёный",
+      "ok": true,
+      "detail": "status-pill status-pill--ok"
+    },
+    {
+      "name": "settings/dark/1440: ссылка «Проверить» у доступа скрыта при ok",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/1440: «Войти заново» скрыта при ok",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/1440: ссылка «Проверить» в «Свободно на Umbrel» видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/1440: подпись ссылки «Проверить»",
+      "ok": true,
+      "detail": "Проверить"
+    },
+    {
+      "name": "settings/dark/1440: ссылка с btn--link",
+      "ok": true,
+      "detail": "btn btn--link"
+    },
+    {
+      "name": "settings/dark/1440: внизу настроек нет кнопок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "settings/dark/1440: data-theme=dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "settings/dark/1440: фон темы dark",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "settings/dark/1440: probe вызван ссылкой",
+      "ok": true,
+      "detail": "0→1"
+    },
+    {
+      "name": "settings/dark/1440: /api/system обновлён ссылкой",
+      "ok": true,
+      "detail": "1→3"
+    },
+    {
+      "name": "settings/dark/1440: занятое на Диске обновилось",
+      "ok": true,
+      "detail": "100 из 200 ГБ → 102 из 200 ГБ"
+    },
+    {
+      "name": "settings/dark/1440: свободное на Umbrel обновилось",
+      "ok": true,
+      "detail": "900 ГБ из 2 ТБ → 905 ГБ из 2 ТБ"
+    },
+    {
+      "name": "settings/dark/1440: результат проверки показан",
+      "ok": true,
+      "detail": "Доступ есть. Занято 102 ГБ из 200 ГБ"
+    },
+    {
+      "name": "settings/dark/1440: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "settings/dark/1440: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "settings/dark/1440: dialog внутри ширины окна",
+      "ok": true,
+      "detail": "{\"left\":490,\"right\":950,\"top\":265,\"bottom\":635}"
+    },
+    {
+      "name": "settings/dark/1440: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/390: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "settings/light/390: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "settings/light/390: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "settings/light/390: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "settings/light/390: диалог настроек открыт",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/390: нет «Способ входа»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/390: нет узла #account-method",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/390: нет «не проверялось»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/390: нет узла #account-checked",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/390: нет блока .account-actions",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/390: нет блока выхода .account-danger",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/390: в настройках нет выхода из аккаунта",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/390: доступ «Доступно»",
+      "ok": true,
+      "detail": "Доступно"
+    },
+    {
+      "name": "settings/light/390: pill «Доступно» — зелёный",
+      "ok": true,
+      "detail": "status-pill status-pill--ok"
+    },
+    {
+      "name": "settings/light/390: ссылка «Проверить» у доступа скрыта при ok",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/390: «Войти заново» скрыта при ok",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/390: ссылка «Проверить» в «Свободно на Umbrel» видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/light/390: подпись ссылки «Проверить»",
+      "ok": true,
+      "detail": "Проверить"
+    },
+    {
+      "name": "settings/light/390: ссылка с btn--link",
+      "ok": true,
+      "detail": "btn btn--link"
+    },
+    {
+      "name": "settings/light/390: внизу настроек нет кнопок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "settings/light/390: data-theme=light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "settings/light/390: фон темы light",
+      "ok": true,
+      "detail": "rgb(245, 244, 248)"
+    },
+    {
+      "name": "settings/light/390: probe вызван ссылкой",
+      "ok": true,
+      "detail": "0→1"
+    },
+    {
+      "name": "settings/light/390: /api/system обновлён ссылкой",
+      "ok": true,
+      "detail": "1→3"
+    },
+    {
+      "name": "settings/light/390: занятое на Диске обновилось",
+      "ok": true,
+      "detail": "100 из 200 ГБ → 102 из 200 ГБ"
+    },
+    {
+      "name": "settings/light/390: свободное на Umbrel обновилось",
+      "ok": true,
+      "detail": "900 ГБ из 2 ТБ → 905 ГБ из 2 ТБ"
+    },
+    {
+      "name": "settings/light/390: результат проверки показан",
+      "ok": true,
+      "detail": "Доступ есть. Занято 102 ГБ из 200 ГБ"
+    },
+    {
+      "name": "settings/light/390: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "settings/light/390: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "settings/light/390: dialog внутри ширины окна",
+      "ok": true,
+      "detail": "{\"left\":0,\"right\":390,\"top\":0,\"bottom\":720}"
+    },
+    {
+      "name": "settings/light/390: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/390: нет узла .job-check",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "settings/dark/390: нет кнопки data-action=\"check\"",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "settings/dark/390: нет текста «Проверить файлы»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "settings/dark/390: нет состояния «Проверяем…»",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "name": "settings/dark/390: диалог настроек открыт",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/390: нет «Способ входа»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/390: нет узла #account-method",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/390: нет «не проверялось»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/390: нет узла #account-checked",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/390: нет блока .account-actions",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/390: нет блока выхода .account-danger",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/390: в настройках нет выхода из аккаунта",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/390: доступ «Доступно»",
+      "ok": true,
+      "detail": "Доступно"
+    },
+    {
+      "name": "settings/dark/390: pill «Доступно» — зелёный",
+      "ok": true,
+      "detail": "status-pill status-pill--ok"
+    },
+    {
+      "name": "settings/dark/390: ссылка «Проверить» у доступа скрыта при ok",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/390: «Войти заново» скрыта при ok",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/390: ссылка «Проверить» в «Свободно на Umbrel» видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "settings/dark/390: подпись ссылки «Проверить»",
+      "ok": true,
+      "detail": "Проверить"
+    },
+    {
+      "name": "settings/dark/390: ссылка с btn--link",
+      "ok": true,
+      "detail": "btn btn--link"
+    },
+    {
+      "name": "settings/dark/390: внизу настроек нет кнопок",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "settings/dark/390: data-theme=dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "settings/dark/390: фон темы dark",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "settings/dark/390: probe вызван ссылкой",
+      "ok": true,
+      "detail": "0→1"
+    },
+    {
+      "name": "settings/dark/390: /api/system обновлён ссылкой",
+      "ok": true,
+      "detail": "1→3"
+    },
+    {
+      "name": "settings/dark/390: занятое на Диске обновилось",
+      "ok": true,
+      "detail": "100 из 200 ГБ → 102 из 200 ГБ"
+    },
+    {
+      "name": "settings/dark/390: свободное на Umbrel обновилось",
+      "ok": true,
+      "detail": "900 ГБ из 2 ТБ → 905 ГБ из 2 ТБ"
+    },
+    {
+      "name": "settings/dark/390: результат проверки показан",
+      "ok": true,
+      "detail": "Доступ есть. Занято 102 ГБ из 200 ГБ"
+    },
+    {
+      "name": "settings/dark/390: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "settings/dark/390: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "settings/dark/390: dialog внутри ширины окна",
+      "ok": true,
+      "detail": "{\"left\":0,\"right\":390,\"top\":0,\"bottom\":720}"
+    },
+    {
+      "name": "settings/dark/390: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/light/1440: доступ «Ошибка»",
+      "ok": true,
+      "detail": "Ошибка"
+    },
+    {
+      "name": "needs-auth/light/1440: pill ошибки",
+      "ok": true,
+      "detail": "status-pill status-pill--error"
+    },
+    {
+      "name": "needs-auth/light/1440: «Проверить» скрыта при needs-auth",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/light/1440: «Войти заново» видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/light/1440: текст «Войти заново»",
+      "ok": true,
+      "detail": "Войти заново"
+    },
+    {
+      "name": "needs-auth/light/1440: ссылка ведёт в мастер",
+      "ok": true,
+      "detail": "#/setup"
+    },
+    {
+      "name": "needs-auth/light/1440: нет «не проверялось»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/light/1440: data-theme=light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "needs-auth/light/1440: фон темы light",
+      "ok": true,
+      "detail": "rgb(245, 244, 248)"
+    },
+    {
+      "name": "needs-auth/light/1440: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "needs-auth/light/1440: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "needs-auth/light/1440: dialog внутри ширины окна",
+      "ok": true,
+      "detail": "{\"left\":490,\"right\":950,\"top\":275,\"bottom\":625}"
+    },
+    {
+      "name": "needs-auth/light/1440: «Войти заново» открыл мастер",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/light/1440: главный экран скрыт в мастере",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/light/1440: настройки закрылись",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/light/1440: hash #/setup",
+      "ok": true,
+      "detail": "#/setup"
+    },
+    {
+      "name": "needs-auth/light/1440: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/dark/1440: доступ «Ошибка»",
+      "ok": true,
+      "detail": "Ошибка"
+    },
+    {
+      "name": "needs-auth/dark/1440: pill ошибки",
+      "ok": true,
+      "detail": "status-pill status-pill--error"
+    },
+    {
+      "name": "needs-auth/dark/1440: «Проверить» скрыта при needs-auth",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/dark/1440: «Войти заново» видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/dark/1440: текст «Войти заново»",
+      "ok": true,
+      "detail": "Войти заново"
+    },
+    {
+      "name": "needs-auth/dark/1440: ссылка ведёт в мастер",
+      "ok": true,
+      "detail": "#/setup"
+    },
+    {
+      "name": "needs-auth/dark/1440: нет «не проверялось»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/dark/1440: data-theme=dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "needs-auth/dark/1440: фон темы dark",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "needs-auth/dark/1440: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "needs-auth/dark/1440: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "needs-auth/dark/1440: dialog внутри ширины окна",
+      "ok": true,
+      "detail": "{\"left\":490,\"right\":950,\"top\":275,\"bottom\":625}"
+    },
+    {
+      "name": "needs-auth/dark/1440: «Войти заново» открыл мастер",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/dark/1440: главный экран скрыт в мастере",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/dark/1440: настройки закрылись",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/dark/1440: hash #/setup",
+      "ok": true,
+      "detail": "#/setup"
+    },
+    {
+      "name": "needs-auth/dark/1440: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/light/390: доступ «Ошибка»",
+      "ok": true,
+      "detail": "Ошибка"
+    },
+    {
+      "name": "needs-auth/light/390: pill ошибки",
+      "ok": true,
+      "detail": "status-pill status-pill--error"
+    },
+    {
+      "name": "needs-auth/light/390: «Проверить» скрыта при needs-auth",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/light/390: «Войти заново» видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/light/390: текст «Войти заново»",
+      "ok": true,
+      "detail": "Войти заново"
+    },
+    {
+      "name": "needs-auth/light/390: ссылка ведёт в мастер",
+      "ok": true,
+      "detail": "#/setup"
+    },
+    {
+      "name": "needs-auth/light/390: нет «не проверялось»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/light/390: data-theme=light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "needs-auth/light/390: фон темы light",
+      "ok": true,
+      "detail": "rgb(245, 244, 248)"
+    },
+    {
+      "name": "needs-auth/light/390: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "needs-auth/light/390: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "needs-auth/light/390: dialog внутри ширины окна",
+      "ok": true,
+      "detail": "{\"left\":0,\"right\":390,\"top\":0,\"bottom\":720}"
+    },
+    {
+      "name": "needs-auth/light/390: «Войти заново» открыл мастер",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/light/390: главный экран скрыт в мастере",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/light/390: настройки закрылись",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/light/390: hash #/setup",
+      "ok": true,
+      "detail": "#/setup"
+    },
+    {
+      "name": "needs-auth/light/390: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/dark/390: доступ «Ошибка»",
+      "ok": true,
+      "detail": "Ошибка"
+    },
+    {
+      "name": "needs-auth/dark/390: pill ошибки",
+      "ok": true,
+      "detail": "status-pill status-pill--error"
+    },
+    {
+      "name": "needs-auth/dark/390: «Проверить» скрыта при needs-auth",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/dark/390: «Войти заново» видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/dark/390: текст «Войти заново»",
+      "ok": true,
+      "detail": "Войти заново"
+    },
+    {
+      "name": "needs-auth/dark/390: ссылка ведёт в мастер",
+      "ok": true,
+      "detail": "#/setup"
+    },
+    {
+      "name": "needs-auth/dark/390: нет «не проверялось»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/dark/390: data-theme=dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "needs-auth/dark/390: фон темы dark",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "needs-auth/dark/390: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "needs-auth/dark/390: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "needs-auth/dark/390: dialog внутри ширины окна",
+      "ok": true,
+      "detail": "{\"left\":0,\"right\":390,\"top\":0,\"bottom\":720}"
+    },
+    {
+      "name": "needs-auth/dark/390: «Войти заново» открыл мастер",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/dark/390: главный экран скрыт в мастере",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/dark/390: настройки закрылись",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "needs-auth/dark/390: hash #/setup",
+      "ok": true,
+      "detail": "#/setup"
+    },
+    {
+      "name": "needs-auth/dark/390: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "access-error/light/1440: доступ «Ошибка»",
+      "ok": true,
+      "detail": "Ошибка"
+    },
+    {
+      "name": "access-error/light/1440: ссылка «Проверить» видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "access-error/light/1440: текст ссылки",
+      "ok": true,
+      "detail": "Проверить"
+    },
+    {
+      "name": "access-error/light/1440: ссылка btn--link",
+      "ok": true,
+      "detail": "btn btn--link"
+    },
+    {
+      "name": "access-error/light/1440: «Проверить» вызвал probe",
+      "ok": true,
+      "detail": "1→2"
+    },
+    {
+      "name": "access-error/light/1440: после probe доступ «Доступно»",
+      "ok": true,
+      "detail": "Доступно"
+    },
+    {
+      "name": "access-error/light/1440: ссылка скрылась после успеха",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "access-error/light/1440: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "access-error/light/1440: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "access-error/light/1440: dialog внутри ширины окна",
+      "ok": true,
+      "detail": "{\"left\":490,\"right\":950,\"top\":265,\"bottom\":635}"
+    },
+    {
+      "name": "access-error/light/1440: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "access-error/dark/1440: доступ «Ошибка»",
+      "ok": true,
+      "detail": "Ошибка"
+    },
+    {
+      "name": "access-error/dark/1440: ссылка «Проверить» видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "access-error/dark/1440: текст ссылки",
+      "ok": true,
+      "detail": "Проверить"
+    },
+    {
+      "name": "access-error/dark/1440: ссылка btn--link",
+      "ok": true,
+      "detail": "btn btn--link"
+    },
+    {
+      "name": "access-error/dark/1440: «Проверить» вызвал probe",
+      "ok": true,
+      "detail": "1→2"
+    },
+    {
+      "name": "access-error/dark/1440: после probe доступ «Доступно»",
+      "ok": true,
+      "detail": "Доступно"
+    },
+    {
+      "name": "access-error/dark/1440: ссылка скрылась после успеха",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "access-error/dark/1440: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "access-error/dark/1440: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "access-error/dark/1440: dialog внутри ширины окна",
+      "ok": true,
+      "detail": "{\"left\":490,\"right\":950,\"top\":265,\"bottom\":635}"
+    },
+    {
+      "name": "access-error/dark/1440: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "access-error/light/390: доступ «Ошибка»",
+      "ok": true,
+      "detail": "Ошибка"
+    },
+    {
+      "name": "access-error/light/390: ссылка «Проверить» видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "access-error/light/390: текст ссылки",
+      "ok": true,
+      "detail": "Проверить"
+    },
+    {
+      "name": "access-error/light/390: ссылка btn--link",
+      "ok": true,
+      "detail": "btn btn--link"
+    },
+    {
+      "name": "access-error/light/390: «Проверить» вызвал probe",
+      "ok": true,
+      "detail": "1→2"
+    },
+    {
+      "name": "access-error/light/390: после probe доступ «Доступно»",
+      "ok": true,
+      "detail": "Доступно"
+    },
+    {
+      "name": "access-error/light/390: ссылка скрылась после успеха",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "access-error/light/390: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "access-error/light/390: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "access-error/light/390: dialog внутри ширины окна",
+      "ok": true,
+      "detail": "{\"left\":0,\"right\":390,\"top\":0,\"bottom\":720}"
+    },
+    {
+      "name": "access-error/light/390: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "access-error/dark/390: доступ «Ошибка»",
+      "ok": true,
+      "detail": "Ошибка"
+    },
+    {
+      "name": "access-error/dark/390: ссылка «Проверить» видна",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "access-error/dark/390: текст ссылки",
+      "ok": true,
+      "detail": "Проверить"
+    },
+    {
+      "name": "access-error/dark/390: ссылка btn--link",
+      "ok": true,
+      "detail": "btn btn--link"
+    },
+    {
+      "name": "access-error/dark/390: «Проверить» вызвал probe",
+      "ok": true,
+      "detail": "1→2"
+    },
+    {
+      "name": "access-error/dark/390: после probe доступ «Доступно»",
+      "ok": true,
+      "detail": "Доступно"
+    },
+    {
+      "name": "access-error/dark/390: ссылка скрылась после успеха",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "access-error/dark/390: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "access-error/dark/390: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "access-error/dark/390: dialog внутри ширины окна",
+      "ok": true,
+      "detail": "{\"left\":0,\"right\":390,\"top\":0,\"bottom\":720}"
+    },
+    {
+      "name": "access-error/dark/390: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "menu-exit/light/1440: «Выйти из аккаунта» только в меню •••",
+      "ok": true,
+      "detail": "[\"menu\"]"
+    },
+    {
+      "name": "menu-exit/light/1440: меню ••• открыто",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "menu-exit/light/1440: пункт «Выйти из аккаунта»",
+      "ok": true,
+      "detail": "Выйти из аккаунта"
+    },
+    {
+      "name": "menu-exit/light/1440: пункт меню виден",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "menu-exit/light/1440: data-theme=light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "menu-exit/light/1440: фон темы light",
+      "ok": true,
+      "detail": "rgb(245, 244, 248)"
+    },
+    {
+      "name": "menu-exit/light/1440: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "menu-exit/light/1440: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "menu-exit/light/1440: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "menu-exit/dark/1440: «Выйти из аккаунта» только в меню •••",
+      "ok": true,
+      "detail": "[\"menu\"]"
+    },
+    {
+      "name": "menu-exit/dark/1440: меню ••• открыто",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "menu-exit/dark/1440: пункт «Выйти из аккаунта»",
+      "ok": true,
+      "detail": "Выйти из аккаунта"
+    },
+    {
+      "name": "menu-exit/dark/1440: пункт меню виден",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "menu-exit/dark/1440: data-theme=dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "menu-exit/dark/1440: фон темы dark",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "menu-exit/dark/1440: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "menu-exit/dark/1440: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "1440/1440"
+    },
+    {
+      "name": "menu-exit/dark/1440: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "menu-exit/light/390: «Выйти из аккаунта» только в меню •••",
+      "ok": true,
+      "detail": "[\"menu\"]"
+    },
+    {
+      "name": "menu-exit/light/390: меню ••• открыто",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "menu-exit/light/390: пункт «Выйти из аккаунта»",
+      "ok": true,
+      "detail": "Выйти из аккаунта"
+    },
+    {
+      "name": "menu-exit/light/390: пункт меню виден",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "menu-exit/light/390: data-theme=light",
+      "ok": true,
+      "detail": "light"
+    },
+    {
+      "name": "menu-exit/light/390: фон темы light",
+      "ok": true,
+      "detail": "rgb(245, 244, 248)"
+    },
+    {
+      "name": "menu-exit/light/390: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "menu-exit/light/390: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "menu-exit/light/390: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "menu-exit/dark/390: «Выйти из аккаунта» только в меню •••",
+      "ok": true,
+      "detail": "[\"menu\"]"
+    },
+    {
+      "name": "menu-exit/dark/390: меню ••• открыто",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "menu-exit/dark/390: пункт «Выйти из аккаунта»",
+      "ok": true,
+      "detail": "Выйти из аккаунта"
+    },
+    {
+      "name": "menu-exit/dark/390: пункт меню виден",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "menu-exit/dark/390: data-theme=dark",
+      "ok": true,
+      "detail": "dark"
+    },
+    {
+      "name": "menu-exit/dark/390: фон темы dark",
+      "ok": true,
+      "detail": "rgb(22, 21, 26)"
+    },
+    {
+      "name": "menu-exit/dark/390: documentElement.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "menu-exit/dark/390: body.scrollWidth == innerWidth",
+      "ok": true,
+      "detail": "390/390"
+    },
+    {
+      "name": "menu-exit/dark/390: консоль без ошибок",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "problems": [],
+  "snapshots": {
+    "empty/light/1440": {
+      "theme": "light",
+      "bg": "rgb(245, 244, 248)",
+      "docScroll": 1440,
+      "bodyScroll": 1440,
+      "innerWidth": 1440,
+      "dialog": null,
+      "plus": {
+        "display": "flex",
+        "alignItems": "center",
+        "iconCenter": 169,
+        "titleCenter": 169,
+        "tileCenter": 169,
+        "iconHeight": 38,
+        "titleHeight": 22
+      }
+    },
+    "empty/dark/1440": {
+      "theme": "dark",
+      "bg": "rgb(22, 21, 26)",
+      "docScroll": 1440,
+      "bodyScroll": 1440,
+      "innerWidth": 1440,
+      "dialog": null,
+      "plus": {
+        "display": "flex",
+        "alignItems": "center",
+        "iconCenter": 169,
+        "titleCenter": 169,
+        "tileCenter": 169,
+        "iconHeight": 38,
+        "titleHeight": 22
+      }
+    },
+    "empty/light/390": {
+      "theme": "light",
+      "bg": "rgb(245, 244, 248)",
+      "docScroll": 390,
+      "bodyScroll": 390,
+      "innerWidth": 390,
+      "dialog": null,
+      "plus": {
+        "display": "flex",
+        "alignItems": "center",
+        "iconCenter": 165.078125,
+        "titleCenter": 165.078125,
+        "tileCenter": 165.078125,
+        "iconHeight": 38,
+        "titleHeight": 22
+      }
+    },
+    "empty/dark/390": {
+      "theme": "dark",
+      "bg": "rgb(22, 21, 26)",
+      "docScroll": 390,
+      "bodyScroll": 390,
+      "innerWidth": 390,
+      "dialog": null,
+      "plus": {
+        "display": "flex",
+        "alignItems": "center",
+        "iconCenter": 165.078125,
+        "titleCenter": 165.078125,
+        "tileCenter": 165.078125,
+        "iconHeight": 38,
+        "titleHeight": 22
+      }
+    },
+    "failed/light/1440": {
+      "theme": "light",
+      "bg": "rgb(245, 244, 248)",
+      "docScroll": 1440,
+      "bodyScroll": 1440,
+      "innerWidth": 1440,
+      "dialog": null,
+      "failure": {
+        "status": "failed",
+        "text": "Не удалось скачать 3 файла Повторить",
+        "hidden": false,
+        "buttonText": "Повторить",
+        "buttonClass": "btn btn--link",
+        "buttonData": "resume",
+        "errorText": "Проверьте подключение и запустите ещё раз — уже скачанные файлы повторно не скачиваются. Не скачались: 3 Видео/a.mp4Видео/b.mp4Видео/c.mp4 Скопировать список"
+      }
+    },
+    "failed/dark/1440": {
+      "theme": "dark",
+      "bg": "rgb(22, 21, 26)",
+      "docScroll": 1440,
+      "bodyScroll": 1440,
+      "innerWidth": 1440,
+      "dialog": null,
+      "failure": {
+        "status": "failed",
+        "text": "Не удалось скачать 3 файла Повторить",
+        "hidden": false,
+        "buttonText": "Повторить",
+        "buttonClass": "btn btn--link",
+        "buttonData": "resume",
+        "errorText": "Проверьте подключение и запустите ещё раз — уже скачанные файлы повторно не скачиваются. Не скачались: 3 Видео/a.mp4Видео/b.mp4Видео/c.mp4 Скопировать список"
+      }
+    },
+    "failed/light/390": {
+      "theme": "light",
+      "bg": "rgb(245, 244, 248)",
+      "docScroll": 390,
+      "bodyScroll": 390,
+      "innerWidth": 390,
+      "dialog": null,
+      "failure": {
+        "status": "failed",
+        "text": "Не удалось скачать 3 файла Повторить",
+        "hidden": false,
+        "buttonText": "Повторить",
+        "buttonClass": "btn btn--link",
+        "buttonData": "resume",
+        "errorText": "Проверьте подключение и запустите ещё раз — уже скачанные файлы повторно не скачиваются. Не скачались: 3 Видео/a.mp4Видео/b.mp4Видео/c.mp4 Скопировать список"
+      }
+    },
+    "failed/dark/390": {
+      "theme": "dark",
+      "bg": "rgb(22, 21, 26)",
+      "docScroll": 390,
+      "bodyScroll": 390,
+      "innerWidth": 390,
+      "dialog": null,
+      "failure": {
+        "status": "failed",
+        "text": "Не удалось скачать 3 файла Повторить",
+        "hidden": false,
+        "buttonText": "Повторить",
+        "buttonClass": "btn btn--link",
+        "buttonData": "resume",
+        "errorText": "Проверьте подключение и запустите ещё раз — уже скачанные файлы повторно не скачиваются. Не скачались: 3 Видео/a.mp4Видео/b.mp4Видео/c.mp4 Скопировать список"
+      }
+    },
+    "interrupted/light/1440": {
+      "theme": "light",
+      "bg": "rgb(245, 244, 248)",
+      "docScroll": 1440,
+      "bodyScroll": 1440,
+      "innerWidth": 1440,
+      "dialog": null,
+      "failure": {
+        "status": "interrupted",
+        "text": "Скачивание прервалось Повторить",
+        "hidden": false,
+        "buttonText": "Повторить",
+        "color": "rgb(130, 83, 25)"
+      }
+    },
+    "interrupted/dark/1440": {
+      "theme": "dark",
+      "bg": "rgb(22, 21, 26)",
+      "docScroll": 1440,
+      "bodyScroll": 1440,
+      "innerWidth": 1440,
+      "dialog": null,
+      "failure": {
+        "status": "interrupted",
+        "text": "Скачивание прервалось Повторить",
+        "hidden": false,
+        "buttonText": "Повторить",
+        "color": "rgb(236, 198, 142)"
+      }
+    },
+    "interrupted/light/390": {
+      "theme": "light",
+      "bg": "rgb(245, 244, 248)",
+      "docScroll": 390,
+      "bodyScroll": 390,
+      "innerWidth": 390,
+      "dialog": null,
+      "failure": {
+        "status": "interrupted",
+        "text": "Скачивание прервалось Повторить",
+        "hidden": false,
+        "buttonText": "Повторить",
+        "color": "rgb(130, 83, 25)"
+      }
+    },
+    "interrupted/dark/390": {
+      "theme": "dark",
+      "bg": "rgb(22, 21, 26)",
+      "docScroll": 390,
+      "bodyScroll": 390,
+      "innerWidth": 390,
+      "dialog": null,
+      "failure": {
+        "status": "interrupted",
+        "text": "Скачивание прервалось Повторить",
+        "hidden": false,
+        "buttonText": "Повторить",
+        "color": "rgb(236, 198, 142)"
+      }
+    },
+    "settings/light/1440": {
+      "theme": "light",
+      "bg": "rgb(245, 244, 248)",
+      "docScroll": 1440,
+      "bodyScroll": 1440,
+      "innerWidth": 1440,
+      "dialog": {
+        "left": 490,
+        "right": 950,
+        "top": 265,
+        "bottom": 635
+      },
+      "settings": {
+        "open": true,
+        "text": "Настройки Логин artem Доступ Доступно Проверить Войти заново Занято на Яндекс Диске 100 из 200 ГБ Свободно на Umbrel 900 ГБ из 2 ТБ Папка назначения: /downloads Проверить",
+        "hasMethod": false,
+        "hasChecked": false,
+        "hasActions": false,
+        "hasDanger": false,
+        "buttons": [
+          {
+            "id": "account-probe",
+            "text": "Проверить",
+            "hidden": true,
+            "cls": "btn btn--link"
+          },
+          {
+            "id": "account-server-probe",
+            "text": "Проверить",
+            "hidden": false,
+            "cls": "btn btn--link"
+          }
+        ],
+        "statusText": "Доступно",
+        "statusClass": "status-pill status-pill--ok",
+        "probeHidden": true,
+        "probeText": "Проверить",
+        "probeClass": "btn btn--link",
+        "serverHidden": false,
+        "serverText": "Проверить",
+        "serverClass": "btn btn--link",
+        "reconnectHidden": true,
+        "disk": "100 из 200 ГБ",
+        "server": "900 ГБ из 2 ТБ",
+        "probeResultHidden": true
+      },
+      "probe": {
+        "disk": "102 из 200 ГБ",
+        "server": "905 ГБ из 2 ТБ",
+        "resultHidden": false,
+        "resultText": "Доступ есть. Занято 102 ГБ из 200 ГБ"
+      }
+    },
+    "settings/dark/1440": {
+      "theme": "dark",
+      "bg": "rgb(22, 21, 26)",
+      "docScroll": 1440,
+      "bodyScroll": 1440,
+      "innerWidth": 1440,
+      "dialog": {
+        "left": 490,
+        "right": 950,
+        "top": 265,
+        "bottom": 635
+      },
+      "settings": {
+        "open": true,
+        "text": "Настройки Логин artem Доступ Доступно Проверить Войти заново Занято на Яндекс Диске 100 из 200 ГБ Свободно на Umbrel 900 ГБ из 2 ТБ Папка назначения: /downloads Проверить",
+        "hasMethod": false,
+        "hasChecked": false,
+        "hasActions": false,
+        "hasDanger": false,
+        "buttons": [
+          {
+            "id": "account-probe",
+            "text": "Проверить",
+            "hidden": true,
+            "cls": "btn btn--link"
+          },
+          {
+            "id": "account-server-probe",
+            "text": "Проверить",
+            "hidden": false,
+            "cls": "btn btn--link"
+          }
+        ],
+        "statusText": "Доступно",
+        "statusClass": "status-pill status-pill--ok",
+        "probeHidden": true,
+        "probeText": "Проверить",
+        "probeClass": "btn btn--link",
+        "serverHidden": false,
+        "serverText": "Проверить",
+        "serverClass": "btn btn--link",
+        "reconnectHidden": true,
+        "disk": "100 из 200 ГБ",
+        "server": "900 ГБ из 2 ТБ",
+        "probeResultHidden": true
+      },
+      "probe": {
+        "disk": "102 из 200 ГБ",
+        "server": "905 ГБ из 2 ТБ",
+        "resultHidden": false,
+        "resultText": "Доступ есть. Занято 102 ГБ из 200 ГБ"
+      }
+    },
+    "settings/light/390": {
+      "theme": "light",
+      "bg": "rgb(245, 244, 248)",
+      "docScroll": 390,
+      "bodyScroll": 390,
+      "innerWidth": 390,
+      "dialog": {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 720
+      },
+      "settings": {
+        "open": true,
+        "text": "Настройки Логин artem Доступ Доступно Проверить Войти заново Занято на Яндекс Диске 100 из 200 ГБ Свободно на Umbrel 900 ГБ из 2 ТБ Папка назначения: /downloads Проверить",
+        "hasMethod": false,
+        "hasChecked": false,
+        "hasActions": false,
+        "hasDanger": false,
+        "buttons": [
+          {
+            "id": "account-probe",
+            "text": "Проверить",
+            "hidden": true,
+            "cls": "btn btn--link"
+          },
+          {
+            "id": "account-server-probe",
+            "text": "Проверить",
+            "hidden": false,
+            "cls": "btn btn--link"
+          }
+        ],
+        "statusText": "Доступно",
+        "statusClass": "status-pill status-pill--ok",
+        "probeHidden": true,
+        "probeText": "Проверить",
+        "probeClass": "btn btn--link",
+        "serverHidden": false,
+        "serverText": "Проверить",
+        "serverClass": "btn btn--link",
+        "reconnectHidden": true,
+        "disk": "100 из 200 ГБ",
+        "server": "900 ГБ из 2 ТБ",
+        "probeResultHidden": true
+      },
+      "probe": {
+        "disk": "102 из 200 ГБ",
+        "server": "905 ГБ из 2 ТБ",
+        "resultHidden": false,
+        "resultText": "Доступ есть. Занято 102 ГБ из 200 ГБ"
+      }
+    },
+    "settings/dark/390": {
+      "theme": "dark",
+      "bg": "rgb(22, 21, 26)",
+      "docScroll": 390,
+      "bodyScroll": 390,
+      "innerWidth": 390,
+      "dialog": {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 720
+      },
+      "settings": {
+        "open": true,
+        "text": "Настройки Логин artem Доступ Доступно Проверить Войти заново Занято на Яндекс Диске 100 из 200 ГБ Свободно на Umbrel 900 ГБ из 2 ТБ Папка назначения: /downloads Проверить",
+        "hasMethod": false,
+        "hasChecked": false,
+        "hasActions": false,
+        "hasDanger": false,
+        "buttons": [
+          {
+            "id": "account-probe",
+            "text": "Проверить",
+            "hidden": true,
+            "cls": "btn btn--link"
+          },
+          {
+            "id": "account-server-probe",
+            "text": "Проверить",
+            "hidden": false,
+            "cls": "btn btn--link"
+          }
+        ],
+        "statusText": "Доступно",
+        "statusClass": "status-pill status-pill--ok",
+        "probeHidden": true,
+        "probeText": "Проверить",
+        "probeClass": "btn btn--link",
+        "serverHidden": false,
+        "serverText": "Проверить",
+        "serverClass": "btn btn--link",
+        "reconnectHidden": true,
+        "disk": "100 из 200 ГБ",
+        "server": "900 ГБ из 2 ТБ",
+        "probeResultHidden": true
+      },
+      "probe": {
+        "disk": "102 из 200 ГБ",
+        "server": "905 ГБ из 2 ТБ",
+        "resultHidden": false,
+        "resultText": "Доступ есть. Занято 102 ГБ из 200 ГБ"
+      }
+    },
+    "needs-auth/light/1440": {
+      "theme": "light",
+      "bg": "rgb(245, 244, 248)",
+      "docScroll": 1440,
+      "bodyScroll": 1440,
+      "innerWidth": 1440,
+      "dialog": {
+        "left": 490,
+        "right": 950,
+        "top": 275,
+        "bottom": 625
+      },
+      "settings": {
+        "statusText": "Ошибка",
+        "statusClass": "status-pill status-pill--error",
+        "pillColor": "rgb(167, 43, 61)",
+        "probeHidden": true,
+        "reconnectHidden": false,
+        "reconnectText": "Войти заново",
+        "reconnectHref": "#/setup",
+        "dialogText": "Настройки Логин artem Доступ Ошибка Проверить Войти заново Занято на Яндекс Диске — Войдите заново, чтобы увидеть занятое место. Свободно на Umbrel 900 ГБ из 2 ТБ Папка назначения: /downloads Проверить"
+      }
+    },
+    "needs-auth/dark/1440": {
+      "theme": "dark",
+      "bg": "rgb(22, 21, 26)",
+      "docScroll": 1440,
+      "bodyScroll": 1440,
+      "innerWidth": 1440,
+      "dialog": {
+        "left": 490,
+        "right": 950,
+        "top": 275,
+        "bottom": 625
+      },
+      "settings": {
+        "statusText": "Ошибка",
+        "statusClass": "status-pill status-pill--error",
+        "pillColor": "rgb(255, 156, 169)",
+        "probeHidden": true,
+        "reconnectHidden": false,
+        "reconnectText": "Войти заново",
+        "reconnectHref": "#/setup",
+        "dialogText": "Настройки Логин artem Доступ Ошибка Проверить Войти заново Занято на Яндекс Диске — Войдите заново, чтобы увидеть занятое место. Свободно на Umbrel 900 ГБ из 2 ТБ Папка назначения: /downloads Проверить"
+      }
+    },
+    "needs-auth/light/390": {
+      "theme": "light",
+      "bg": "rgb(245, 244, 248)",
+      "docScroll": 390,
+      "bodyScroll": 390,
+      "innerWidth": 390,
+      "dialog": {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 720
+      },
+      "settings": {
+        "statusText": "Ошибка",
+        "statusClass": "status-pill status-pill--error",
+        "pillColor": "rgb(167, 43, 61)",
+        "probeHidden": true,
+        "reconnectHidden": false,
+        "reconnectText": "Войти заново",
+        "reconnectHref": "#/setup",
+        "dialogText": "Настройки Логин artem Доступ Ошибка Проверить Войти заново Занято на Яндекс Диске — Войдите заново, чтобы увидеть занятое место. Свободно на Umbrel 900 ГБ из 2 ТБ Папка назначения: /downloads Проверить"
+      }
+    },
+    "needs-auth/dark/390": {
+      "theme": "dark",
+      "bg": "rgb(22, 21, 26)",
+      "docScroll": 390,
+      "bodyScroll": 390,
+      "innerWidth": 390,
+      "dialog": {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 720
+      },
+      "settings": {
+        "statusText": "Ошибка",
+        "statusClass": "status-pill status-pill--error",
+        "pillColor": "rgb(255, 156, 169)",
+        "probeHidden": true,
+        "reconnectHidden": false,
+        "reconnectText": "Войти заново",
+        "reconnectHref": "#/setup",
+        "dialogText": "Настройки Логин artem Доступ Ошибка Проверить Войти заново Занято на Яндекс Диске — Войдите заново, чтобы увидеть занятое место. Свободно на Umbrel 900 ГБ из 2 ТБ Папка назначения: /downloads Проверить"
+      }
+    },
+    "access-error/light/1440": {
+      "theme": "light",
+      "bg": "rgb(245, 244, 248)",
+      "docScroll": 1440,
+      "bodyScroll": 1440,
+      "innerWidth": 1440,
+      "dialog": {
+        "left": 490,
+        "right": 950,
+        "top": 265,
+        "bottom": 635
+      },
+      "before": {
+        "statusText": "Ошибка",
+        "probeHidden": false,
+        "probeText": "Проверить",
+        "probeClass": "btn btn--link"
+      },
+      "after": {
+        "statusText": "Доступно",
+        "probeHidden": true
+      }
+    },
+    "access-error/dark/1440": {
+      "theme": "dark",
+      "bg": "rgb(22, 21, 26)",
+      "docScroll": 1440,
+      "bodyScroll": 1440,
+      "innerWidth": 1440,
+      "dialog": {
+        "left": 490,
+        "right": 950,
+        "top": 265,
+        "bottom": 635
+      },
+      "before": {
+        "statusText": "Ошибка",
+        "probeHidden": false,
+        "probeText": "Проверить",
+        "probeClass": "btn btn--link"
+      },
+      "after": {
+        "statusText": "Доступно",
+        "probeHidden": true
+      }
+    },
+    "access-error/light/390": {
+      "theme": "light",
+      "bg": "rgb(245, 244, 248)",
+      "docScroll": 390,
+      "bodyScroll": 390,
+      "innerWidth": 390,
+      "dialog": {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 720
+      },
+      "before": {
+        "statusText": "Ошибка",
+        "probeHidden": false,
+        "probeText": "Проверить",
+        "probeClass": "btn btn--link"
+      },
+      "after": {
+        "statusText": "Доступно",
+        "probeHidden": true
+      }
+    },
+    "access-error/dark/390": {
+      "theme": "dark",
+      "bg": "rgb(22, 21, 26)",
+      "docScroll": 390,
+      "bodyScroll": 390,
+      "innerWidth": 390,
+      "dialog": {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 720
+      },
+      "before": {
+        "statusText": "Ошибка",
+        "probeHidden": false,
+        "probeText": "Проверить",
+        "probeClass": "btn btn--link"
+      },
+      "after": {
+        "statusText": "Доступно",
+        "probeHidden": true
+      }
+    },
+    "menu-exit/light/1440": {
+      "theme": "light",
+      "bg": "rgb(245, 244, 248)",
+      "docScroll": 1440,
+      "bodyScroll": 1440,
+      "innerWidth": 1440,
+      "dialog": null,
+      "menu": {
+        "open": true,
+        "text": "Выйти из аккаунта",
+        "visible": true
+      }
+    },
+    "menu-exit/dark/1440": {
+      "theme": "dark",
+      "bg": "rgb(22, 21, 26)",
+      "docScroll": 1440,
+      "bodyScroll": 1440,
+      "innerWidth": 1440,
+      "dialog": null,
+      "menu": {
+        "open": true,
+        "text": "Выйти из аккаунта",
+        "visible": true
+      }
+    },
+    "menu-exit/light/390": {
+      "theme": "light",
+      "bg": "rgb(245, 244, 248)",
+      "docScroll": 390,
+      "bodyScroll": 390,
+      "innerWidth": 390,
+      "dialog": null,
+      "menu": {
+        "open": true,
+        "text": "Выйти из аккаунта",
+        "visible": true
+      }
+    },
+    "menu-exit/dark/390": {
+      "theme": "dark",
+      "bg": "rgb(22, 21, 26)",
+      "docScroll": 390,
+      "bodyScroll": 390,
+      "innerWidth": 390,
+      "dialog": null,
+      "menu": {
+        "open": true,
+        "text": "Выйти из аккаунта",
+        "visible": true
+      }
+    }
+  }
+}

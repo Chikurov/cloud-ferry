@@ -38,6 +38,30 @@ SYSTEM = {
             'available': True, 'stale': False, 'updatedAt': '2026-11-15T12:00:00Z'},
 }
 
+def scenario_state():
+    base = json.loads(json.dumps(STATE))
+    if os.environ.get('MOCK_EMPTY') == '1':
+        base['accounts'] = []; base['jobs'] = []
+        return base
+    scenario = os.environ.get('MOCK_SCENARIO', 'running')
+    job = base['jobs'][0]
+    if scenario == 'paused':
+        job['status'] = 'paused'
+        job['stats'] = {k: v for k, v in job.get('stats', {}).items() if k in ('bytes', 'totalBytes', 'transfers', 'totalTransfers')}
+        job['stats'].pop('speed', None); job['stats'].pop('eta', None)
+    elif scenario == 'done':
+        job['status'] = 'done'
+        job['stats'] = {'bytes': 13212057600, 'totalBytes': 13212057600, 'transfers': 12418, 'totalTransfers': 12418}
+        job['check'] = {'hashType': 'md5', 'matched': 12415, 'differ': 2, 'missingOnDst': 1, 'broken': 0,
+                        'checkedAt': '2026-11-18T20:40:00Z'}
+    elif scenario == 'error':
+        job['status'] = 'failed'
+        job['errorTitle'] = 'Не удалось скачать часть файлов'
+        job['errorAdvice'] = 'Проверьте подключение и запустите ещё раз — уже скачанные файлы повторно не скачиваются.'
+        job['error'] = 'rclone: too many errors'
+        job['stats'] = {'bytes': 4200000000, 'totalBytes': 13212057600, 'transfers': 400, 'totalTransfers': 12418, 'errors': 3}
+    return base
+
 def folder_payload(path):
     items = CLOUD.get(path)
     if items is None:
@@ -75,10 +99,7 @@ class H(BaseHTTPRequestHandler):
         if p == '/app.js':
             return self._file('app.js', 'application/javascript')
         if p == '/api/state':
-            if os.environ.get('MOCK_EMPTY') == '1':
-                empty = dict(STATE); empty['accounts'] = []; empty['jobs'] = []
-                return self._send(200, empty)
-            return self._send(200, STATE)
+            return self._send(200, scenario_state())
         if p == '/api/system':
             return self._send(200, SYSTEM)
         if p in ('/api/healthz', '/api/readyz'):

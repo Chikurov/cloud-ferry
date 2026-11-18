@@ -221,15 +221,14 @@
     </div>
   </dialog>
 
-  <!-- П3 «Аккаунт и место»: панель, а не отдельный экран. Логин, способ входа,
-       доступ, занятое на Диске и свободное на сервере — в одном месте.
-       Опасный «Выйти» отделён внизу и подтверждается отдельным диалогом. -->
+  <!-- П3 «Аккаунт и место»: панель, а не отдельный экран. Логин, доступ,
+       занятое на Диске и свободное на сервере — в одном месте.
+       Выход из аккаунта живёт только в меню «•••» на главном экране; внизу
+       панели кнопок нет. -->
   <dialog id="account-dialog" class="modal modal--account" role="dialog" aria-modal="true" aria-labelledby="account-title">
     <div class="modal-head">
       <div class="modal-heading">
-        
         <h2 class="modal-title" id="account-title" tabindex="-1">Настройки</h2>
-        
       </div>
       <button class="btn btn--ghost btn--icon" type="button" data-dialog-close aria-label="Закрыть">
         <svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11m0-11-11 11"/></svg>
@@ -243,14 +242,11 @@
           <dd id="account-login">—</dd>
         </div>
         <div class="account-fact">
-          <dt>Способ входа</dt>
-          <dd id="account-method">—</dd>
-        </div>
-        <div class="account-fact">
           <dt>Доступ</dt>
           <dd class="account-access">
             <span id="account-status"></span>
-            <span class="account-checked" id="account-checked">не проверялось</span>
+            <button class="btn btn--link" type="button" id="account-probe" hidden>Проверить</button>
+            <a class="btn btn--link" id="account-reconnect" href="#/setup" hidden>Войти заново</a>
           </dd>
         </div>
       </dl>
@@ -269,16 +265,14 @@
           <h3 class="account-server-title" id="account-server-title">Свободно на Umbrel</h3>
           <span class="account-server-value" id="account-server-value">—</span>
         </div>
-        <p class="account-server-note" id="account-server-note">Куда сохраняются файлы: /downloads</p>
+        <div class="account-server-foot">
+          <p class="account-server-note" id="account-server-note">Куда сохраняются файлы: /downloads</p>
+          <button class="btn btn--link" type="button" id="account-server-probe">Проверить</button>
+        </div>
       </section>
 
-      <div class="account-actions">
-        <button class="btn btn--primary" type="button" id="account-probe">Проверить</button>
-        
-      </div>
       <p class="account-probe-result" id="account-probe-result" role="status" aria-live="polite" hidden></p>
     </div>
-
   </dialog>
 
   <div id="toasts" class="toasts"></div>
