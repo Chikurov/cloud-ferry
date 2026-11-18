@@ -21,7 +21,7 @@ REPO := $(patsubst ghcr.io/%,%,$(IMAGE))
 # image tag 0.3.1 -> manifest version "0.3.1" -> compose
 # cloud-ferry:0.3.1@sha256:<manifest-list digest>.
 # The version is changed by `make set-version VERSION=x.y.z`, never by hand.
-TAG ?= 0.4.0
+TAG ?= 0.5.0
 PLATFORMS ?= linux/amd64,linux/arm64
 RCLONE_IMAGE := rclone/rclone:1.76.0@sha256:7cbeec24a44f206067597c0368be4de90ae19a64d5113c7d1938bd737a81e466
 TAG_RE := $(subst .,\.,$(TAG))

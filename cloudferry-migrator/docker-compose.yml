@@ -14,7 +14,7 @@ services:
     # `make digest` or the publish CI job; pin it with `make pin-digest`.
     # A zero digest means "never published" and is not installable:
     # `make check-version` and the release-tag CI job fail on it.
-    image: ghcr.io/chikurov/cloud-ferry:0.4.0@sha256:3edd610463ff923a3c3182063dcc3c16802faeae5105045f3e3e8c8bc5d3d898
+    image: ghcr.io/chikurov/cloud-ferry:0.5.0@sha256:da99f63b759108f628fc3aa29e7705418d7160dafb407c061cc3d36ab7d07525
     restart: on-failure
     init: true
     user: "1000:1000"
