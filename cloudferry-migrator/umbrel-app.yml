@@ -6,25 +6,13 @@ folderAccess:
   - id: umbrel-downloads
     name: Downloads
     note: >-
-      Куда сохранять файлы по умолчанию. Для больших объёмов выберите папку
-      на USB-диске во втором слоте: папки в Home попадают в резервные копии,
-      внешний диск — нет.
+      Куда сохранять файлы. Для больших объёмов выберите папку на USB-диске:
+      папки в Home попадают в резервные копии, внешний диск — нет.
     mounts:
       - service: api
         targetPath: /downloads
       - service: rclone
         targetPath: /downloads
-  - id: destination
-    name: Папка для скачивания (необязательно)
-    note: >-
-      Если выбрали эту папку, укажите /destination в поле «На сервере».
-    mounts:
-      - service: api
-        targetPath: /destination
-        readOnly: false
-      - service: rclone
-        targetPath: /destination
-        readOnly: false
 environment:
   - name: CLOUDFERRY_TRANSFERS
     services:

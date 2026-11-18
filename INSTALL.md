@@ -229,8 +229,8 @@ make lint-images UMBREL_APPS=/tmp/umbrel-apps
 2. На Umbrel: **App Store → ⋮ → Community App Stores → Add → URL**
    `https://github.com/chikurov/cloud-ferry`.
 3. В добавленном магазине появится **Cloud Ferry 0.3.1**; **Install**.
-4. В настройках приложения выберите папку назначения (**Downloads** по
-   умолчанию, второй слот — необязательная папка `/destination`).
+4. В настройках приложения оставьте папку **Downloads** — приложение
+   сохраняет файлы в неё (внутри можно выбрать любую подпапку).
 5. Откройте приложение на `http://umbrel.local:8741` и подключите Яндекс Диск
    (способы — в README).
 
