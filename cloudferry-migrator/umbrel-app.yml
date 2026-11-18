@@ -38,7 +38,7 @@ environment:
       публикуйте его: если приложение заблокируют в Яндексе, вход сломается у всех.
 category: files
 name: Cloud Ferry
-version: "0.3.2"
+version: "0.4.0"
 tagline: Скачивание файлов из облака на ваш Umbrel
 description: >-
   Скачивает файлы из облака на ваш Umbrel и показывает прогресс.
