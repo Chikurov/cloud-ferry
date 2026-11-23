@@ -1,5 +1,4 @@
-GOCACHE ?= $(CURDIR)/.gocache
-GOMODCACHE ?= $(CURDIR)/.gomodcache
+# Go uses system cache directories outside the project.
 
 MANIFEST := cloudferry-migrator/umbrel-app.yml
 COMPOSE := cloudferry-migrator/docker-compose.yml
@@ -34,6 +33,7 @@ IMAGE_CHECK ?= 1
 .PHONY: help fmt vet test build run docker docker-push digest pin-digest set-owner set-version owner check-version check-image release-tag lint lint-images
 
 help:
+	@echo "make archive        source ZIP without cache, binaries or local data"
 	@echo "make test           unit tests with the race detector, no network and no rclone"
 	@echo "make build          binary in bin/cloudferry"
 	@echo "make run            run locally, rclone is spawned (SPAWN_RCLONE=true)"
@@ -53,13 +53,13 @@ fmt:
 	gofmt -w ./cmd ./internal
 
 vet:
-	GOCACHE=$(GOCACHE) GOMODCACHE=$(GOMODCACHE) go vet ./...
+	go vet ./...
 
 test:
-	GOCACHE=$(GOCACHE) GOMODCACHE=$(GOMODCACHE) go test -race -count=1 ./...
+	go test -race -count=1 ./...
 
 build:
-	GOCACHE=$(GOCACHE) GOMODCACHE=$(GOMODCACHE) go build -o bin/cloudferry ./cmd/cloudferry
+	go build -o bin/cloudferry ./cmd/cloudferry
 
 run: build
 	DATA_DIR=./.devdata \
@@ -267,3 +267,7 @@ lint:
 lint-images:
 	@test -n "$(UMBREL_APPS)" || { echo "error: set UMBREL_APPS=/path/to/umbrel-apps (clone + npm ci), see Makefile" >&2; exit 1; }
 	cd "$(UMBREL_APPS)" && npm run lint:apps -- cloudferry-migrator --root "$(CURDIR)" --check-images
+
+.PHONY: archive
+archive:
+	python3 scripts/archive.py

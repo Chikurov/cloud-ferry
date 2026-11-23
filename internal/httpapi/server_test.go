@@ -492,7 +492,7 @@ func TestProbeReportsListingWarning(t *testing.T) {
 	}
 }
 
-func TestStopReturnsWarningWhenRcloneFails(t *testing.T) {
+func TestStopReturnsErrorWhenRcloneFails(t *testing.T) {
 	server, _, engine := newTestServer(t)
 	_, created := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/accounts", map[string]any{
 		"name": "Яндекс", "provider": "yandex-token", "token": `{"access_token":"x"}`,
@@ -505,11 +505,11 @@ func TestStopReturnsWarningWhenRcloneFails(t *testing.T) {
 	engine.errors = map[string]error{"job/stop": errors.New("rclone is down")}
 
 	resp, body := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/jobs/"+jobID+"/stop", nil)
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusBadGateway {
 		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
 	}
-	if warning, _ := body["warning"].(string); warning == "" {
-		t.Fatalf("expected warning, body = %v", body)
+	if warning, _ := body["error"].(string); warning == "" {
+		t.Fatalf("expected error, body = %v", body)
 	}
 }
 

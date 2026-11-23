@@ -1,7 +1,7 @@
 # Cloud Ferry — интеграция дизайна v3 с backend
 
 Дата: 18 ноября 2026.
-Источник дизайна: `/Users/artemcikurov/Downloads/cloud-ferry-ui/internal/httpapi/web/{index.html,style.css,app.js}`.
+Источник дизайна: локальная копия UI (`internal/httpapi/web/{index.html,style.css,app.js}`).
 Предыдущие файлы сохранены без изменений в `agent-work/legacy-web/` (эталон).
 Новый интерфейс развёрнут в `internal/httpapi/web/` (три файла заменены). Go-код не менялся.
 

@@ -497,7 +497,7 @@ func TestFailedJobStoresFileList(t *testing.T) {
 	}
 }
 
-func TestStopFallsBackToLocalCancel(t *testing.T) {
+func TestStopKeepsRunningWhenEngineUnreachable(t *testing.T) {
 	manager, fake, st := newTestManager(t)
 	fake.errors = map[string]error{"job/stop": errors.New("connection refused")}
 	if err := st.AddJob(store.Job{
@@ -507,15 +507,11 @@ func TestStopFallsBackToLocalCancel(t *testing.T) {
 		t.Fatalf("add job: %v", err)
 	}
 
-	warning, err := manager.Stop(context.Background(), "j1")
-	if err != nil {
-		t.Fatalf("stop: %v", err)
-	}
-	if warning == "" {
-		t.Fatal("expected a warning about rclone")
+	if _, err := manager.Stop(context.Background(), "j1"); err == nil {
+		t.Fatal("expected stop failure")
 	}
 	stored, _ := st.Job("j1")
-	if stored.Status != store.StatusCanceled {
+	if stored.Status != store.StatusRunning {
 		t.Fatalf("status = %q", stored.Status)
 	}
 }

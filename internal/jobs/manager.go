@@ -102,9 +102,10 @@ func (e *SourceFileError) Unwrap() error { return ErrSourceFileNotFound }
 // preserved inside Dest; Files lists individual files picked alongside the
 // folders. Paths and Files win over Path when set.
 type Source struct {
-	Path  string
-	Paths []string
-	Files []string
+	Path     string
+	Paths    []string
+	Files    []string
+	Excluded []string
 }
 
 // selectedPaths returns the cloud folders that need verification.
@@ -164,6 +165,9 @@ func FileIncludeRules(files []string) []string {
 // SourceFS returns the rclone srcFs for a source and, for a folder or file
 // selection, the _filter block that restricts the transfer to it.
 func SourceFS(remote string, src Source) (string, map[string]any) {
+	if len(src.Excluded) > 0 {
+		return remote + ":", map[string]any{"ExcludeRule": IncludeRules(src.Excluded)}
+	}
 	if len(src.Paths) > 0 || len(src.Files) > 0 {
 		rules := make([]string, 0, len(src.Paths)+len(src.Files))
 		rules = append(rules, IncludeRules(src.Paths)...)
@@ -273,6 +277,9 @@ func isMissingJob(err error) bool {
 // sourceForJob reconstructs the cloud source of a stored job, including jobs
 // written by older builds that only have Source.
 func sourceForJob(job store.Job) Source {
+	if len(job.ExcludedFolders) > 0 {
+		return Source{Excluded: slices.Clone(job.ExcludedFolders)}
+	}
 	if len(job.SourcePaths) > 0 || len(job.SourceFiles) > 0 {
 		return Source{
 			Paths: append([]string(nil), job.SourcePaths...),
@@ -520,7 +527,7 @@ func (m *Manager) claimDest(dst string, reserve func() error) error {
 
 // sameSource reports whether two cloud selections pick the same items.
 func sameSource(a, b Source) bool {
-	return a.Path == b.Path && slices.Equal(a.Paths, b.Paths) && slices.Equal(a.Files, b.Files)
+	return a.Path == b.Path && slices.Equal(a.Paths, b.Paths) && slices.Equal(a.Files, b.Files) && slices.Equal(a.Excluded, b.Excluded)
 }
 
 // idempotentJob finds the job a key already stands for. A job older than
@@ -536,7 +543,11 @@ func (m *Manager) idempotentJob(accountID string, src Source, dstPath, mode, key
 		if now.Sub(existing.CreatedAt) > idempotencyWindow {
 			continue
 		}
-		if existing.Dest != dstPath || existing.Mode != mode || !sameSource(sourceForJob(existing), src) {
+		createdDest := existing.InitialDest
+		if createdDest == "" {
+			createdDest = existing.Dest
+		}
+		if createdDest != dstPath || existing.Mode != mode || !sameSource(sourceForJob(existing), src) {
 			return store.Job{}, ErrIdempotencyConflict
 		}
 		if unreplayable(existing) {
@@ -601,15 +612,16 @@ func (m *Manager) StartIdempotent(ctx context.Context, account store.Account, sr
 	source, _ := SourceFS(account.Remote, src)
 
 	job = store.Job{
-		ID:             id,
-		AccountID:      account.ID,
-		IdempotencyKey: key,
-		Source:         source,
-		Dest:           dstPath,
-		Mode:           mode,
-		Status:         store.StatusQueued,
-		Group:          newGroup(id),
-		CreatedAt:      time.Now().UTC(),
+		ID:              id,
+		AccountID:       account.ID,
+		IdempotencyKey:  key,
+		ExcludedFolders: slices.Clone(src.Excluded),
+		Source:          source,
+		Dest:            dstPath,
+		Mode:            mode,
+		Status:          store.StatusQueued,
+		Group:           newGroup(id),
+		CreatedAt:       time.Now().UTC(),
 	}
 	if len(src.Paths) > 0 {
 		job.SourcePaths = append([]string(nil), src.Paths...)
@@ -656,7 +668,7 @@ func (m *Manager) StartIdempotent(ctx context.Context, account store.Account, sr
 		case errors.Is(err, errLaunchWindowLost):
 			return store.Job{}, false, err
 		default:
-			m.markFailed(job.ID, err)
+			m.markFailed(job.ID, job.Group, err)
 			return job, false, err
 		}
 	}
@@ -668,6 +680,15 @@ func (m *Manager) StartIdempotent(ctx context.Context, account store.Account, sr
 // Resume continues an interrupted or failed job. It refuses to touch a job that
 // is already running: that would create a second transfer into the same folder.
 func (m *Manager) Resume(ctx context.Context, id string) (store.Job, error) {
+	return m.ResumeTo(ctx, id, "")
+}
+
+// ResumeTo changes the destination only when a new copy attempt is claimed.
+func (m *Manager) ResumeTo(ctx context.Context, id, destination string) (store.Job, error) {
+	if !m.claimCheck(id) {
+		return store.Job{}, ErrConflict
+	}
+	defer m.releaseCheck(id)
 	job, ok := m.store.Job(id)
 	if !ok {
 		return store.Job{}, fmt.Errorf("job %s not found", id)
@@ -702,10 +723,26 @@ func (m *Manager) Resume(ctx context.Context, id string) (store.Job, error) {
 	group := newGroup(id)
 	startedAt := time.Now().UTC()
 	claimed := false
-	err = m.claimDest(job.Dest, func() error {
+	if destination == "" {
+		destination = job.Dest
+	}
+	if destination != job.Dest && job.Mode == "sync" {
+		return store.Job{}, ErrConflict
+	}
+	err = m.claimDest(destination, func() error {
 		if err := m.store.UpdateJob(id, func(j *store.Job) bool {
 			if j.Status != store.StatusFailed && j.Status != store.StatusInterrupted && j.Status != store.StatusCanceled {
 				return false
+			}
+			if j.Group != job.Group {
+				return false
+			}
+			if destination != j.Dest {
+				if j.InitialDest == "" {
+					j.InitialDest = j.Dest
+				}
+				j.Dest = destination
+				j.Stats = store.Stats{}
 			}
 			claimed = true
 			j.Status = store.StatusQueued
@@ -745,6 +782,7 @@ func (m *Manager) Resume(ctx context.Context, id string) (store.Job, error) {
 	}
 
 	job.Group = group
+	job.Dest = destination
 	// A new attempt gets a fresh error grace period: a status error recorded
 	// before the pause must not interrupt the resumed transfer immediately.
 	m.resetStatusError(id)
@@ -755,7 +793,7 @@ func (m *Manager) Resume(ctx context.Context, id string) (store.Job, error) {
 		case errors.Is(err, errLaunchWindowLost):
 			return store.Job{}, err
 		default:
-			m.markFailed(id, err)
+			m.markFailed(id, job.Group, err)
 			return store.Job{}, err
 		}
 	}
@@ -773,7 +811,7 @@ func (m *Manager) launchQueued(ctx context.Context, job store.Job) error {
 	ready := false
 	if err := m.createSerialized(func() error {
 		current, ok := m.store.Job(job.ID)
-		if ok && current.Status == store.StatusQueued {
+		if ok && current.Group == job.Group && current.Status == store.StatusQueued {
 			ready = true
 		}
 		return nil
@@ -788,7 +826,7 @@ func (m *Manager) launchQueued(ctx context.Context, job store.Job) error {
 	if err != nil {
 		return err
 	}
-	if err := m.markRunning(job.ID, rcloneJobID, executeID); err != nil {
+	if err := m.markRunning(job.ID, job.Group, rcloneJobID, executeID); err != nil {
 		// The job is no longer ours: stop the orphan so two transfers do not
 		// write into the same folder.
 		m.stopRclone(context.Background(), rcloneJobID)
@@ -808,18 +846,17 @@ func (m *Manager) Stop(ctx context.Context, id string) (string, error) {
 		return "", ErrConflict
 	}
 
-	var warning string
 	if job.Status == store.StatusRunning && job.RcloneJobID > 0 {
 		callCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
-		if err := m.rc.Call(callCtx, "job/stop", map[string]any{"jobid": job.RcloneJobID}, nil); err != nil {
-			warning = "Скачивание приостановлено, но приложение не получило подтверждение. Если прогресс продолжится, перезапустите Cloud Ferry."
+		if err := m.rc.Call(callCtx, "job/stop", map[string]any{"jobid": job.RcloneJobID}, nil); err != nil && !isMissingJob(err) {
+			return "", fmt.Errorf("confirm stop: %w", err)
 		}
 	}
-	m.resetStatusError(id)
 
+	stopped := false
 	err := m.store.UpdateJob(id, func(j *store.Job) bool {
-		if j.Status != store.StatusRunning && j.Status != store.StatusQueued {
+		if j.Group != job.Group || j.Status != job.Status || j.RcloneJobID != job.RcloneJobID {
 			return false
 		}
 		j.Status = store.StatusCanceled
@@ -827,12 +864,17 @@ func (m *Manager) Stop(ctx context.Context, id string) (string, error) {
 		j.ErrorTitle = ""
 		j.ErrorAdvice = ""
 		j.FinishedAt = time.Now().UTC()
+		stopped = true
 		return true
 	})
 	if err != nil {
-		return warning, err
+		return "", err
 	}
-	return warning, nil
+	if !stopped {
+		return "", ErrConflict
+	}
+	m.resetStatusError(id)
+	return "", nil
 }
 
 func (m *Manager) launch(ctx context.Context, job store.Job) (int64, string, error) {
@@ -848,7 +890,11 @@ func (m *Manager) launch(ctx context.Context, job store.Job) (int64, string, err
 	}
 	// Leave a tenth of the destination free: rclone stops gracefully when the
 	// limit is reached instead of failing every remaining file with ENOSPC.
-	if limit, ok := transferLimit(job.Dest); ok {
+	if free, err := disk.Free(job.Dest); err == nil {
+		if free == 0 {
+			return 0, "", errors.New("нет свободного места в папке назначения")
+		}
+		limit, _ := transferLimitForFree(free)
 		config["MaxTransfer"] = limit
 	}
 
@@ -882,9 +928,9 @@ func (m *Manager) launch(ctx context.Context, job store.Job) (int64, string, err
 	return out.JobID, out.ExecuteID, nil
 }
 
-func (m *Manager) markRunning(id string, rcloneJobID int64, executeID string) error {
+func (m *Manager) markRunning(id, group string, rcloneJobID int64, executeID string) error {
 	err := m.store.UpdateJob(id, func(j *store.Job) bool {
-		if j.Status != store.StatusQueued {
+		if j.Group != group || j.Status != store.StatusQueued {
 			return false
 		}
 		j.Status = store.StatusRunning
@@ -896,23 +942,25 @@ func (m *Manager) markRunning(id string, rcloneJobID int64, executeID string) er
 		return err
 	}
 	current, ok := m.store.Job(id)
-	if !ok || current.Status != store.StatusRunning || current.RcloneJobID != rcloneJobID {
+	if !ok || current.Group != group || current.Status != store.StatusRunning || current.RcloneJobID != rcloneJobID {
 		return ErrConflict
 	}
 	return nil
 }
 
-func (m *Manager) markFailed(id string, cause error) {
+func (m *Manager) markFailed(id, group string, cause error) {
 	m.resetStatusError(id)
 	if err := m.store.UpdateJob(id, func(j *store.Job) bool {
 		// A user's stop or an already finished result must not be rewritten by
 		// a late launch error.
-		if j.Status != store.StatusQueued && j.Status != store.StatusRunning {
+		if j.Group != group || j.Status != store.StatusQueued {
 			return false
 		}
 		// Nothing was transferred, so there is nothing to replay: drop the
 		// client key and let a retry start the download again.
-		j.IdempotencyKey = ""
+		if j.InitialDest == "" {
+			j.IdempotencyKey = ""
+		}
 		j.Status = store.StatusFailed
 		j.Error = cause.Error()
 		applyHint(j)
@@ -1164,6 +1212,10 @@ func (m *Manager) markInterrupted(id, reason string) {
 // expensive and repeating it would overwrite the stored result; Resume clears
 // the result, so the next attempt can be checked again.
 func (m *Manager) Check(ctx context.Context, id string) (store.CheckResult, error) {
+	if !m.claimCheck(id) {
+		return store.CheckResult{}, ErrConflict
+	}
+	defer m.releaseCheck(id)
 	job, ok := m.store.Job(id)
 	if !ok {
 		return store.CheckResult{}, fmt.Errorf("job %s not found", id)
@@ -1176,10 +1228,6 @@ func (m *Manager) Check(ctx context.Context, id string) (store.CheckResult, erro
 	if job.Check != nil {
 		return store.CheckResult{}, ErrConflict
 	}
-	if !m.claimCheck(id) {
-		return store.CheckResult{}, ErrConflict
-	}
-	defer m.releaseCheck(id)
 
 	req := map[string]any{
 		"dstFs":        job.Dest,

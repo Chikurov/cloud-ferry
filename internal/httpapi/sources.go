@@ -87,6 +87,22 @@ func parseSources(sourcePath string, sourcePaths, sourceFiles *[]string) (jobs.S
 	return jobs.Source{Paths: paths, Files: files}, nil
 }
 
+func parseSelection(path string, paths, files *[]string, excluded []string) (jobs.Source, error) {
+	src, err := parseSources(path, paths, files)
+	if err != nil || len(excluded) == 0 {
+		return src, err
+	}
+	if src.Path != "" || len(src.Paths) > 0 || len(src.Files) > 0 {
+		return jobs.Source{}, &sourceFieldError{"excludedFolders", "Исключения применяются к целому диску."}
+	}
+	roots, err := normalizeSourcePaths(excluded)
+	if err != nil {
+		return jobs.Source{}, &sourceFieldError{"excludedFolders", err.Error()}
+	}
+	src.Excluded = roots
+	return src, nil
+}
+
 // normalizeSourcePaths validates every path, drops duplicates, then sorts the
 // list and drops descendants of selected ancestors: selecting "Фото" already
 // covers "Фото/2024", so the shorter path wins.

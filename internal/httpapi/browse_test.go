@@ -90,6 +90,28 @@ func getJSON(t *testing.T, server *httptest.Server, path string) (*http.Response
 	return doJSON(t, server.Client(), http.MethodGet, server.URL+path, nil)
 }
 
+func TestFSDirsReadOnly(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root bypasses directory mode")
+	}
+	root := t.TempDir()
+	locked := filepath.Join(root, "locked")
+	mkdirAll(t, locked)
+	if err := os.Chmod(locked, 0o555); err != nil {
+		t.Fatalf("chmod: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(locked, 0o755) })
+
+	_, server, _ := newRootedServer(t, []string{root}, root)
+	resp, body := getJSON(t, server, "/api/fs/dirs?path="+url.QueryEscape(locked))
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, body = %v", resp.StatusCode, body)
+	}
+	if body["writable"] != false {
+		t.Fatalf("writable = %v", body["writable"])
+	}
+}
+
 func TestFSDirsAndFoldersAliasShareResponse(t *testing.T) {
 	root := t.TempDir()
 	mkdirAll(t, filepath.Join(root, "Фото"))

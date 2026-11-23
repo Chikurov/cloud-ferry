@@ -10,3 +10,12 @@ cloudferry-migrator
 .release-prep-tmp
 .DS_Store
 *.md
+
+agent-work
+__MACOSX
+**/.DS_Store
+**/._*
+*.zip
+preview.html
+.env
+.env.*
