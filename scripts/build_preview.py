@@ -27,6 +27,22 @@ DEMO_DIALOG = (
     '<button class="btn btn--quiet">Назад</button></form></dialog>'
 )
 
+# Screenshot helpers only: force theme via localStorage before product theme.js,
+# and mark capture mode. Does not fork theme.js itself.
+SHOT_BOOT = """<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var forced = params.get('theme');
+  if (forced === 'light' || forced === 'dark') {
+    try { localStorage.setItem('cloudferry-theme', forced); } catch (e) { /* ignore */ }
+  }
+  if (params.get('shot') || params.has('freeze')) {
+    document.documentElement.setAttribute('data-shot', params.get('shot') || 'freeze');
+  }
+})();
+</script>
+"""
+
 SHOT_STYLE = """<style id="shot-capture-style">
   html[data-shot] *, html[data-shot] *::before, html[data-shot] *::after { caret-color: transparent !important; }
   html[data-shot], html[data-shot] *, html[data-shot] *:hover { cursor: none !important; }
@@ -35,29 +51,6 @@ SHOT_STYLE = """<style id="shot-capture-style">
     box-shadow: none !important;
   }
 </style>
-"""
-
-THEME_BOOT = """<script>
-(function () {
-  var params = new URLSearchParams(location.search);
-  var forced = params.get('theme');
-  var saved = null;
-  try { saved = localStorage.getItem('cloudferry-theme'); } catch (e) { /* ignore */ }
-  var theme = (forced === 'light' || forced === 'dark')
-    ? forced
-    : (saved === 'light' || saved === 'dark'
-      ? saved
-      : ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'));
-  document.documentElement.setAttribute('data-theme', theme);
-  document.documentElement.style.colorScheme = theme;
-  var meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', theme === 'dark' ? '#16151a' : '#f5f4f8');
-  if (params.get('shot') || params.has('freeze')) {
-    document.documentElement.setAttribute('data-shot', params.get('shot') || 'freeze');
-    try { localStorage.setItem('cloudferry-theme', theme); } catch (e) { /* ignore */ }
-  }
-})();
-</script>
 """
 
 
@@ -72,6 +65,7 @@ def inline_script(source: str) -> str:
 def build() -> str:
     index = read(WEB / "index.html")
     style = read(WEB / "style.css")
+    theme = read(WEB / "theme.js")
     auth = read(WEB / "auth-view.js")
     transfer = read(WEB / "transfer-view.js")
     app = read(WEB / "app.js")
@@ -81,7 +75,7 @@ def build() -> str:
     html = html.replace("<title>Cloud Ferry</title>", "<title>Cloud Ferry · демо</title>", 1)
     html = re.sub(
         r'<script src="/theme\.js"></script>\s*',
-        THEME_BOOT + SHOT_STYLE,
+        SHOT_BOOT + inline_script(theme) + SHOT_STYLE,
         html,
         count=1,
     )

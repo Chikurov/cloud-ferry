@@ -12,21 +12,29 @@
 (function () {
   var params = new URLSearchParams(location.search);
   var forced = params.get('theme');
+  if (forced === 'light' || forced === 'dark') {
+    try { localStorage.setItem('cloudferry-theme', forced); } catch (e) { /* ignore */ }
+  }
+  if (params.get('shot') || params.has('freeze')) {
+    document.documentElement.setAttribute('data-shot', params.get('shot') || 'freeze');
+  }
+})();
+</script>
+<script>
+/* Тема до первого кадра. Отдельный файл, а не inline-скрипт: сервер отдаёт
+   CSP script-src 'self', поэтому inline-скрипты в <head> браузер блокирует.
+   Подключён в <head> до style.css, поэтому первый вычисленный кадр уже в
+   выбранной теме; выбор пользователя важнее системной настройки. */
+(function () {
   var saved = null;
-  try { saved = localStorage.getItem('cloudferry-theme'); } catch (e) { /* ignore */ }
-  var theme = (forced === 'light' || forced === 'dark')
-    ? forced
-    : (saved === 'light' || saved === 'dark'
-      ? saved
-      : ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'));
+  try { saved = localStorage.getItem('cloudferry-theme'); } catch (e) { /* хранилище недоступно */ }
+  var theme = saved === 'light' || saved === 'dark'
+    ? saved
+    : ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light');
   document.documentElement.setAttribute('data-theme', theme);
   document.documentElement.style.colorScheme = theme;
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', theme === 'dark' ? '#16151a' : '#f5f4f8');
-  if (params.get('shot') || params.has('freeze')) {
-    document.documentElement.setAttribute('data-shot', params.get('shot') || 'freeze');
-    try { localStorage.setItem('cloudferry-theme', theme); } catch (e) { /* ignore */ }
-  }
 })();
 </script>
 <style id="shot-capture-style">

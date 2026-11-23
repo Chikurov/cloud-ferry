@@ -29,7 +29,7 @@ VIEWPORT = {"width": 1100, "height": 800}
 DPR = 2
 MAX_BYTES = 500 * 1024
 # Compact home frame: shell head + drive row + one job card, with padding.
-HOME_CLIP = {"x": 180, "y": 0, "width": 740, "height": 320}
+HOME_CLIP = {"x": 180, "y": 0, "width": 740, "height": 348}
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
