@@ -185,9 +185,11 @@ def select_demo_folders(page) -> None:
         """() => {
           const disk = document.body.innerText.includes('Весь диск');
           const existing = document.body.innerText.includes('Показать папки на сервере');
+          const next = document.querySelector('#folder-choose');
           const checks = Array.from(document.querySelectorAll('#flow-source-tree .folder-check'))
             .filter((el) => el.checked).length;
-          return disk && existing && checks >= 3;
+          return disk && existing && checks >= 3
+            && next && /Далее/.test(next.textContent);
         }"""
     )
 
@@ -296,10 +298,12 @@ def shot_destination(browser, base: str, out: Path, theme: str, name: str) -> di
               const path = document.querySelector('#folder-path');
               const create = document.querySelector('#folder-create');
               const primary = document.querySelector('#folder-choose');
+              const hint = document.querySelector('#flow-dest-hint');
               const body = document.querySelector('#flow-dest-body');
               const text = (body && body.innerText) || '';
               return path && path.textContent.trim().length > 0
                 && create && /Создать папку/.test(create.textContent)
+                && hint && !hint.hidden && /эту загрузку/.test(hint.textContent)
                 && primary && !primary.disabled && primary.getClientRects().length
                 && body && (body.querySelectorAll('.folder-row, [data-path]').length >= 1
                   || /Фото|Видео|Документы|Музыка|Новые|подпапок/.test(text));

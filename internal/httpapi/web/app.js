@@ -1604,10 +1604,11 @@ function currentTheme() {
 
 function syncThemeControls() {
   const dark = currentTheme() === 'dark';
+  const label = dark ? 'Светлая тема' : 'Тёмная тема';
   for (const button of $$('.js-theme-toggle')) {
     button.setAttribute('aria-pressed', dark ? 'true' : 'false');
-    button.setAttribute('aria-label', 'Тёмная тема');
-    button.title = 'Тёмная тема';
+    button.setAttribute('aria-label', label);
+    button.title = label;
   }
 }
 
@@ -2370,8 +2371,21 @@ function homeMarkup() {
         <div class="drive-pop"><button type="button" data-action="exit">Выйти из аккаунта</button></div>
       </details>
     </section>
+    <p class="drive-tip" id="drive-tip" hidden>Нажмите «Скачать», чтобы выбрать папки</p>
     <div id="job-list" aria-label="Загрузки"></div>
     <section id="cell-now" class="cell cell--now" data-mode="idle" aria-labelledby="now-title"></section>`;
+}
+
+function visibleHomeJobs() {
+  return accountJobs().filter((job) => ACTIVE_STATUSES.includes(job.status)
+    || PAUSED_STATUSES.includes(job.status)
+    || (job.status === 'done' && !dismissedJobs.has(job.id)));
+}
+
+function syncDriveTip() {
+  const tip = $('#drive-tip');
+  if (!tip) return;
+  tip.hidden = visibleHomeJobs().length > 0;
 }
 
 function emptyMarkup() {
@@ -2419,8 +2433,8 @@ function render() {
 function renderNow() {
   const cell = $('#cell-now');
   const jobs = accountJobs();
-  renderJobList(jobs.filter(job => ACTIVE_STATUSES.includes(job.status) ||
-    PAUSED_STATUSES.includes(job.status) || (job.status === 'done' && !dismissedJobs.has(job.id))));
+  renderJobList(visibleHomeJobs());
+  syncDriveTip();
   const needsAuth = currentAccount()?.status === 'needs-auth';
   const unknown = jobs.find(job => !KNOWN_JOB_STATUSES.has(job.status));
   cell.hidden = !needsAuth && !unknown;
@@ -3009,6 +3023,8 @@ function renderDestinationView() {
   const up = $('#folder-up');
   const path = $('#folder-path');
   const body = $('#flow-dest-body');
+  const hint = $('#flow-dest-hint');
+  if (hint) hint.hidden = flowEditing !== 'dest';
   if (path) {
     const value = displayPath(folder.path || '');
     path.textContent = value;
@@ -3353,7 +3369,8 @@ function cloudNodeMarkup(path, depth) {
     ? `<button class="folder-expand" type="button" data-expand="${escapeHtml(path)}" aria-expanded="${expanded}"${expanded ? ` aria-controls="${escapeHtml(childrenId(path))}"` : ''} aria-label="${expanded ? 'Скрыть папки внутри' : 'Показать папки внутри'} «${escapeHtml(name)}»">${icon('chevron')}</button>`
     : '';
   const filesOpen = folder.filePanelPath === path;
-  const filesButton = !folder.all && cloudFilesAvailable()
+  /* Глаз — после раскрытия ветки: на свёрнутой строке остаётся только шеврон. */
+  const filesButton = !folder.all && cloudFilesAvailable() && (expanded || filesOpen)
     ? `<button class="folder-files-toggle" type="button" data-preview="${escapeHtml(path)}" aria-expanded="${filesOpen}" aria-controls="${escapeHtml(filesPanelId(path))}" aria-label="${filesOpen ? 'Скрыть файлы' : 'Показать файлы'} в папке «${escapeHtml(name)}»">${icon('eye')}</button>`
     : '';
   const children = expanded ? cloudNodeChildren(path, depth) : '';
