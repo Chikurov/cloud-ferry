@@ -245,3 +245,38 @@ func TestReviewCheckRejectsRunningAndRepeatedCheck(t *testing.T) {
 		t.Fatalf("operations/check calls = %d, want 1", calls)
 	}
 }
+
+func TestWholeDiskExclusionsReachEstimateAndTransfer(t *testing.T) {
+	server, _, engine := newTestServer(t)
+	body := map[string]any{
+		"accountId": createTestAccount(t, server), "destPath": "/downloads/filtered",
+		"excludedFolders": []string{"Архив", "Архив/2025"},
+	}
+	for _, tc := range []struct {
+		path   string
+		method string
+		status int
+	}{
+		{"/api/preflight", "operations/size", http.StatusOK},
+		{"/api/jobs", "sync/copy", http.StatusCreated},
+	} {
+		resp, data := doJSON(t, server.Client(), http.MethodPost, server.URL+tc.path, body)
+		if resp.StatusCode != tc.status {
+			t.Fatalf("%s: %d %v", tc.path, resp.StatusCode, data)
+		}
+		call, ok := engine.find(tc.method)
+		if !ok {
+			t.Fatalf("missing %s", tc.method)
+		}
+		filter, _ := call.input["_filter"].(map[string]any)
+		rules, _ := filter["ExcludeRule"].([]string)
+		if len(rules) != 1 || rules[0] != "/Архив/**" {
+			t.Fatalf("%s exclusion rules = %#v", tc.method, filter)
+		}
+	}
+	body["sourceFiles"] = []string{"заметки.txt"}
+	resp, data := doJSON(t, server.Client(), http.MethodPost, server.URL+"/api/preflight", body)
+	if resp.StatusCode != http.StatusBadRequest || data["field"] != "excludedFolders" {
+		t.Fatalf("mixed source = %d %v", resp.StatusCode, data)
+	}
+}

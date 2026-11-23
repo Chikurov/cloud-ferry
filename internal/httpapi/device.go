@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"cloudferry/internal/store"
@@ -16,6 +17,7 @@ import (
 // deviceFlow is a pending device authorization: the user is entering userCode
 // on Yandex while we poll for the token.
 type deviceFlow struct {
+	pollMu       sync.Mutex
 	id           string
 	clientID     string
 	clientSecret string
@@ -118,9 +120,12 @@ func (s *Server) handleDeviceStatus(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "Код устарел. Начните вход заново.")
 		return
 	}
-	s.flowsMu.Lock()
-	s.flows[flow.id] = flow
-	s.flowsMu.Unlock()
+	flow.pollMu.Lock()
+	defer flow.pollMu.Unlock()
+	if _, live := s.takeFlow(flow.id); !live {
+		writeError(w, http.StatusNotFound, "Этот вход уже завершён.")
+		return
+	}
 
 	ctx, cancel := contextWithTimeout(r, 30*time.Second)
 	defer cancel()
@@ -135,8 +140,13 @@ func (s *Server) handleDeviceStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Claim completion before writing credentials. A canceled or expired
+	// flow cannot be revived by a late provider response.
+	if !s.consumeFlow(flow) {
+		writeError(w, http.StatusNotFound, "Вход отменён или код истёк.")
+		return
+	}
 	account, err := s.createYandexAccount(ctx, flow.name, flow.clientID, flow.clientSecret, token)
-	s.dropFlow(flow.id)
 	if err != nil {
 		s.fail(w, http.StatusBadGateway, "Не удалось сохранить подключение. Попробуйте ещё раз.", err)
 		return
@@ -163,6 +173,16 @@ func (s *Server) takeFlow(id string) (*deviceFlow, bool) {
 		return nil, false
 	}
 	return flow, true
+}
+
+func (s *Server) consumeFlow(flow *deviceFlow) bool {
+	s.flowsMu.Lock()
+	defer s.flowsMu.Unlock()
+	if s.flows[flow.id] != flow {
+		return false
+	}
+	delete(s.flows, flow.id)
+	return time.Now().Before(flow.expiresAt)
 }
 
 func (s *Server) dropFlow(id string) {

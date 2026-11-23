@@ -15,8 +15,9 @@ docs/mobile.png
 docs/dialog.png
 docs/screenshot.png
 
-# Local screenshot tooling (do not vendor browsers)
+# Local screenshot / tooling caches (never vendor)
 .playwright/
 playwright-report/
 test-results/
 **/ms-playwright/
+.venv/

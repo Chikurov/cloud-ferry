@@ -15,6 +15,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"os"
 	"path"
 	"regexp"
 	"strings"
@@ -62,8 +63,9 @@ type Config struct {
 
 // Server serves the UI and the JSON API.
 type Server struct {
-	cfg Config
-	mux *http.ServeMux
+	accountJobsMu sync.RWMutex
+	cfg           Config
+	mux           *http.ServeMux
 
 	flowsMu          sync.Mutex
 	flows            map[string]*deviceFlow
@@ -459,6 +461,8 @@ func providerType(provider string) string {
 }
 
 func (s *Server) handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
+	s.accountJobsMu.Lock()
+	defer s.accountJobsMu.Unlock()
 	id := r.PathValue("id")
 	account, ok := s.cfg.Store.Account(id)
 	if !ok {
@@ -466,10 +470,17 @@ func (s *Server) handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, job := range s.cfg.Store.Jobs() {
-		if job.AccountID == id && job.Status == store.StatusRunning {
+		if job.AccountID == id && (job.Status == store.StatusRunning || job.Status == store.StatusQueued) {
 			writeError(w, http.StatusConflict, "Сначала остановите скачивание из этого облака.")
 			return
 		}
+	}
+
+	ctx, cancel := contextWithTimeout(r, 20*time.Second)
+	defer cancel()
+	if err := s.cfg.Rclone.Call(ctx, "config/delete", map[string]any{"name": account.Remote}, nil); err != nil {
+		s.fail(w, http.StatusBadGateway, "Не удалось отключить диск. Повторите выход.", err)
+		return
 	}
 
 	removed, err := s.cfg.Store.DeleteAccount(id)
@@ -482,11 +493,6 @@ func (s *Server) handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := contextWithTimeout(r, 20*time.Second)
-	defer cancel()
-	if err := s.cfg.Rclone.Call(ctx, "config/delete", map[string]any{"name": account.Remote}, nil); err != nil {
-		log.Printf("config/delete %s: %v", account.Remote, err)
-	}
 	writeJSON(w, http.StatusOK, map[string]any{"deleted": id})
 }
 
@@ -582,11 +588,12 @@ func (s *Server) accountLogin(ctx context.Context, account store.Account) string
 }
 
 type preflightRequest struct {
-	AccountID   string    `json:"accountId"`
-	SourcePath  string    `json:"sourcePath"`
-	SourcePaths *[]string `json:"sourcePaths"`
-	SourceFiles *[]string `json:"sourceFiles"`
-	DestPath    string    `json:"destPath"`
+	AccountID       string    `json:"accountId"`
+	SourcePath      string    `json:"sourcePath"`
+	SourcePaths     *[]string `json:"sourcePaths"`
+	SourceFiles     *[]string `json:"sourceFiles"`
+	ExcludedFolders []string  `json:"excludedFolders"`
+	DestPath        string    `json:"destPath"`
 }
 
 // handlePreflight counts files and bytes in the cloud before a transfer starts.
@@ -602,7 +609,7 @@ func (s *Server) handlePreflight(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "Подключение не найдено. Возможно, оно уже отключено.")
 		return
 	}
-	src, err := parseSources(req.SourcePath, req.SourcePaths, req.SourceFiles)
+	src, err := parseSelection(req.SourcePath, req.SourcePaths, req.SourceFiles, req.ExcludedFolders)
 	if err != nil {
 		s.sourceError(w, err)
 		return
@@ -646,36 +653,44 @@ func (s *Server) handlePreflight(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var free uint64
-	if value, err := disk.Free(dst); err == nil {
-		free = value
-	}
-
-	// rclone stops at 90% of the free space (see transferLimit), so the
-	// preflight must use the same threshold: a transfer that fits into 100% of
-	// the free space but not into 90% would stop halfway. free == 0 means the
-	// filesystem could not be measured: the fit is unknown, so do not block
-	// the user.
+	free, measureErr := disk.Free(dst)
 	fits := true
-	if free > 0 && size.Bytes > 0 {
-		fits = uint64(size.Bytes) <= disk.TransferLimit(free)
+	partialEstimate := false
+	if measureErr == nil && size.Bytes > 0 && uint64(size.Bytes) > disk.TransferLimit(free) {
+		// Existing files may be skipped by rclone. Only block a known empty
+		// destination or a completely full filesystem.
+		fits = free > 0 && destinationMayContainFiles(dst)
+		partialEstimate = fits
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"files": size.Count,
-		"bytes": size.Bytes,
-		"free":  free,
-		"fits":  fits,
+		"files":           size.Count,
+		"bytes":           size.Bytes,
+		"free":            free,
+		"freeKnown":       measureErr == nil,
+		"partialEstimate": partialEstimate,
+		"fits":            fits,
 	})
 }
 
+func destinationMayContainFiles(path string) bool {
+	dir, err := os.Open(path)
+	if err != nil {
+		return !os.IsNotExist(err)
+	}
+	defer dir.Close()
+	_, err = dir.Readdirnames(1)
+	return err != io.EOF
+}
+
 type createJobRequest struct {
-	AccountID   string    `json:"accountId"`
-	SourcePath  string    `json:"sourcePath"`
-	SourcePaths *[]string `json:"sourcePaths"`
-	SourceFiles *[]string `json:"sourceFiles"`
-	DestPath    string    `json:"destPath"`
-	Mode        string    `json:"mode"`
+	AccountID       string    `json:"accountId"`
+	SourcePath      string    `json:"sourcePath"`
+	SourcePaths     *[]string `json:"sourcePaths"`
+	SourceFiles     *[]string `json:"sourceFiles"`
+	ExcludedFolders []string  `json:"excludedFolders"`
+	DestPath        string    `json:"destPath"`
+	Mode            string    `json:"mode"`
 	// ClientToken is an optional client-generated key that makes a retry safe:
 	// the same key returns the job it already created instead of starting a
 	// second download. The Idempotency-Key header wins over this field.
@@ -683,6 +698,8 @@ type createJobRequest struct {
 }
 
 func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
+	s.accountJobsMu.RLock()
+	defer s.accountJobsMu.RUnlock()
 	var req createJobRequest
 	if err := decodeJSON(r, &req); err != nil {
 		s.badRequest(w, err)
@@ -699,7 +716,7 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	src, err := parseSources(req.SourcePath, req.SourcePaths, req.SourceFiles)
+	src, err := parseSelection(req.SourcePath, req.SourcePaths, req.SourceFiles, req.ExcludedFolders)
 	if err != nil {
 		s.sourceError(w, err)
 		return
@@ -768,7 +785,7 @@ func (s *Server) handleStopJob(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	warning, err := s.cfg.Jobs.Stop(ctx, r.PathValue("id"))
 	if errors.Is(err, jobs.ErrConflict) {
-		writeError(w, http.StatusConflict, "Это скачивание уже завершено — останавливать нечего.")
+		writeError(w, http.StatusConflict, "Состояние скачивания изменилось. Обновите список и попробуйте ещё раз.")
 		return
 	}
 	if err != nil {
@@ -779,6 +796,8 @@ func (s *Server) handleStopJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleResumeJob(w http.ResponseWriter, r *http.Request) {
+	s.accountJobsMu.RLock()
+	defer s.accountJobsMu.RUnlock()
 	stored, ok := s.cfg.Store.Job(r.PathValue("id"))
 	if !ok {
 		writeError(w, http.StatusNotFound, "Скачивание не найдено. Обновите страницу.")
@@ -787,15 +806,33 @@ func (s *Server) handleResumeJob(w http.ResponseWriter, r *http.Request) {
 	// The saved destination may have become unavailable or outside the allowed
 	// roots since the job was created (roots can change between restarts).
 	// Validate it before the job is claimed or rclone is launched.
-	if _, err := s.cleanDestPath(stored.Dest); err != nil {
+	var req struct {
+		DestPath string `json:"destPath"`
+	}
+	if err := decodeJSON(r, &req); err != nil {
+		s.badRequest(w, err)
+		return
+	}
+	raw := req.DestPath
+	if raw == "" {
+		raw = stored.Dest
+	}
+	dest, err := s.cleanDestPath(raw)
+	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	ctx, cancel := contextWithTimeout(r, 90*time.Second)
 	defer cancel()
-	job, err := s.cfg.Jobs.Resume(ctx, r.PathValue("id"))
+	if stored.AccountID != "" {
+		if _, ok := s.cfg.Store.Account(stored.AccountID); !ok {
+			writeError(w, http.StatusNotFound, "Диск этой загрузки отключён.")
+			return
+		}
+	}
+	job, err := s.cfg.Jobs.ResumeTo(ctx, stored.ID, dest)
 	if errors.Is(err, jobs.ErrConflict) {
-		writeError(w, http.StatusConflict, "Это скачивание нельзя продолжить: оно уже идёт, завершено или остановлено.")
+		writeError(w, http.StatusConflict, "Не удалось продолжить. Проверьте состояние загрузки и выберите свободную папку.")
 		return
 	}
 	if errors.Is(err, jobs.ErrSourceNotFound) {

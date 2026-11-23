@@ -110,7 +110,6 @@ const resumedJobs = new Set();
    назад, «замирание» допустимо. */
 const jobPercentFloor = new Map();
 let focusStartAfterRender = false;
-let pendingFocusKey = '';
 /* Одна сессия диалога «Новое скачивание».
    Шаги переключают context, но накопленные узлы дерева, раскрытые ветки,
    выбор и прокрутка живут в этой же сессии: «Назад» возвращает состояние. */
@@ -133,7 +132,7 @@ let folder = {
   createError: '',
   /* Шаг 2: папки и отдельные файлы выбираются независимо. */
   all: false,
-  showExisting: false,
+  showExisting: true,
   expanded: new Set(),
   nodes: new Map(),
   selected: [],
@@ -167,13 +166,11 @@ let folderToken = 0;
    поэтому переживает ошибки, переходы и повторную отрисовку. */
 const MAX_SOURCE_FOLDERS = 20;
 const MAX_SOURCE_FILES = 100;
-let flowStep = 1;
+
 let excludedFolders = [];
 let flowSourceAll = false;
-let flowShowExisting = false;
+let flowShowExisting = true;
 let flowDest = '';
-let flowFree = null;
-let flowTotal = null;
 let flowBusy = false;
 let flowOpener = null;
 /* 'dest' | 'source' — шаг открыт по «Изменить» из проверки и возвращает
@@ -399,7 +396,21 @@ const shortPath = (path) => {
   const parts = String(path || '').split('/').filter(Boolean);
   return parts.length ? parts[parts.length - 1] : '';
 };
-const currentAccount = () => (state.accounts.length ? state.accounts[state.accounts.length - 1] : null);
+let selectedAccountID = '';
+try { selectedAccountID = localStorage.getItem('cloud-ferry.active-account') || ''; } catch {}
+
+function currentAccount() {
+  return state.accounts.find(account => account.id === selectedAccountID) || state.accounts.at(-1) || null;
+}
+
+function activateAccount(id) {
+  selectedAccountID = id;
+  try { localStorage.setItem('cloud-ferry.active-account', id); } catch {}
+  cancelPreflight();
+  resetFlowDraft();
+  lastCloudAttempt = 0;
+}
+
 const statusOf = (job) => JOB_STATUS[job.status] || [job.status, ''];
 
 /* Логин — из ответа API, иначе из того, что UI запомнил при подключении/probe.
@@ -844,6 +855,7 @@ async function tick() {
     pollFailures = 0;
     if ($('#app-view').hidden && $('#setup-view').hidden) { route(); return; }
     render();
+    if (folder.context === 'flow-review' && !flowBusy) { renderReview(); renderFlowFooter(); }
   } catch {
     if (seq !== pollSeq) return;
     pollFailures += 1;
@@ -928,8 +940,9 @@ function showSetup() {
     accountID: '',
     login: '',
     fields: {},
-    tokenHelp: false,
+    customOAuth: false,
     methodTouched: false,
+    knownAccounts: state.accounts.map(account => account.id),
   };
   homeMode = '';
   renderSetup();
@@ -937,197 +950,6 @@ function showSetup() {
 }
 
 /* --- setup wizard --------------------------------------------------------- */
-
-/* Способы входа. «Войти через Яндекс» — основной, когда сервер настроен:
-   пароль приложения и токен остаются запасными и видны ниже. */
-const SETUP_METHODS = {
-  yandex: 'Войти через Яндекс',
-  webdav: 'Логин и пароль приложения',
-  'yandex-token': 'Вход по токену',
-};
-
-const YANDEX_DEVICE_URL = 'https://oauth.yandex.ru/device';
-/* Требование макета: проверяем подтверждение каждые 5 секунд. */
-const YANDEX_POLL_MS = 5000;
-const YANDEX_ACCOUNT_NAME = 'Яндекс Диск';
-
-/* Команда обмена кода на токен: показывается в инструкции и копируется как есть. */
-const TOKEN_COMMAND = [
-  'curl -s https://oauth.yandex.ru/token \\',
-  '  -d grant_type=authorization_code \\',
-  '  -d code=КОД_ИЗ_АДРЕСА \\',
-  '  -d client_id=ID_ПРИЛОЖЕНИЯ \\',
-  '  -d client_secret=СЕКРЕТ_ПРИЛОЖЕНИЯ',
-].join('\n');
-
-function setupFieldValue(name) {
-  return escapeHtml(wizard.fields[name] || '');
-}
-
-/* Сегменты-переключатели: все доступные способы видны сразу, выбор не теряет
-   ввод. Яндекс-вход — первым и во всю ширину, остальные два — под ним. */
-function availableMethods() {
-  return Object.keys(SETUP_METHODS).filter((method) => method !== 'yandex' || yandexAuth.available === true);
-}
-
-function methodSwitch() {
-  const options = availableMethods().map((method) => {
-    const active = wizard.method === method;
-    const primary = method === 'yandex' ? ' method-option--primary' : '';
-    return `<button class="method-option${primary}" type="button" role="radio" id="method-${method}" data-method="${method}" aria-checked="${active ? 'true' : 'false'}" tabindex="${active ? '0' : '-1'}">${escapeHtml(SETUP_METHODS[method])}</button>`;
-  }).join('');
-  return `<div class="method-switch" role="radiogroup" aria-label="Способ входа">${options}</div>`;
-}
-
-function loginFields() {
-  return `
-    <form class="setup-form" id="setup-form" novalidate autocomplete="on">
-      <div class="control">
-        <label class="control-label" for="f-user">Логин</label>
-        <input id="f-user" name="username" type="text" autocomplete="username" inputmode="text" spellcheck="false" autocapitalize="none" autocorrect="off" placeholder="Логин на Яндексе" value="${setupFieldValue('user')}">
-      </div>
-      <div class="control">
-        <label class="control-label" for="f-pass">Пароль приложения</label>
-        <div class="field-with-action">
-          <input id="f-pass" name="password" type="password" autocomplete="current-password" inputmode="text" spellcheck="false" autocapitalize="none" autocorrect="off" placeholder="Пароль из Яндекс ID" value="${setupFieldValue('pass')}">
-          <button class="field-action" type="button" id="f-pass-toggle" aria-label="Показать пароль" aria-pressed="false" title="Показать пароль">${icon('eye')}</button>
-        </div>
-      </div>
-      <p class="note" id="webdav-note">Нужен тариф <strong>Яндекс 360</strong>. Пароль приложения создаётся в <a href="https://id.yandex.ru/security/app-passwords" target="_blank" rel="noreferrer">Яндекс ID → Пароли приложений</a> и начинает действовать через 2–3 часа.</p>
-      <button class="sr-only" type="submit" tabindex="-1" aria-hidden="true">Подключиться</button>
-    </form>`;
-}
-
-function tokenFields() {
-  const open = !!wizard.tokenHelp;
-  return `
-    <form class="setup-form" id="setup-form" novalidate autocomplete="off">
-      <div class="control control--token">
-        <div class="control-head">
-          <label class="control-label" for="f-token">Токен</label>
-          <button class="token-help-toggle" type="button" id="token-help-toggle" aria-expanded="${open ? 'true' : 'false'}" aria-controls="token-help">${icon('code')}Как получить токен?</button>
-        </div>
-        <textarea id="f-token" name="token" rows="3" spellcheck="false" autocapitalize="none" autocorrect="off" autocomplete="off" aria-describedby="token-required" placeholder="Вставьте токен или JSON из ответа">${setupFieldValue('token')}</textarea>
-      </div>
-      <p class="note" id="token-required">Нужен <strong>refresh-токен</strong>: обычный access-токен истекает через час, и подключение перестанет работать.</p>
-      <div class="token-help" id="token-help"${open ? '' : ' hidden'}>
-        <ol class="token-steps">
-          <li>Создайте приложение на <a href="https://oauth.yandex.ru/client/new" target="_blank" rel="noreferrer">oauth.yandex.ru</a> и отметьте доступ <code>cloud_api:disk.read</code>.</li>
-          <li>Откройте <code class="token-url">https://oauth.yandex.ru/authorize?response_type=code&amp;client_id=ВАШ_ID</code> — после разрешения браузер вернёт код в адресной строке.</li>
-          <li>Обменяйте код на токен командой:
-            <div class="token-command">
-              <code id="token-command">${escapeHtml(TOKEN_COMMAND)}</code>
-              <button class="btn btn--secondary btn--sm" type="button" id="token-copy">Скопировать</button>
-            </div>
-          </li>
-          <li>Скопируйте JSON из ответа и вставьте его в поле выше.</li>
-        </ol>
-      </div>
-      <button class="sr-only" type="submit" tabindex="-1" aria-hidden="true">Подключиться</button>
-    </form>`;
-}
-
-/* --- вход через Яндекс: код подтверждения -------------------------------- */
-
-function formatUserCode(value) {
-  const code = String(value || '').trim().toUpperCase();
-  if (!code) return '';
-  if (code.includes('-')) return code;
-  if (/^[A-Z0-9]{8}$/.test(code)) return `${code.slice(0, 4)}-${code.slice(4)}`;
-  return code;
-}
-
-function formatCountdown(seconds) {
-  const total = Math.max(0, Math.ceil(Number(seconds) || 0));
-  const minutes = Math.floor(total / 60);
-  return `${String(minutes).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
-}
-
-/* Ссылку подтверждения сервер отдаёт сам; в href пускаем только http(s). */
-function safeHttpUrl(value, fallback) {
-  const raw = String(value || '').trim();
-  if (/^https?:\/\/[^\s]+$/i.test(raw)) return raw;
-  return fallback;
-}
-
-function yandexIdleFields() {
-  return `
-    <div class="yandex-intro" id="yandex-intro">
-      <p class="note" id="yandex-note">Код подтверждения действует 10 минут. Пароль приложения не нужен — подтвердить вход можно с телефона.</p>
-      <button class="btn btn--primary" type="button" id="yandex-start">Получить код</button>
-    </div>`;
-}
-
-function yandexWaitingFields() {
-  const code = formatUserCode(yandexAuth.userCode);
-  const url = safeHttpUrl(yandexAuth.verificationUrl, YANDEX_DEVICE_URL);
-  return `
-    <div class="yandex-panel" id="yandex-panel">
-      <p class="control-label" id="yandex-code-label">Код для входа</p>
-      <p class="yandex-code" id="yandex-code" tabindex="-1" aria-labelledby="yandex-code-label">${escapeHtml(code)}</p>
-      <p class="yandex-hint">Откройте <a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(url)}</a> и введите код.</p>
-      <p class="yandex-timer" id="yandex-timer">Код действует <span id="yandex-timer-value">${formatCountdown(yandexAuth.remaining)}</span></p>
-      <p class="yandex-state" id="yandex-state" role="status" aria-live="polite"><span class="yandex-pulse" aria-hidden="true"></span><span id="yandex-state-text"></span></p>
-      <button class="btn btn--secondary" type="button" id="yandex-cancel">Отменить</button>
-    </div>`;
-}
-
-function yandexFailureFields() {
-  const expired = yandexAuth.status === 'expired';
-  const title = expired ? 'Код истёк' : (yandexAuth.message || 'Не удалось войти через Яндекс. Попробуйте ещё раз.');
-  const retry = yandexAuth.retryLabel || (yandexAuth.hasCode ? 'Получить новый код' : 'Получить код');
-  return `
-    <div class="yandex-panel yandex-panel--error" id="yandex-panel">
-      <p class="yandex-state yandex-state--error" id="yandex-state" role="status" aria-live="polite">${icon('warning')}<span id="yandex-state-text"></span></p>
-      <p class="note">Другие способы тоже доступны — выберите их выше.</p>
-      <button class="btn btn--primary" type="button" id="yandex-retry">${escapeHtml(retry)}</button>
-    </div>`;
-}
-
-function yandexFields() {
-  if (yandexAuth.status === 'waiting') return yandexWaitingFields();
-  if (yandexAuth.status === 'error' || yandexAuth.status === 'expired') return yandexFailureFields();
-  return yandexIdleFields();
-}
-
-/* Текст собственного live-региона способа: он создан пустым, поэтому любое
-   последующее изменение гарантированно озвучивается. */
-function yandexLiveText() {
-  if (wizard.method !== 'yandex') return '';
-  if (yandexAuth.status === 'waiting') return 'Ждём подтверждение…';
-  if (yandexAuth.status === 'expired') return 'Код истёк';
-  if (yandexAuth.status === 'error') return yandexAuth.message || 'Не удалось войти через Яндекс. Попробуйте ещё раз.';
-  return '';
-}
-
-function syncYandexLive() {
-  const node = document.getElementById('yandex-state-text');
-  if (!node) return;
-  const text = yandexLiveText();
-  if (text) node.textContent = text;
-}
-
-function setYandexLive(text) {
-  const node = document.getElementById('yandex-state-text');
-  if (node && text) node.textContent = text;
-}
-
-function focusYandexRetry() {
-  const retry = document.getElementById('yandex-retry');
-  if (retry) retry.focus({ preventScroll: true });
-}
-
-function methodFields() {
-  if (wizard.method === 'yandex') return yandexFields();
-  return wizard.method === 'yandex-token' ? tokenFields() : loginFields();
-}
-
-function setupStepBody() {
-  return `
-      <h1 class="setup-title" id="setup-title" tabindex="-1">Подключение</h1>
-      ${methodSwitch()}
-      <div class="setup-fields" id="setup-fields">${methodFields()}</div>`;
-}
 
 function renderSetup(options = {}) {
   const focusTitle = options.focusTitle !== false;
@@ -1163,7 +985,7 @@ function focusSetupTitle() {
 function setupError(message) { $('#setup-error').textContent = message || ''; }
 
 function saveSetupFields() {
-  const map = { 'f-user': 'user', 'f-pass': 'pass', 'f-token': 'token' };
+  const map = { 'f-user': 'user', 'f-pass': 'pass', 'f-token': 'token', 'f-client': 'clientID', 'f-secret': 'clientSecret' };
   for (const [id, key] of Object.entries(map)) {
     const element = document.getElementById(id);
     if (element) wizard.fields[key] = element.value;
@@ -1175,6 +997,9 @@ function saveSetupFields() {
 function clearWizardSecrets() {
   delete wizard.fields.pass;
   delete wizard.fields.token;
+  delete wizard.fields.clientSecret;
+  const secret = document.getElementById('f-secret');
+  if (secret) secret.value = '';
   const pass = document.getElementById('f-pass');
   if (pass) pass.value = '';
   const token = document.getElementById('f-token');
@@ -1208,24 +1033,6 @@ function chooseMethod(method) {
   if (option) option.focus({ preventScroll: true });
 }
 
-async function enforceSingleAccount(keepID) {
-  const stale = state.accounts.filter((account) => account.id !== keepID);
-  if (!stale.length) return;
-  let failed = 0;
-  for (const account of stale) {
-    try { await api(`/api/accounts/${encodeURIComponent(account.id)}`, { method: 'DELETE', timeout: API_TIMEOUT.mutate }); }
-    catch { failed += 1; }
-  }
-  try { await loadData(); } catch { /* keep the state we have */ }
-  if (failed) {
-    showToast({
-      type: 'warn', id: 'multi-account',
-      title: 'Не удалось удалить старое облако',
-      message: 'По нему, возможно, идёт скачивание. Приостановите его на главном экране и подключите облако ещё раз — тогда старое подключение удалится.',
-    });
-  }
-}
-
 async function finishConnect(account) {
   wizard.accountID = account.id;
   const enteredLogin = wizard.method === 'webdav' ? String(wizard.fields.user || '').trim() : '';
@@ -1233,7 +1040,8 @@ async function finishConnect(account) {
   wizard.login = login;
   if (login) accountLogins.set(account.id, login);
   try { await loadData(); } catch { /* the wizard stays usable */ }
-  await enforceSingleAccount(account.id);
+  if (!state.accounts.some(item => item.id === account.id)) state.accounts.push(account);
+  activateAccount(account.id);
   clearWizardSecrets();
   focusStartAfterRender = true;
   location.hash = '#/';
@@ -1419,7 +1227,7 @@ async function onSetupNext() {
   const next = $('#setup-next');
   if (setupBusy || isBusyControl(next)) return;
   /* У Яндекс-входа своя кнопка «Получить код» в панели: футер не участвует. */
-  if (wizard.method === 'yandex') return;
+  if (wizard.method === 'yandex') { startYandexDevice(); return; }
   setupError('');
   wizard.methodTouched = true;
   saveSetupFields();
@@ -1514,6 +1322,11 @@ async function refreshYandexAvailability() {
   if ($('#setup-view').hidden) return;
   const preferred = available ? 'yandex' : 'webdav';
   const touched = wizard.methodTouched || hasWizardInput();
+  if (wizard.method === 'yandex' && !available && !wizard.customOAuth && yandexAuth.status === 'idle') {
+    wizard.method = 'webdav';
+    renderSetup({ focusTitle: false });
+    return;
+  }
   if (!touched && wizard.method !== preferred) {
     /* Ничего ещё не выбирали: основной способ — Яндекс, он выбран сразу. */
     wizard.method = preferred;
@@ -1564,6 +1377,15 @@ function yandexStartFailureMessage(error) {
 
 async function startYandexDevice() {
   if (setupBusy || yandexAuth.status === 'starting' || yandexAuth.status === 'waiting') return;
+  saveSetupFields();
+  const credentials = {};
+  if (!yandexAuth.available) {
+    credentials.clientId = String(wizard.fields.clientID || '').trim();
+    credentials.clientSecret = String(wizard.fields.clientSecret || '').trim();
+    if (!credentials.clientId) { setFieldError($('#f-client'), 'Введите ID приложения.'); return; }
+    if (!credentials.clientSecret) { setFieldError($('#f-secret'), 'Введите секрет приложения.'); return; }
+  }
+  const attempt = ++yandexAuth.pollSeq;
   const trigger = document.getElementById('yandex-start') || document.getElementById('yandex-retry');
   yandexAuth.status = 'starting';
   yandexAuth.message = '';
@@ -1576,7 +1398,7 @@ async function startYandexDevice() {
     data = await api('/api/oauth/yandex/device/start', {
       method: 'POST',
       timeout: API_TIMEOUT.external,
-      body: JSON.stringify({ name: YANDEX_ACCOUNT_NAME }),
+      body: JSON.stringify({ name: YANDEX_ACCOUNT_NAME, ...credentials }),
     });
   } catch (error) {
     failure = error;
@@ -1584,7 +1406,7 @@ async function startYandexDevice() {
   setupStatus('');
   if (trigger && trigger.isConnected) setBusy(trigger, false);
   /* Пока шёл запрос, мастер могли закрыть или сменить способ. */
-  if ($('#setup-view').hidden || wizard.method !== 'yandex' || yandexAuth.status !== 'starting') {
+  if (attempt !== yandexAuth.pollSeq || $('#setup-view').hidden || wizard.method !== 'yandex' || yandexAuth.status !== 'starting') {
     if (data && data.flowId) deleteYandexFlow(String(data.flowId));
     return;
   }
@@ -1604,6 +1426,7 @@ async function startYandexDevice() {
   yandexAuth.verificationUrl = safeHttpUrl(data.verificationUrl, YANDEX_DEVICE_URL);
   yandexAuth.expiresAt = Date.now() + lifetime * 1000;
   yandexAuth.remaining = lifetime;
+  yandexAuth.pollDelay = Math.max(YANDEX_POLL_MS, (Number(data.interval) || 0) * 1000);
   yandexAuth.hasCode = true;
   yandexAuth.retryLabel = 'Получить новый код';
   renderSetup({ focusTitle: false });
@@ -1617,7 +1440,7 @@ function startYandexTimers() {
   clearYandexTimers();
   updateYandexTimer();
   yandexAuth.tickTimer = setInterval(updateYandexTimer, 1000);
-  scheduleYandexPoll(YANDEX_POLL_MS);
+  scheduleYandexPoll(yandexAuth.pollDelay || YANDEX_POLL_MS);
 }
 
 function updateYandexTimer() {
@@ -1664,7 +1487,7 @@ async function pollYandexDevice() {
     if (status === 0 || status >= 500) {
       /* Сеть моргнула: поток на сервере жив, просто продолжаем ждать. */
       setYandexLive('Нет связи. Повторяем…');
-      scheduleYandexPoll(YANDEX_POLL_MS);
+      scheduleYandexPoll(yandexAuth.pollDelay || YANDEX_POLL_MS);
       return;
     }
     failYandex(friendlyError(error), { hasCode: true, retryLabel: 'Получить новый код' });
@@ -1681,7 +1504,7 @@ async function pollYandexDevice() {
     return;
   }
   setYandexLive('Ждём подтверждение…');
-  scheduleYandexPoll(YANDEX_POLL_MS);
+  scheduleYandexPoll(yandexAuth.pollDelay || YANDEX_POLL_MS);
 }
 
 function expireYandexCode() {
@@ -1720,7 +1543,7 @@ async function completeYandexFlow(account) {
   if (!target) {
     /* Ответ без аккаунта: подключение уже создано, просто перечитываем. */
     try { await loadData(); } catch { /* покажем сообщение ниже */ }
-    target = currentAccount();
+    target = state.accounts.find(item => !wizard.knownAccounts.includes(item.id));
   }
   if (!target || !target.id) {
     showToast({
@@ -1765,34 +1588,6 @@ function togglePassword() {
   button.title = reveal ? 'Скрыть пароль' : 'Показать пароль';
   button.innerHTML = icon(reveal ? 'eyeOff' : 'eye');
   input.focus({ preventScroll: true });
-}
-
-/* Инструкция «Как получить токен?» раскрывается на месте, без ухода со страницы. */
-function toggleTokenHelp() {
-  const help = document.getElementById('token-help');
-  const button = document.getElementById('token-help-toggle');
-  if (!help || !button) return;
-  const open = help.hidden;
-  help.hidden = !open;
-  wizard.tokenHelp = open;
-  button.setAttribute('aria-expanded', open ? 'true' : 'false');
-  if (open) announce('Инструкция, как получить токен');
-}
-
-async function copyTokenCommand(trigger) {
-  if (isBusyControl(trigger)) return;
-  setBusy(trigger, true);
-  try {
-    await copyText(TOKEN_COMMAND);
-    showToast({ type: 'ok', title: 'Команда скопирована', message: 'Выполните её в терминале и вставьте JSON из ответа.' });
-  } catch {
-    showToast({
-      type: 'error', title: 'Не удалось скопировать',
-      message: 'Выделите команду в инструкции и скопируйте вручную.',
-    });
-  } finally {
-    if (trigger && trigger.isConnected) setBusy(trigger, false);
-  }
 }
 
 /* --- тема ----------------------------------------------------------------- */
@@ -1976,6 +1771,9 @@ function openExitDialog() {
   if (!dialog || dialog.open) return;
   const error = $('#exit-error');
   if (error) { error.hidden = true; error.textContent = ''; }
+  dialog.dataset.accountId = currentAccount()?.id || '';
+  $('#exit-title').textContent = 'Выйти из аккаунта ' + accountLabel(currentAccount()) + '?';
+  $('#exit-text').hidden = !activeJobs().length;
   dialog.showModal();
   const title = $('#exit-title');
   if (title) title.focus({ preventScroll: true });
@@ -1987,7 +1785,7 @@ async function confirmExit() {
   const error = $('#exit-error');
   if (error) { error.hidden = true; error.textContent = ''; }
   const account = currentAccount();
-  if (!account) { if (dialog && dialog.open) dialog.close(); return; }
+  if (!account || account.id !== dialog.dataset.accountId) { if (dialog && dialog.open) dialog.close(); return; }
   exitBusy = true;
   /* Пока идёт DELETE, диалог не закрывается ни Esc, ни «Остаться»: операция
      уже отправлена и отменять её нельзя. */
@@ -2003,7 +1801,7 @@ async function confirmExit() {
       for (const job of activeJobs()) {
         suppressStatus(job.id, ['interrupted', 'canceled']);
         try { await api(`/api/jobs/${encodeURIComponent(job.id)}/stop`, { method: 'POST', timeout: API_TIMEOUT.mutate }); }
-        catch { /* the account delete below will report the real problem */ }
+        catch (error) { if (error.status !== 409) throw error; }
       }
       await api(`/api/accounts/${encodeURIComponent(account.id)}`, { method: 'DELETE', timeout: API_TIMEOUT.mutate });
     } catch (error) {
@@ -2026,9 +1824,10 @@ async function confirmExit() {
     lastCloudAttempt = 0;
     state.accounts = (state.accounts || []).filter((item) => item.id !== account.id);
     state.jobs = (state.jobs || []).filter((job) => job.accountId !== account.id);
+    activateAccount(currentAccount()?.id || '');
     if (dialog && dialog.open) dialog.close();
     render();
-    showToast({ type: 'ok', title: 'Вы вышли из Яндекс Диска', message: 'Подключить снова можно в любой момент.' });
+    showToast({ type: 'ok', title: 'Диск отключён' });
     const plus = $('.plus-tile');
     if (plus) plus.focus({ preventScroll: true });
     await refreshAfterAction();
@@ -2060,7 +1859,7 @@ function serverRoot() {
 function systemCloudMatchesAccount(account, cloud = system && system.cloud) {
   if (!cloud) return false;
   if (!account) return false;
-  if (!cloud.accountId) return true;
+  if (!cloud.accountId) return state.accounts.length === 1;
   return cloud.accountId === account.id;
 }
 
@@ -2145,7 +1944,7 @@ function usageValuePair(used, total) {
   const units = ['Б', 'КБ', 'МБ', 'ГБ', 'ТБ'];
   let unit = 0;
   let base = Math.max(Number(total) || 0, Number(used) || 0);
-  while (base >= 1024 && unit < units.length - 1) { base /= 1024; unit += 1; }
+  while (base >= 1024 && unit < 3) { base /= 1024; unit += 1; }
   const format = (value) => {
     const number = (Number(value) || 0) / (1024 ** unit);
     return number.toFixed(unit === 0 ? 0 : 1).replace('.', ',').replace(/,0$/, '');
@@ -2268,7 +2067,27 @@ function renderAccountCell() {
      панели аккаунта. */
   if (accountNeedsReauth(account)) cloudUsage = null;
   login.textContent = accountLabel(account);
-  login.nextElementSibling.hidden = login.textContent === 'Яндекс Диск';
+  const picker = $('#drive-picker');
+  const multiple = state.accounts.length > 1;
+  login.hidden = multiple;
+  picker.hidden = !multiple;
+  if (multiple) updateDriveOptions(picker, account.id);
+  $('#drive-provider').hidden = !multiple && login.textContent === 'Яндекс Диск';
+}
+
+function updateDriveOptions(picker, activeID) {
+  const labels = state.accounts.map(drive => accountLabel(drive));
+  const signature = JSON.stringify(state.accounts.map((drive, i) => [drive.id, labels[i]]));
+  if (picker.dataset.signature !== signature) {
+    const options = state.accounts.map((drive, index) => {
+      const label = labels[index];
+      const duplicate = labels.indexOf(label) !== labels.lastIndexOf(label);
+      return new Option(duplicate ? label + ' · ' + (index + 1) : label, drive.id);
+    });
+    picker.replaceChildren(...options);
+    picker.dataset.signature = signature;
+  }
+  picker.value = activeID;
 }
 
 /* Панель аккаунта: статичные узлы, поэтому busy и фокус не теряются при
@@ -2368,12 +2187,6 @@ function jobSourceFiles(job) {
     : [];
 }
 
-function sourceLabel(paths) {
-  if (!paths.length) return 'Весь Диск';
-  if (paths.length === 1) return displayCloudPath(paths[0]);
-  return pluralFolders(paths.length);
-}
-
 /* «2 папки и 3 файла» — одна подпись источника для проверки и итога. */
 function selectionLabel(folders, files) {
   const folderCount = Array.isArray(folders) ? folders.length : 0;
@@ -2384,27 +2197,16 @@ function selectionLabel(folders, files) {
   return formatFiles(fileCount);
 }
 
-/* One readable line for «Сейчас» and toasts: "3 папки: A, B → /downloads". */
-function jobSourceText(job) {
-  const paths = jobSourcePaths(job);
-  const files = jobSourceFiles(job);
-  const dest = displayPath(job.dest);
-  if (paths.length > 1) {
-    const names = paths.map((value) => displayPath(value)).join(', ');
-    return `${pluralFolders(paths.length)}: ${names} → ${dest}`;
-  }
-  if (paths.length === 0 && files.length) return `${formatFiles(files.length)} → ${dest}`;
-  return `${sourceLabel(paths)} → ${dest}`;
-}
-
-/* Источник черновика: «Весь Диск», «2 папки и 3 файла» и т. п. */
-function flowSourceText() {
-  if (flowSourceAll) return wholeDiskLabel(excludedFolders);
-  return selectionLabel(cloudSelection, cloudFileSelection);
-}
-
 function flowSourcePaths() {
   return flowSourceAll ? [] : cloudSelection.slice();
+}
+
+function selectedSourcePayload() {
+  return {
+    sourcePaths: flowSourcePaths().sort(),
+    sourceFiles: flowSourceFiles().sort(),
+    ...(flowSourceAll && excludedFolders.length ? { excludedFolders: [...excludedFolders].sort() } : {}),
+  };
 }
 
 function flowSourceFiles() {
@@ -2423,7 +2225,7 @@ function syncSelectionAccount() {
     cloudFileSelection = [];
     excludedFolders = [];
     flowSourceAll = false;
-    flowShowExisting = false;
+    flowShowExisting = true;
     cloudSelectionAccount = account ? account.id : '';
     flowPreflight = {
       key: '', status: 'idle', data: null, error: null, seq: 0, controller: null, startedAt: 0,
@@ -2439,7 +2241,7 @@ function syncSelectionAccount() {
 function accountJobs() {
   const account = currentAccount();
   if (!account) return [];
-  return state.jobs.filter((job) => !job.accountId || job.accountId === account.id);
+  return state.jobs.filter(job => job.accountId === account.id || (!job.accountId && state.accounts.length === 1));
 }
 
 function activeJobs() {
@@ -2449,11 +2251,6 @@ function activeJobs() {
       const order = { running: 0, verifying: 0, queued: 1 };
       return (order[a.status] ?? 2) - (order[b.status] ?? 2);
     });
-}
-
-function latestJob() {
-  const jobs = accountJobs();
-  return jobs.length ? jobs[0] : null;
 }
 
 function percentOf(job) {
@@ -2510,7 +2307,6 @@ function jobSourceLabel(job) {
   const files = jobSourceFiles(job);
   return selectionLabel(paths, files);
 }
-function jobTitle(job) { return `${jobSourceLabel(job)} → ${displayPath(job.dest)}`; }
 
 function jobMeta(job) {
   if (job.status === 'queued') return 'Ожидает запуска';
@@ -2523,30 +2319,6 @@ function jobMeta(job) {
   if (Number(stats.speed) > 0) parts.push(`${humanBytes(stats.speed)}/с`);
   if (Number(stats.eta) > 0) parts.push(`≈ ${humanEta(stats.eta)}`);
 
-  return parts.join(' · ');
-}
-
-/* Время задания: elapsedTime от rclone, иначе разница отметок. */
-function jobElapsedSeconds(job) {
-  const stats = job.stats || {};
-  const elapsed = Number(stats.elapsedTime) || 0;
-  if (elapsed > 0) return elapsed;
-  const started = new Date(job.startedAt || job.createdAt || 0).getTime();
-  const finished = new Date(job.finishedAt || Date.now()).getTime();
-  if (!(started > 0) || !(finished > started)) return 0;
-  return Math.round((finished - started) / 1000);
-}
-
-/* Итог «Готово»: файлов, объём, время. Пустые значения не выдумываем. */
-function jobDoneFacts(job) {
-  const stats = job.stats || {};
-  const files = Math.max(0, Number(stats.transfers) || Number(stats.totalTransfers) || 0);
-  const bytes = Math.max(0, Number(stats.totalBytes) || Number(stats.bytes) || 0);
-  const seconds = jobElapsedSeconds(job);
-  const parts = [];
-  if (files > 0) parts.push(formatFiles(files));
-  if (bytes > 0) parts.push(humanBytes(bytes));
-  if (seconds > 0 && job.finishedAt) parts.push(humanEta(seconds));
   return parts.join(' · ');
 }
 
@@ -2586,28 +2358,11 @@ function humanPair(used, total) {
 /* «40 % · 12,4 из 29,0 ГБ» — прогресс карточки. У завершённой задачи полный
    объём: файлы на месте, разница — уже существовавшие файлы, которые rclone
    пропустил. */
-function jobProgressText(job) {
-  const stats = job.stats || {};
-  let size = '';
-  if (job.status === 'done') {
-    const total = Number(stats.totalBytes) || Number(stats.bytes) || 0;
-    size = total > 0 ? humanBytes(total) : '';
-  } else if (Number(stats.totalBytes) > 0) {
-    size = humanPair(stats.bytes, stats.totalBytes);
-  } else if (Number(stats.bytes) > 0) {
-    size = humanBytes(stats.bytes);
-  }
-  const percent = shownPercent(job);
-  const known = job.status === 'done' || Number(stats.totalBytes) > 0 || percent > 0;
-  if (!known) return '';
-  return size ? `${percent} % · ${size}` : `${percent} %`;
-}
-
 function homeMarkup() {
   return `
     <section class="drive-row" aria-labelledby="account-cell-login">
       <span class="drive-symbol">${icon('cloud')}</span>
-      <div class="drive-name"><h2 id="account-cell-login"></h2><small>Яндекс Диск</small></div>
+      <div class="drive-name"><h2 id="account-cell-login"></h2><select id="drive-picker" aria-label="Активный диск" hidden></select><small id="drive-provider">Яндекс Диск</small></div>
       <button class="btn btn--primary" id="flow-start" type="button" data-action="start-flow">${icon('transfer')}Скачать</button>
       <details class="drive-menu"><summary aria-label="Действия с диском" title="Действия с диском">•••</summary>
         <div class="drive-pop"><button type="button" data-action="exit">Выйти из аккаунта</button></div>
@@ -2632,7 +2387,13 @@ function render() {
   if (!app || app.hidden) return;
   renderHeader();
   const account = currentAccount();
+  if ($('#folder-dialog').open && folder.accountID !== account?.id && !flowBusy) {
+    forceCloseFolderDialog();
+    resetFlowDraft();
+  }
   const mode = account ? 'app' : 'empty';
+  const add = $('#add-drive');
+  if (add) add.hidden = !account;
   if (homeMode !== mode) {
     homeMode = mode;
     const view = $('#home-view');
@@ -2653,232 +2414,20 @@ function render() {
   }
 }
 
-function nowKey(mode, job, activeCount, account) {
-  return [mode, job ? job.id : '', job ? job.status : '', activeCount, account ? account.status : ''].join('|');
-}
-
-function nowHead(right = '') {
-  /* tabindex="-1" делает заголовок стабильным якорем фокуса: при смене
-     режима кнопка, на которой был фокус, может исчезнуть. */
-  return `
-    <div class="cell-head">
-      ${icon('clock')}
-      <h2 class="cell-title" id="now-title" tabindex="-1">Сейчас</h2>
-      <span class="now-status">${right}</span>
-    </div>`;
-}
-
-/* --- неоконченная задача: строка и повтор -------------------------------- */
-
-/* Проверки целостности в интерфейсе больше нет. У задачи, которая не
-   завершилась успешно, показываем одну строку — сколько файлов не скачалось,
-   — и тонкую ссылку «Повторить», продолжающую скачивание с того же места.
-   Если rclone не сообщил об ошибках файлов (например, задача просто встала
-   на паузу), строка честно говорит, что скачивание прервалось. */
-function jobFailureMarkup(job) {
-  if (!job || (job.status !== 'failed' && job.status !== 'interrupted')) return '';
-  const errors = Math.max(0, Number(job.stats && job.stats.errors) || 0);
-  const text = errors > 0
-    ? `Не удалось скачать ${formatFiles(errors)}`
-    : 'Скачивание прервалось';
-  return `<span class="job-failure-text">${icon('warning')}${escapeHtml(text)}</span>
-      <button class="btn btn--link" type="button" data-action="resume" data-id="${escapeHtml(job.id)}">Повторить</button>`;
-}
-
-/* Обновление по месту: карточка не пересоздаётся на каждом опросе, а
-   aria-live-регион не перечитывает одну и ту же строку. */
-function renderJobFailure(row, job) {
-  const host = row.querySelector('.job-failure');
-  if (!host) return;
-  const errors = Math.max(0, Number(job.stats && job.stats.errors) || 0);
-  const key = [job.status, errors].join('|');
-  if (host.dataset.key === key) return;
-  const active = document.activeElement;
-  const hadFocus = !!active && active !== host && host.contains(active);
-  host.dataset.key = key;
-  const markup = jobFailureMarkup(job);
-  host.innerHTML = markup;
-  host.hidden = !markup;
-  if (hadFocus) {
-    /* «Повторить» продолжает скачивание: строка исчезает, фокус ведём на
-       главное действие карточки, чтобы он не упал на body. */
-    const next = host.querySelector('button') || row.querySelector('.task-head button:not([hidden])');
-    if (next) next.focus({ preventScroll: true });
-  }
-}
-
-function renderJobList(jobs) {
-  const list = $('#job-list');
-  const stale = new Map(Array.from(list.children, row => [row.dataset.id, row]));
-  for (const job of jobs) {
-    let row = stale.get(job.id);
-    stale.delete(job.id);
-    if (!row) {
-      row = document.createElement('article');
-      row.className = 'cell cell--now job-row';
-      row.dataset.id = job.id;
-      row.innerHTML = `<div class="task-head">${icon('folder')}<h2></h2><button class="btn btn--secondary" type="button"></button></div>
-        <div class="now-body"><div class="progress job-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div><div class="task-stats"><span></span><span></span></div><div class="job-error"></div><div class="job-failure" role="status" hidden></div></div>`;
-      list.append(row);
-    }
-    const paths = [...jobSourcePaths(job), ...jobSourceFiles(job)];
-    const title = paths.length === 1 ? shortPath(paths[0]) : jobSourceLabel(job);
-    row.querySelector('h2').textContent = title;
-    const button = row.querySelector('button');
-    const paused = PAUSED_STATUSES.includes(job.status);
-    const failed = job.status === 'failed';
-    const done = job.status === 'done';
-    const label = done ? 'Убрать из списка' : paused ? (failed ? 'Повторить' : 'Продолжить') : 'Приостановить';
-    if (row.dataset.status !== job.status) {
-      row.dataset.status = job.status;
-      button.hidden = job.status === 'verifying';
-      button.dataset.id = job.id;
-      button.dataset.action = done ? 'dismiss-job' : paused ? 'resume' : 'stop';
-      button.title = label;
-      button.setAttribute('aria-label', label + ' · ' + title);
-      button.innerHTML = icon(done ? 'close' : paused ? 'resume' : 'pause');
-      /* В очереди кнопка остаётся доступной — пауза сработает, — но
-         aria-busy честно говорит, что запуск ещё не завершён. */
-      button.setAttribute('aria-busy', job.status === 'queued' ? 'true' : 'false');
-      const error = row.querySelector('.job-error');
-      error.hidden = !failed;
-      if (failed) error.innerHTML = escapeHtml(job.errorAdvice || job.errorTitle || 'Не удалось скачать') + failureListMarkup(job.failures || [], job.failureCount || 0) +
-        (job.failureCount ? `<button class="btn btn--quiet" data-action="copy-failures" data-id="${escapeHtml(job.id)}">Скопировать список</button>` : '');
-    }
-    /* Пока движок готовится или пересканирует облако, полоса показывает, что
-       работа идёт, а старый процент остаётся видимым и приглушённым. */
-    const preparing = jobPreparing(job);
-    const percent = shownPercent(job);
-    const known = done || Number(job.stats?.totalBytes) > 0 || percent > 0;
-    const stateText = jobStateText(job);
-    const progress = row.querySelector('.job-progress');
-    progress.setAttribute('aria-label', title);
-    progress.classList.toggle('progress--prepare', preparing);
-    progress.querySelector('i').style.width = `${known ? percent : 0}%`;
-    if (known) progress.setAttribute('aria-valuenow', String(percent));
-    else progress.removeAttribute('aria-valuenow');
-    const valueText = [known ? `${percent} %` : '', stateText].filter(Boolean).join(', ');
-    if (valueText) progress.setAttribute('aria-valuetext', valueText);
-    else progress.removeAttribute('aria-valuetext');
-    const facts = row.querySelectorAll('.task-stats span');
-    facts[0].textContent = jobProgressText(job);
-    facts[1].textContent = stateText;
-    renderJobFailure(row, job);
-  }
-  for (const row of stale.values()) {
-    const hadFocus = row.contains(document.activeElement);
-    row.remove();
-    if (hadFocus) {
-      const target = list.querySelector('button:not([hidden])') || $('#flow-start');
-      target?.focus({ preventScroll: true });
-    }
-  }
-  list.hidden = !jobs.length;
-}
-
-function nowMarkup(mode, job, activeCount, account) {
-  if (mode === 'auth') {
-    return `
-      ${nowHead('<span class="status-pill status-pill--auth">Нужен вход</span>')}
-      <div class="cell-body">
-        <div class="now-row">
-          <div class="now-text">
-            <p class="now-title">Яндекс Диск просит войти заново</p>
-            <p class="now-note">Доступ к облаку истёк.</p>
-          </div>
-          <button class="btn btn--secondary" type="button" data-action="reconnect">${icon('key')}Войти заново</button>
-        </div>
-      </div>`;
-  }
-
-  if (mode === 'done') {
-    const facts = jobDoneFacts(job);
-    return `
-      ${nowHead('<span class="status-pill status-pill--ok">Готово</span>')}
-      <div class="cell-body now-done">
-        ${facts ? `<p class="now-summary" id="now-summary">${escapeHtml(facts)}</p>` : ''}
-
-      </div>`;
-  }
-
-  if (mode === 'unknown') {
-    return `
-      ${nowHead(`<span class="status-pill" title="${escapeHtml(job.status)}">Неизвестный статус</span>`)}
-      <div class="cell-body">
-        <div class="now-row">
-          <div class="now-text">
-            <p class="now-title">Неизвестное состояние скачивания</p>
-            <p class="now-note">Возможно, приложение обновилось. Обновите данные, чтобы увидеть актуальный статус.</p>
-          </div>
-          <button class="btn btn--secondary" type="button" data-action="refresh" data-focus-key="refresh">Обновить</button>
-        </div>
-
-      </div>`;
-  }
-
-  return `
-    ${nowHead()}
-    <div class="cell-body">
-      <div class="now-text now-text--idle">
-        <p class="now-title">Скачиваний пока нет</p>
-        <p class="now-note">Начните с кнопки «Скачать»: три шага и проверка перед запуском.</p>
-      </div>
-    </div>`;
-}
-
 function renderNow() {
   const cell = $('#cell-now');
-  if (!cell) return;
-  const account = currentAccount();
-  const active = activeJobs();
-  const latest = latestJob();
-  let mode = 'idle';
-  let job = latest;
-  const visible = accountJobs().filter(item =>
-    ACTIVE_STATUSES.includes(item.status) || PAUSED_STATUSES.includes(item.status) ||
-    (item.status === 'done' && !dismissedJobs.has(item.id)));
-
-  renderJobList(visible);
-  if (visible.length && account?.status !== 'needs-auth') {
-    cell.hidden = true;
-    cell.dataset.key = '';
-    return;
-  } else if (account && account.status === 'needs-auth') {
-    mode = 'auth';
-
-  } else if (latest && !KNOWN_JOB_STATUSES.has(latest.status)) {
-    mode = 'unknown';
-  }
-  cell.hidden = mode === 'idle';
-  const key = nowKey(mode, job, active.length, account);
-  if (cell.dataset.key === key) {
-
-    return;
-  }
-  const focused = document.activeElement;
-  const focusWasInside = !!(focused && focused !== cell && cell.contains(focused));
-  const focusKey = (focusWasInside && focused.dataset ? focused.dataset.focusKey || '' : '') || pendingFocusKey;
-  pendingFocusKey = '';
+  const jobs = accountJobs();
+  renderJobList(jobs.filter(job => ACTIVE_STATUSES.includes(job.status) ||
+    PAUSED_STATUSES.includes(job.status) || (job.status === 'done' && !dismissedJobs.has(job.id))));
+  const needsAuth = currentAccount()?.status === 'needs-auth';
+  const unknown = jobs.find(job => !KNOWN_JOB_STATUSES.has(job.status));
+  cell.hidden = !needsAuth && !unknown;
+  if (cell.hidden) { cell.dataset.key = ''; return; }
+  const key = needsAuth ? 'auth' : 'unknown';
+  if (cell.dataset.key === key) return;
   cell.dataset.key = key;
-  cell.dataset.mode = mode;
-  cell.innerHTML = nowMarkup(mode, job, active.length, account);
-  const anchor = () => {
-    const title = cell.querySelector('#now-title');
-    if (title) title.focus({ preventScroll: true });
-  };
-  if (focusKey) {
-    /* После «Приостановить» логично вести фокус на «Продолжить», но если
-       такого действия в новом режиме нет — на заголовок региона, а не body. */
-    const fallbackKey = focusKey === 'stop' ? 'resume' : '';
-    const target = cell.querySelector(`[data-focus-key="${cssEscape(focusKey)}"]`)
-      || (fallbackKey ? cell.querySelector(`[data-focus-key="${cssEscape(fallbackKey)}"]`) : null);
-    if (target) target.focus({ preventScroll: true });
-    else anchor();
-  } else if (focusWasInside) {
-    /* running → done/error: кнопки исчезли, но пользователь не должен
-       оказаться на body. */
-    anchor();
-  }
+  cell.innerHTML = `<div class="now-row"><h2 class="now-title" id="now-title">${needsAuth ? 'Доступ к диску истёк' : 'Неизвестное состояние загрузки'}</h2>
+    <button class="btn btn--secondary" type="button" data-action="${needsAuth ? 'reconnect' : 'refresh'}">${needsAuth ? 'Войти заново' : 'Обновить'}</button></div>`;
 }
 
 /* --- job status notifications -------------------------------------------- */
@@ -2962,27 +2511,25 @@ async function stopJob(id, trigger) {
   /* Ответ 200 — операция подтверждена. Ниже только обновление UI: его сбой
      не превращается в «не удалось приостановить». */
   const job = state.jobs.find((item) => item.id === id);
-  pendingFocusKey = trigger && trigger.dataset ? (trigger.dataset.focusKey || '') : '';
-  try {
-    showToast({
-      type: data.warning ? 'warn' : 'ok',
-      title: data.warning ? 'Скачивание приостановлено не сразу' : 'Скачивание приостановлено',
-      message: data.warning || (job ? `${jobSourceLabel(job)} · ${displayPath(job.dest)}` : ''),
-    });
-    await refreshAfterAction();
-  } finally {
-    pendingFocusKey = '';
-  }
+  showToast({
+    type: data.warning ? 'warn' : 'ok',
+    title: data.warning ? 'Скачивание приостановлено не сразу' : 'Скачивание приостановлено',
+    message: data.warning || (job ? `${jobSourceLabel(job)} · ${displayPath(job.dest)}` : ''),
+  });
+  await refreshAfterAction();
 }
 
-async function resumeJob(id, trigger) {
+async function resumeJob(id, trigger, destination = '') {
   const busyKey = `resume:${id}`;
   if (jobActionBusy.has(busyKey)) return;
   jobActionBusy.add(busyKey);
   setBusy(trigger, true);
   let failed = null;
   try {
-    await api(`/api/jobs/${encodeURIComponent(id)}/resume`, { method: 'POST', timeout: API_TIMEOUT.mutate });
+    await api(`/api/jobs/${encodeURIComponent(id)}/resume`, {
+      method: 'POST', timeout: API_TIMEOUT.mutate,
+      ...(destination ? { body: JSON.stringify({ destPath: destination }) } : {}),
+    });
   } catch (error) {
     failed = error;
   } finally {
@@ -2994,20 +2541,41 @@ async function resumeJob(id, trigger) {
      процент, показанный до паузы, пока не придёт первый свежий пакет. */
   const job = state.jobs.find((item) => item.id === id);
   resumedJobs.add(id);
-  if (job) {
+  if (job && destination && destination !== job.dest) {
+    jobPercentFloor.delete(id);
+  } else if (job) {
     jobPercentFloor.set(id, Math.max(jobPercentFloor.get(id) || 0, shownPercent(job)));
   }
-  pendingFocusKey = trigger && trigger.dataset ? (trigger.dataset.focusKey || '') : '';
+  showToast({
+    type: 'ok', title: 'Скачивание продолжено',
+    message: destination ? displayPath(destination) : '',
+  });
+  await refreshAfterAction();
+}
+
+function chooseResumeDestination(job, trigger) {
+  folder = folderSession('flow-dest', trigger);
+  folder.resumeID = job.id;
+  folder.path = job.dest;
+  $('#folder-dialog').showModal();
+  showFlowStep('flow-dest');
+}
+
+async function resumeInFolder() {
+  if (flowBusy) return;
+  const id = folder.resumeID;
+  const path = folder.path;
+  flowBusy = true;
+  folder.alert = '';
+  renderFlowFooter();
   try {
-    showToast({
-      type: 'ok', title: 'Скачивание продолжено',
-      message: job
-        ? `${jobSourceLabel(job)} · ${displayPath(job.dest)}. Скачанные файлы не будут скачаны снова.`
-        : 'Скачанные файлы не будут скачаны снова.',
-    });
-    await refreshAfterAction();
+    await resumeJob(id, null, path);
+    forceCloseFolderDialog();
+  } catch (error) {
+    setFlowAlert(serverMessage(error));
   } finally {
-    pendingFocusKey = '';
+    flowBusy = false;
+    renderFlowFooter();
   }
 }
 
@@ -3060,7 +2628,7 @@ async function copyFailures(id, trigger) {
 const FLOW_STEPS = {
   'flow-dest': { step: 1, title: 'Куда сохранить' },
   'flow-source': { step: 2, title: 'Что скачать' },
-  'flow-review': { step: 3, title: 'Проверьте выбор' },
+  'flow-review': { step: 3, title: 'Сохранить на Umbrel' },
 };
 /* Сколько ждём оценку, прежде чем честно сказать «Оценка ещё идёт». */
 const ESTIMATE_SLOW_MS = 20000;
@@ -3088,6 +2656,7 @@ function flowAnnounce(text) {
 
 function folderSession(context, opener) {
   return {
+    accountID: currentAccount()?.id || '',
     context,
     target: context === 'flow-source' ? 'cloud' : 'server',
     path: '',
@@ -3105,7 +2674,7 @@ function folderSession(context, opener) {
     createBusy: false,
     createUnavailable: folderCreateUnavailable,
     all: false,
-    showExisting: false,
+    showExisting: true,
     excluded: [],
     confirmPath: '',
     confirmFocus: false,
@@ -3137,12 +2706,10 @@ function initialDestinationPath() {
    Закрытие X черновик не очищает: повторный вход начинается с шага 1. */
 function resetFlowDraft() {
   excludedFolders = [];
-  flowStep = 1;
+
   flowSourceAll = false;
-  flowShowExisting = false;
+  flowShowExisting = true;
   flowDest = '';
-  flowFree = null;
-  flowTotal = null;
   flowBusy = false;
   flowEditing = '';
   flowLaunchToken = '';
@@ -3172,10 +2739,10 @@ function openFlowStart(trigger) {
     return;
   }
   flowOpener = trigger instanceof HTMLElement ? trigger : $('#flow-start');
-  flowStep = 1;
-  /* Новый вход: фильтр «уже скачанные» выключен, ответы проверки сбрасываем,
-     а назначение и выбор папок/файлов остаются в памяти страницы. */
-  flowShowExisting = false;
+
+  /* Новый вход: уже скачанные папки видны. Ответы проверки сбрасываем,
+     назначение и выбор папок/файлов остаются в памяти страницы. */
+  flowShowExisting = true;
   flowEditing = '';
   resetExistingCache();
   folder = folderSession('flow-dest', flowOpener);
@@ -3193,6 +2760,7 @@ function openFlowStart(trigger) {
 /* --- переключение шагов ---------------------------------------------------- */
 
 function showFlowStep(context) {
+  if (folder.context === 'flow-review' && context !== folder.context) cancelPreflight();
   folder.context = context;
   folder.target = context === 'flow-source' ? 'cloud' : 'server';
 
@@ -3200,7 +2768,7 @@ function showFlowStep(context) {
   folder.confirmFocus = false;
   folder.status = '';
   const info = FLOW_STEPS[context] || FLOW_STEPS['flow-dest'];
-  flowStep = info.step || 1;
+
 
   if (context === 'flow-dest') {
     updateFlowChrome();
@@ -3216,6 +2784,10 @@ function showFlowStep(context) {
     folder.showExisting = !!flowShowExisting;
     if (!folder.existingDest) folder.existingDest = flowDest;
     renderFlow();
+    if (cloudFilesAvailable() && !folder.files.has('')) {
+      folder.files.set('', { status: 'loading', files: [], limit: CLOUD_FILES_LIMIT });
+      requestCloudFiles('');
+    }
     const root = folder.nodes.get('');
     if (!root || (!root.loaded && !root.loading)) loadCloudNode('');
     else {
@@ -3256,7 +2828,7 @@ function updateFlowChrome() {
   const stepHead = $('#flow-step-head');
   const foot = $('#flow-foot');
   const dialog = $('#folder-dialog');
-  if (title) title.textContent = context === 'flow-source' ? 'Что скачать' : context === 'flow-review' ? 'Перед скачиванием' : 'Куда сохранить';
+  if (title) title.textContent = info.title;
   if (stepHead) stepHead.hidden = true;
   if (stepTitle) stepTitle.textContent = info.title;
   for (const number of [1, 2, 3]) {
@@ -3323,7 +2895,12 @@ function renderFlowFooter() {
     back.hidden = flowEditing !== 'dest';
     back.disabled = false;
     primary.textContent = flowEditing === 'dest' ? 'Сохранить папку' : 'Выбрать эту папку';
-    primary.disabled = !!folder.loading || !!folder.error || !folder.path || folder.writable === false;
+    primary.disabled = flowBusy || !!folder.loading || !!folder.error || !folder.path || folder.writable === false;
+    if (folder.resumeID) {
+      primary.textContent = 'Продолжить здесь';
+      noteText = folder.alert || 'Ранее скачанные файлы останутся в прежней папке.';
+    }
+    if (folder.writable === false) noteText = 'Папка только для чтения. Выберите другую.';
   } else if (context === 'flow-source') {
     back.hidden = flowEditing !== 'source';
     back.disabled = false;
@@ -3338,7 +2915,7 @@ function renderFlowFooter() {
       && flowPreflight.data
       && flowPreflight.data.fits === false;
     primary.textContent = 'Скачать';
-    primary.disabled = flowBusy || nofit;
+    primary.disabled = flowBusy || nofit || destinationInUse(flowDest);
     noteText = folder.status || '';
     noteTone = folder.status ? 'status' : '';
   }
@@ -3746,17 +3323,17 @@ function cloudNodeMarkup(path, depth) {
   const covered = folderCovered(path);
   const indeterminate = folderIsIndeterminate(path);
   const checked = folderNodeChecked(path) && !indeterminate;
-  const disabled = covered || folder.all;
+  const disabled = covered || (folder.all && folder.excluded.some(root => path.startsWith(root + '/')));
   const expanded = folder.expanded.has(path);
   const node = folder.nodes.get(path);
   const canExpand = !node || !node.loaded || (node.dirs && node.dirs.length > 0);
-  const tag = folderTagMarkup(path, entry);
+  const tag = folder.all && !folder.showExisting ? '' : folderTagMarkup(path, entry);
   const describedBy = tag ? tagId(path) : '';
   /* Фильтр меняет только видимость. Выбранное и сфокусированное не прячем,
      иначе строка исчезает из-под курсора и фокус уходит на body. */
   const keep = !!folder.keepVisiblePath
     && (path === folder.keepVisiblePath || folder.keepVisiblePath.startsWith(`${path}/`));
-  const hiddenByFilter = downloaded && !folder.showExisting && !checked && !indeterminate && !keep;
+  const hiddenByFilter = downloaded && !folder.all && !folder.showExisting && !checked && !indeterminate && !keep;
   const expandButton = (canExpand || expanded)
     ? `<button class="folder-expand" type="button" data-expand="${escapeHtml(path)}" aria-expanded="${expanded}"${expanded ? ` aria-controls="${escapeHtml(childrenId(path))}"` : ''} aria-label="${expanded ? 'Скрыть папки внутри' : 'Показать папки внутри'} «${escapeHtml(name)}»">${icon('chevron')}</button>`
     : '';
@@ -3812,8 +3389,8 @@ function renderSourceBar() {
   const toggle = $('#folder-show-existing');
   if (toggle) toggle.checked = !!folder.showExisting;
   const all = $('#select-disk');
-  all.checked = folder.all && !folder.excluded.length;
-  all.indeterminate = folder.all ? false : !flowSelectionEmpty();
+  all.checked = folder.all;
+  $('#disk-mode-label').textContent = folder.all && folder.excluded.length ? 'Весь диск с исключениями' : 'Весь диск';
   const unavailable = $('#folder-existing-note');
   if (unavailable) {
     unavailable.hidden = !existingUnavailable;
@@ -3871,13 +3448,19 @@ function renderSourceTree() {
       ? 'Похоже, облако отключено. Проверьте подключение и повторите.'
       : serverMessage(root.error);
     tree.innerHTML = folderErrorState('Не удалось загрузить папки', detail, 'data-folder-retry');
-  } else if (!root.dirs.length) {
-    tree.innerHTML = `<div class="folder-state folder-state--empty">
-      <p class="folder-state-title">В облаке нет папок</p>
-      ${folder.all ? '' : '<p class="folder-detail">Чтобы скачать файлы из корня, отметьте «Весь диск».</p>'}
-    </div>`;
   } else {
     let html = `<ul class="folder-tree">${root.dirs.map((entry) => cloudNodeMarkup(entry.path, 0)).join('')}</ul>`;
+    const files = folder.files.get('');
+    if (files?.status === 'loaded' && files.files.length) {
+      html += `<ul class="file-list root-files" aria-label="Файлы в корне диска">${files.files.map(file => fileMarkup('', file)).join('')}</ul>`;
+      if (files.truncated) html += `<p class="folder-truncated">Показаны первые ${files.files.length} файлов. Остальные можно скачать вместе с диском.</p>`;
+    } else if (files?.status === 'error') {
+      html += folderErrorState('Не удалось загрузить файлы', serverMessage(files.error), 'data-files-retry=""');
+    } else if (files?.status === 'loading') {
+      html += '<p class="files-note" role="status">Загружаем файлы…</p>';
+    } else if (!root.dirs.length) {
+      html += `<p class="files-note">${files ? 'Диск пуст' : 'В корне нет папок'}</p>`;
+    }
     const truncated = Array.from(folder.nodes.values()).some((node) => node && node.truncated);
     if (truncated) html += `<p class="folder-truncated">Показаны первые ${pluralFolders(500)}</p>`;
     tree.innerHTML = html;
@@ -3982,12 +3565,15 @@ function confirmFolderSelection(path) {
 
 function toggleFolderSelection(path, checked) {
   if (!path) return;
-  /* «Весь диск» выбирается целиком: backend не принимает список исключений
-     (POST /api/preflight и /api/jobs отвечают 400 на чужое поле), поэтому
-     под режимом «весь диск» папки показаны отмеченными и заблокированы.
-     Снять одну папку нельзя — иначе интерфейс обещал бы то, чего сервер
-     не умеет. */
   if (folder.all) {
+    const excluded = folder.excluded.filter(root => root !== path && !root.startsWith(path + '/'));
+    if (!checked) excluded.push(path);
+    if (excluded.length > MAX_SOURCE_FOLDERS) {
+      setFlowAlert('Можно исключить до 20 папок');
+    } else {
+      folder.excluded = excluded;
+      folder.alert = '';
+    }
     renderFlow();
     return;
   }
@@ -4196,7 +3782,7 @@ function cancelCloudFiles() {
 }
 
 async function requestCloudFiles(path) {
-  if (!cloudFilesAvailable() || !path) return;
+  if (!cloudFilesAvailable()) return;
   const account = currentAccount();
   const entry = folder.files.get(path);
   if (!account || !entry) return;
@@ -4239,7 +3825,7 @@ async function requestCloudFiles(path) {
     entry.status = 'error';
   } finally {
     if (controller && folder.filesInflight.get(path) === controller) folder.filesInflight.delete(path);
-    if (token === folderToken && folder.filePanelPath === path) renderSourceTree();
+    if (token === folderToken && (!path || folder.filePanelPath === path)) renderSourceTree();
   }
 }
 
@@ -4455,15 +4041,15 @@ function syncSelectionFromFolder() {
    При входе из проверки тот же шаг возвращает к сводке с «Сохранить папку». */
 function flowConfirmDestination() {
   if (folder.loading || folder.error || !folder.path || folder.writable === false) return;
+  if (folder.resumeID) { resumeInFolder(); return; }
   flowDest = displayPath(folder.path);
-  flowFree = Number.isFinite(Number(folder.free)) ? Number(folder.free) : null;
-  flowTotal = Number.isFinite(Number(folder.total)) ? Number(folder.total) : null;
   if (flowEditing === 'dest') {
     flowEditing = '';
+    resetExistingCache();
     showFlowStep('flow-review');
     return;
   }
-  flowStep = 2;
+
   folder.excluded = excludedFolders.slice();
   folder.all = !!flowSourceAll;
   folder.showExisting = !!flowShowExisting;
@@ -4498,7 +4084,7 @@ function flowBackToDest() {
   if (tree) folder.treeScroll = tree.scrollTop;
   syncSelectionFromFolder();
   folder.alert = '';
-  flowStep = 1;
+
   showFlowStep('flow-dest');
 }
 
@@ -4516,7 +4102,7 @@ function flowToReview() {
   syncSelectionFromFolder();
   folder.alert = '';
   flowEditing = '';
-  flowStep = 3;
+
   showFlowStep('flow-review');
 }
 
@@ -4548,6 +4134,7 @@ function cancelPreflight() {
   if (flowPreflight && flowPreflight.controller) {
     try { flowPreflight.controller.abort(); } catch { /* запрос уже завершён */ }
     flowPreflight.controller = null;
+    if (flowPreflight.status === 'loading') flowPreflight.status = 'idle';
   }
 }
 
@@ -4586,8 +4173,7 @@ function ensurePreflight({ retry = false } = {}) {
   renderFlowFooter();
   const payload = {
     accountId: account.id,
-    sourcePaths: flowSourceAll ? [] : cloudSelection.slice(),
-    sourceFiles: flowSourceAll ? [] : cloudFileSelection.slice(),
+    ...selectedSourcePayload(),
     destPath: displayPath(flowDest),
   };
   (async () => {
@@ -4654,20 +4240,13 @@ function estimateView() {
   const files = Math.max(0, Number(data.files) || 0);
   const bytes = Math.max(0, Number(data.bytes) || 0);
   const free = Math.max(0, Number(data.free) || 0);
-  return { kind: data.fits === false ? 'nofit' : 'ready', files, bytes, free };
+  return { kind: data.fits === false ? 'nofit' : 'ready', files, bytes, free, partialEstimate: !!data.partialEstimate };
 }
 
 function estimateShortage(view) {
   /* Сервер блокирует перенос при 90% свободного места (transferLimit). */
-  const usable = Math.floor((Number(view.free) || 0) * 0.9);
+  const usable = view.free - Math.floor(view.free / 10);
   return Math.max(0, (Number(view.bytes) || 0) - usable);
-}
-
-function knownFree(view) {
-  if (view.kind === 'ready' || view.kind === 'nofit') {
-    if (Number(view.free) > 0) return Number(view.free);
-  }
-  return Number(flowFree) > 0 ? Number(flowFree) : 0;
 }
 
 function estimateValueMarkup() {
@@ -4686,6 +4265,7 @@ function estimateValueMarkup() {
   if (view.kind === 'nofit') {
     html += `<span class="review-short">${icon('warning', 'review-short-icon')}Не хватает ${escapeHtml(humanBytes(estimateShortage(view)))}</span>`;
   }
+  if (view.partialEstimate) html += `<span class="review-sub">Свободно ${escapeHtml(humanBytes(view.free))}. Часть файлов уже может быть в этой папке.</span>`;
   if (view.files === 0 && view.bytes === 0) {
     html += '<span class="review-sub">Файлов не найдено — возможно, выбранные папки пусты.</span>';
   }
@@ -4702,7 +4282,7 @@ function reviewChips(folders, files) {
     ...shownFiles.map((path) => `<li class="review-chip review-chip--file" title="${escapeHtml(displayPath(path))}">${icon('file')}<span>${escapeHtml(shortPath(path))}</span></li>`),
   ];
   let more = '';
-  if (hiddenCount > 0) {
+  if (folders.length > 3 || files.length > 3) {
     more = `<li class="review-chip-more"><button class="btn btn--quiet btn--sm" type="button" id="review-show-all" aria-expanded="${reviewShowAll}">${reviewShowAll ? 'Свернуть' : `+${hiddenCount}`}</button></li>`;
   }
   return `<ul class="review-chips">${chips.join('')}${more}</ul>`;
@@ -4717,6 +4297,16 @@ function captureReviewFocus(scope) {
   return '';
 }
 
+function destinationInUse(path) {
+  const base = String(path || '').replace(/\/+$/, '');
+  if (!base) return false;
+  return state.jobs.some(job => {
+    if (!['queued', 'running'].includes(job.status)) return false;
+    const active = String(job.dest || '').replace(/\/+$/, '');
+    return active && (base === active || base.startsWith(active + '/') || active.startsWith(base + '/'));
+  });
+}
+
 function renderReview() {
   const body = $('#review-body');
   if (!body || folder.context !== 'flow-review') return;
@@ -4725,7 +4315,6 @@ function renderReview() {
   const files = flowSourceAll ? [] : cloudFileSelection;
   const sourceValue = flowSourceAll ? wholeDiskLabel(excludedFolders) : selectionLabel(folders, files);
   const view = estimateView();
-  const free = knownFree(view);
   body.innerHTML = `
     <dl class="review-list">
       <div class="review-row">
@@ -4739,21 +4328,18 @@ function renderReview() {
         </dd>
       </div>
       <div class="review-row">
-        <dt>Папка на сервере</dt>
+        <dt>Сохранить в</dt>
         <dd>
           <div class="review-line">
             <span class="review-path" title="${escapeHtml(flowDest)}">${escapeHtml(flowDest)}</span>
             <button class="review-change" type="button" data-edit="dest">Изменить</button>
           </div>
+          ${destinationInUse(flowDest) ? '<span class="review-short">Здесь уже идёт загрузка. Выберите другую папку.</span>' : ''}
         </dd>
       </div>
       <div class="review-row">
-        <dt>К скачиванию</dt>
+        <dt>Объём выбора</dt>
         <dd class="review-estimate">${estimateValueMarkup()}</dd>
-      </div>
-      <div class="review-row">
-        <dt>Свободно</dt>
-        <dd><span class="review-value">${free > 0 ? escapeHtml(humanBytes(free)) : '—'}</span></dd>
       </div>
     </dl>`;
   let target = focusSelector ? body.querySelector(focusSelector) : null;
@@ -4807,8 +4393,8 @@ async function startTransfer() {
   const facts = estimate.kind === 'ready' || estimate.kind === 'nofit'
     ? ` · ${formatFiles(estimate.files)} · ${humanBytes(estimate.bytes)}`
     : '';
-  const sourcePaths = flowSourcePaths();
-  const sourceFiles = flowSourceFiles();
+  const selection = selectedSourcePayload();
+  const {sourcePaths, sourceFiles} = selection;
   const destPath = flowDest;
   /* Тот же выбор — тот же ключ: повтор после потери ответа не создаст вторую
      задачу. Смена выбора или успешный старт дают новый ключ. */
@@ -4829,7 +4415,7 @@ async function startTransfer() {
   let result = null;
   let failure = null;
   try {
-    result = await createJob(account, sourcePaths, sourceFiles, destPath, token);
+    result = await createJob(account, selection, destPath, token);
   } catch (error) {
     failure = error;
   }
@@ -4856,7 +4442,7 @@ async function startTransfer() {
   for (let attempt = 0; attempt < START_RETRY_ATTEMPTS; attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, START_RETRY_DELAY * (attempt + 1)));
     try {
-      result = await createJob(account, sourcePaths, sourceFiles, destPath, token);
+      result = await createJob(account, selection, destPath, token);
     } catch (error) {
       failure = error;
       if (idempotencyConflict(error)) {
@@ -4912,7 +4498,7 @@ function resetLaunchToken() {
 }
 
 /* POST /api/jobs с ключом. meta отличает 201 (создано) от 200 (повтор). */
-async function createJob(account, sourcePaths, sourceFiles, destPath, token) {
+async function createJob(account, selection, destPath, token) {
   return api('/api/jobs', {
     method: 'POST',
     timeout: API_TIMEOUT.mutate,
@@ -4921,8 +4507,7 @@ async function createJob(account, sourcePaths, sourceFiles, destPath, token) {
       accountId: account.id,
       /* Ключ считается по отсортированному выбору, поэтому тело тоже
          каноническое: смена порядка папок не даст 409 на тот же набор. */
-      sourcePaths: sourcePaths.slice().sort(),
-      sourceFiles: sourceFiles.slice().sort(),
+      ...selection,
       destPath,
       /* Интерфейс всегда только добавляет и обновляет файлы: mode=copy. */
       mode: 'copy',
@@ -4977,8 +4562,8 @@ function finishTransfer(dialog, sourcePaths, sourceFiles, destPath, facts, repla
     message: `${selectionLabel(sourcePaths, sourceFiles)} → ${displayPath(destPath)}${facts}`,
   });
   refreshAfterAction().catch(() => {}).then(() => {
-    const title = $('#now-title');
-    if (title) title.focus({ preventScroll: true });
+    const next = $('#job-list .task-head button') || $('#flow-start');
+    next?.focus({ preventScroll: true });
   });
 }
 
@@ -5010,6 +4595,7 @@ function finishFolderDialog() {
   resumeAfterDialog();
   if (!folder || folder.finished) return;
   folder.finished = true;
+  cancelPreflight();
   const opener = folder.opener;
   cancelCloudFiles();
   folderToken += 1;
@@ -5026,6 +4612,7 @@ function finishFolderDialog() {
 /* --- общий обработчик кнопок футера --------------------------------------- */
 
 function flowChooseAction() {
+  if (flowBusy) return;
   if (folder.context === 'flow-dest') {
     flowConfirmDestination();
     return;
@@ -5059,13 +4646,19 @@ function flowBackAction() {
   if (folder.context === 'flow-review') {
     if (flowBusy) return;
     flowEditing = '';
-    flowStep = 2;
+
     showFlowStep('flow-source');
   }
 }
 
 /* --- events --------------------------------------------------------------- */
 
+$('#add-drive').addEventListener('click', () => { location.hash = '#/setup'; });
+$('#home-view').addEventListener('change', event => {
+  if (event.target.id !== 'drive-picker') return;
+  activateAccount(event.target.value);
+  render();
+});
 $('#home-view').addEventListener('click', async (event) => {
   const trigger = event.target.closest('button[data-action]');
   if (!trigger) return;
@@ -5076,6 +4669,12 @@ $('#home-view').addEventListener('click', async (event) => {
 
   if (action === 'connect' || action === 'reconnect') {
     location.hash = '#/setup';
+    return;
+  }
+
+  if (action === 'change-dest') {
+    const job = accountJobs().find(item => item.id === id);
+    if (job && PAUSED_STATUSES.includes(job.status) && job.mode !== 'sync') chooseResumeDestination(job, trigger);
     return;
   }
 
@@ -5111,7 +4710,6 @@ $('#home-view').addEventListener('click', async (event) => {
     if (action === 'copy-failures') { await copyFailures(id, trigger); return; }
     if (action === 'refresh') {
       setBusy(trigger, true);
-      pendingFocusKey = trigger.dataset ? (trigger.dataset.focusKey || '') : '';
       try {
         await loadData();
         render();
@@ -5125,7 +4723,6 @@ $('#home-view').addEventListener('click', async (event) => {
           } },
         });
       } finally {
-        pendingFocusKey = '';
         if (trigger.isConnected) setBusy(trigger, false);
       }
       return;
@@ -5214,9 +4811,15 @@ $('#setup-body').addEventListener('click', (event) => {
   if (event.target.closest('#yandex-start, #yandex-retry')) { startYandexDevice(); return; }
   if (event.target.closest('#yandex-cancel')) { cancelYandexAttempt(); return; }
   const help = event.target.closest('#token-help-toggle');
-  if (help) { toggleTokenHelp(); return; }
-  const copy = event.target.closest('#token-copy');
-  if (copy) { copyTokenCommand(copy); return; }
+  if (help) {
+    wizard.customOAuth = !yandexAuth.available;
+    chooseMethod('yandex');
+    return;
+  }
+  if (event.target.closest('#copy-device-code')) {
+    copyText(yandexAuth.userCode).then(() => setYandexLive('Код скопирован.'), () => setYandexLive('Выделите код и скопируйте вручную.'));
+    return;
+  }
   if (event.target.closest('#f-pass-toggle')) { togglePassword(); }
 });
 
@@ -5498,8 +5101,6 @@ $('#flow-source-tree')?.addEventListener('change', (event) => {
 $('#select-disk').addEventListener('change', event => {
   folder.all = event.target.checked;
   folder.excluded = [];
-  folder.selected = [];
-  folder.selectedFiles = [];
   folder.alert = '';
   folder.confirmPath = '';
   renderFlow();

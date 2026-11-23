@@ -894,7 +894,7 @@ ul, dl, dd { margin: 0; padding: 0; }
   box-shadow: var(--shadow);
 }
 /* Яндекс-вход — основной способ: занимает всю строку над двумя запасными. */
-.method-option--primary { grid-column: 1 / -1; }
+.method-switch { grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); }
 /* Вход через Яндекс: панель с кодом подтверждения. */
 .yandex-intro { display: grid; gap: 12px; justify-items: start; }
 .yandex-panel {
@@ -3523,3 +3523,40 @@ body:has(dialog[open]) { overflow: hidden; }
 .job-failure-text .icon { flex: none; width: 16px; height: 16px; }
 /* Пауза не ошибка: у прерванной задачи строка спокойная, а не красная. */
 .job-row[data-status="interrupted"] .job-failure-text { color: var(--amber); }
+
+/* Shared control geometry and hierarchy for the two themes. */
+.setup-brand { width:min(100%,520px); justify-content:flex-start; font-size:20px; }
+.setup-brand .theme-toggle { margin-inline-start:auto; }
+.setup-card { gap:14px; }
+.setup-title { line-height:1.2; font-size:clamp(21px,4vw,26px); }
+#setup-body { gap:20px; }
+.setup-hint:empty, .job-error:empty { display:none; }
+.setup-actions { border-top:1px solid var(--hairline); padding-top:14px; }
+.method-option { border-radius:8px; }
+.method-option[aria-checked="true"] { border-color:transparent; box-shadow:0 1px 4px #0002; }
+.yandex-hint .btn { color:var(--on-accent); text-decoration:none; }
+.drive-name small { display:block; margin-top:2px; }
+#drive-picker { appearance:auto; width:100%; min-height:32px; min-width:0; padding:0 4px 0 0; border:0; color:var(--ink); background:var(--surface); font:inherit; font-weight:600; }
+#job-list { gap:0; border:1px solid var(--hairline); background:var(--surface); border-radius:16px; }
+#job-list:empty { display:none; }
+#job-list .job-row { padding:10px 16px 14px; border:0; border-radius:0; background:transparent; box-shadow:none; }
+#job-list .job-row + .job-row { border-top:1px solid var(--hairline); }
+.job-row .task-head h2 { font-size:15px; }
+.job-row .task-stats { font-size:13px; }
+.job-row .now-body { margin-top:2px; gap:6px; }
+.job-row .task-head button { width:40px; border-radius:10px; background:transparent; color:var(--muted); }
+.job-row .task-head button:hover { background:var(--surface-sunken); color:var(--ink); }
+.root-files { margin:8px 0 0; padding:0; }
+@media(max-width:460px) {
+  .method-switch { grid-template-columns:repeat(auto-fit,minmax(82px,1fr)); }
+  .method-option { font-size:13px; padding-inline:4px; }
+}
+
+.job-row .destination-link { justify-self:start; min-height:32px; padding-inline:0; font-size:13px; }
+
+.code-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.yandex-intro .control { width:100%; }
+
+[hidden] { display:none !important; }
+
+.boot-drive { margin-top:18px; min-height:78px; }

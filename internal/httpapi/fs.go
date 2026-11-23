@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"cloudferry/internal/fsbrowse"
@@ -74,8 +75,15 @@ func (s *Server) handleFSDirs(w http.ResponseWriter, r *http.Request) {
 		Free:      listing.Free,
 		Total:     listing.Total,
 		Truncated: listing.Truncated,
-		Writable:  true,
+		Writable:  dirWritable(listing.Path),
 	})
+}
+
+// dirWritable reports whether this process can create files in path.
+// POSIX W_OK is 2; this platform's syscall package does not export the name.
+func dirWritable(path string) bool {
+	const writeOK = 2
+	return syscall.Access(path, writeOK) == nil
 }
 
 // defaultDestRoot is the folder the picker opens when no path is given.

@@ -92,16 +92,18 @@ type Job struct {
 	// SourceFiles lists individual cloud files the user picked, relative to
 	// the cloud root and normalised. Together with SourcePaths it makes Source
 	// "<remote>:"; the selected files keep their structure inside Dest.
-	SourceFiles []string `json:"sourceFiles,omitempty"`
-	Dest        string   `json:"dest"`
-	Mode        string   `json:"mode"`
-	Status      string   `json:"status"`
-	Group       string   `json:"group"`
-	RcloneJobID int64    `json:"rcloneJobId"`
-	ExecuteID   string   `json:"executeId,omitempty"`
-	Error       string   `json:"error,omitempty"`
-	ErrorTitle  string   `json:"errorTitle,omitempty"`
-	ErrorAdvice string   `json:"errorAdvice,omitempty"`
+	SourceFiles     []string `json:"sourceFiles,omitempty"`
+	ExcludedFolders []string `json:"excludedFolders,omitempty"`
+	Dest            string   `json:"dest"`
+	InitialDest     string   `json:"initialDest,omitempty"`
+	Mode            string   `json:"mode"`
+	Status          string   `json:"status"`
+	Group           string   `json:"group"`
+	RcloneJobID     int64    `json:"rcloneJobId"`
+	ExecuteID       string   `json:"executeId,omitempty"`
+	Error           string   `json:"error,omitempty"`
+	ErrorTitle      string   `json:"errorTitle,omitempty"`
+	ErrorAdvice     string   `json:"errorAdvice,omitempty"`
 	// BytesBase is how much this job had already transferred when the current
 	// attempt was resumed. rclone counts the stats of one engine job, so a
 	// resumed attempt reports only the remainder; BytesBase keeps the stored
@@ -191,6 +193,7 @@ func cloneJob(j Job) Job {
 	if j.SourcePaths != nil {
 		j.SourcePaths = append([]string(nil), j.SourcePaths...)
 	}
+	j.ExcludedFolders = append([]string(nil), j.ExcludedFolders...)
 	if j.SourceFiles != nil {
 		j.SourceFiles = append([]string(nil), j.SourceFiles...)
 	}
