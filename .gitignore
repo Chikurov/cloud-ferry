@@ -21,3 +21,21 @@ playwright-report/
 test-results/
 **/ms-playwright/
 .venv/
+node_modules/
+
+# Secrets and machine-local runtime (keep *.example)
+.env
+.env.*
+!.env.example
+!**/.env.example
+rclone.conf
+**/rclone.conf
+state.json
+**/state.json
+
+# Agent / private scratch
+agent-work/
+.impeccable/
+*.log
+.DS_Store
+**/._*
