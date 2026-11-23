@@ -23,11 +23,25 @@ function availableMethods() {
   return Object.keys(SETUP_METHODS).filter((method) => method !== 'yandex' || yandexAuth.available === true || wizard.customOAuth);
 }
 
+function methodOption(method, extraClass = '') {
+  const active = wizard.method === method;
+  const classes = ['method-option', extraClass].filter(Boolean).join(' ');
+  return `<button class="${classes}" type="button" role="radio" id="method-${method}" data-method="${method}" aria-checked="${active ? 'true' : 'false'}" tabindex="${active ? '0' : '-1'}">${escapeHtml(SETUP_METHODS[method])}</button>`;
+}
+
+/* Когда OAuth доступен — «Яндекс ID» визуально главный, пароль и токен
+   запасные. Без OAuth остаётся равный сегментный переключатель. */
 function methodSwitch() {
-  const options = availableMethods().map((method) => {
-    const active = wizard.method === method;
-    return `<button class="method-option" type="button" role="radio" id="method-${method}" data-method="${method}" aria-checked="${active ? 'true' : 'false'}" tabindex="${active ? '0' : '-1'}">${escapeHtml(SETUP_METHODS[method])}</button>`;
-  }).join('');
+  const methods = availableMethods();
+  const yandexOn = methods.includes('yandex');
+  if (yandexOn) {
+    const alts = methods.filter((method) => method !== 'yandex');
+    return `<div class="method-picker" role="radiogroup" aria-label="Способ входа">
+      ${methodOption('yandex', 'method-primary')}
+      <div class="method-alts">${alts.map((method) => methodOption(method, 'method-alt')).join('')}</div>
+    </div>`;
+  }
+  const options = methods.map((method) => methodOption(method)).join('');
   return `<div class="method-switch" role="radiogroup" aria-label="Способ входа">${options}</div>`;
 }
 

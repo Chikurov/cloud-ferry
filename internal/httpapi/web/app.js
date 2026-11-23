@@ -104,7 +104,7 @@ let yandexAuth = {
 };
 const jobActionBusy = new Set();
 /* Задачи, которые пользователь продолжил в этой сессии: в очереди карточка
-   говорит «Продолжаем…», а не «Начинается». */
+   говорит «Продолжаем…», а не «В очереди». */
 const resumedJobs = new Set();
 /* Нижняя граница показанного процента: между опросами полоса не откатывается
    назад, «замирание» допустимо. */
@@ -2297,8 +2297,10 @@ function jobPreparing(job) {
 function jobStateText(job) {
   if (job.status === 'done') return 'Завершена';
   if (PAUSED_STATUSES.includes(job.status)) return statusOf(job)[0];
-  if (job.status === 'queued') return jobResumed(job) ? 'Продолжаем…' : 'Начинается';
-  if (job.status === 'running' && jobPreparing(job)) return 'Проверяем, что уже скачано…';
+  if (job.status === 'queued') return jobResumed(job) ? 'Продолжаем…' : 'В очереди';
+  if (job.status === 'running' && jobPreparing(job)) {
+    return jobResumed(job) ? 'Проверяем, что уже скачано…' : 'Начинается';
+  }
   return jobMeta(job);
 }
 
@@ -2537,7 +2539,7 @@ async function resumeJob(id, trigger, destination = '') {
     if (trigger && trigger.isConnected) setBusy(trigger, false);
   }
   if (failed) throw failed;
-  /* Карточка сразу говорит «Продолжаем…», а не «Начинается», и держит
+  /* Карточка сразу говорит «Продолжаем…», а не «В очереди», и держит
      процент, показанный до паузы, пока не придёт первый свежий пакет. */
   const job = state.jobs.find((item) => item.id === id);
   resumedJobs.add(id);
@@ -2622,13 +2624,14 @@ async function copyFailures(id, trigger) {
 
 /* --- «Новое скачивание»: один диалог, три шага ---------------------------- */
 
-/* Шаги диалога: короткий заголовок и номер для «N из 3». Название операции
-   «Новое скачивание» показывается в шапке один раз. Контекст setup — тот же
-   диалог в роли пикера папки в мастере, поэтому там номера нет. */
+/* Шаги диалога: короткий заголовок и номер для «Шаг N из 3».
+   section — id секции в разметке (flow-step-1|2|3); step — позиция в
+   пользовательском пути (источник → папка → проверка). */
+const FLOW_STEP_TOTAL = 3;
 const FLOW_STEPS = {
-  'flow-dest': { step: 1, title: 'Куда сохранить' },
-  'flow-source': { step: 2, title: 'Что скачать' },
-  'flow-review': { step: 3, title: 'Сохранить на Umbrel' },
+  'flow-source': { section: 2, step: 1, title: 'Что скачать' },
+  'flow-dest': { section: 1, step: 2, title: 'Куда сохранить' },
+  'flow-review': { section: 3, step: 3, title: 'Сохранить на Umbrel' },
 };
 /* Сколько ждём оценку, прежде чем честно сказать «Оценка ещё идёт». */
 const ESTIMATE_SLOW_MS = 20000;
@@ -2805,7 +2808,7 @@ function showFlowStep(context) {
     }
     renderFlow();
     ensurePreflight();
-    flowAnnounce('Перед скачиванием');
+    flowAnnounce('Сохранить на Umbrel');
   } else {
     renderFlow();
   }
@@ -2824,22 +2827,29 @@ function updateFlowChrome() {
   const context = folder.context || 'flow-dest';
   const info = FLOW_STEPS[context] || FLOW_STEPS['flow-dest'];
   const title = $('#flow-title');
-  const stepTitle = $('#flow-step-title');
+  const stepMeta = $('#flow-step-meta');
   const stepHead = $('#flow-step-head');
   const foot = $('#flow-foot');
   const dialog = $('#folder-dialog');
   if (title) title.textContent = info.title;
-  if (stepHead) stepHead.hidden = true;
-  if (stepTitle) stepTitle.textContent = info.title;
+  const stepNumber = info.step || 0;
+  const sectionNumber = info.section || stepNumber || 1;
+  if (stepHead && stepMeta && stepNumber) {
+    stepMeta.textContent = `Шаг\u00A0${stepNumber}\u00A0из\u00A0${FLOW_STEP_TOTAL}`;
+    stepHead.hidden = false;
+  } else if (stepHead) {
+    stepHead.hidden = true;
+  }
   for (const number of [1, 2, 3]) {
     const section = document.getElementById(`flow-step-${number}`);
-    if (section) section.hidden = number !== (info.step || 1);
+    if (section) section.hidden = number !== sectionNumber;
   }
   if (foot) foot.dataset.context = context;
   if (dialog) {
     dialog.dataset.context = context;
-    dialog.dataset.step = info.step ? String(info.step) : '';
-    dialog.removeAttribute('aria-describedby');
+    dialog.dataset.step = stepNumber ? String(stepNumber) : '';
+    if (stepMeta && stepNumber) dialog.setAttribute('aria-describedby', 'flow-step-meta');
+    else dialog.removeAttribute('aria-describedby');
   }
 }
 
@@ -2904,7 +2914,12 @@ function renderFlowFooter() {
   } else if (context === 'flow-source') {
     back.hidden = flowEditing !== 'source';
     back.disabled = false;
-    primary.textContent = 'Далее';
+    if (folder.all) primary.textContent = 'Далее · весь диск';
+    else if (!flowSelectionEmpty()) {
+      primary.textContent = `Далее · ${selectionLabel(folder.selected, folder.selectedFiles)}`;
+    } else {
+      primary.textContent = 'Далее';
+    }
     primary.disabled = folderBusy() || flowSelectionEmpty();
     noteText = folder.alert || '';
     noteTone = folder.alert ? 'alert' : '';

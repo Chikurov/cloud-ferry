@@ -895,6 +895,73 @@ ul, dl, dd { margin: 0; padding: 0; }
 }
 /* Яндекс-вход — основной способ: занимает всю строку над двумя запасными. */
 .method-switch { grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); }
+.method-picker {
+  display: grid;
+  gap: 8px;
+}
+.method-picker .method-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--r-control);
+  background: var(--accent);
+  color: #fff;
+  font-size: var(--text-md);
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+  transition: background-color var(--duration), border-color var(--duration), color var(--duration), box-shadow var(--duration);
+}
+.method-picker .method-primary:hover { background: var(--accent-hover, #0052d6); }
+.method-picker .method-primary[aria-checked="false"] {
+  background: var(--surface-raised);
+  border-color: var(--border-control);
+  color: var(--ink);
+  box-shadow: none;
+}
+.method-picker .method-primary[aria-checked="false"]:hover {
+  border-color: var(--border-control-hover);
+  background: var(--surface-sunken);
+}
+.method-picker .method-primary[aria-checked="true"] {
+  box-shadow: var(--shadow);
+}
+.method-alts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.method-picker .method-alt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--r-control);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: color var(--duration), background-color var(--duration), border-color var(--duration);
+}
+.method-picker .method-alt:hover {
+  border-color: var(--border-control-hover);
+  background: var(--surface-sunken);
+}
+.method-picker .method-alt[aria-checked="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+}
 /* Вход через Яндекс: панель с кодом подтверждения. */
 .yandex-intro { display: grid; gap: 12px; justify-items: start; }
 .yandex-panel {
@@ -1098,8 +1165,8 @@ ul, dl, dd { margin: 0; padding: 0; }
   font-size: var(--text-xs);
   font-weight: 600;
   line-height: 16px;
-  letter-spacing: .04em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
 }
 /* Поля: 14/20 на десктопе, 16/20 на мобильном (без зума iOS); высота
    совпадает с кнопками, placeholder одинаковый во всех контролах.
@@ -2082,6 +2149,7 @@ body:has(dialog[open]) { overflow: hidden; }
 @media (max-width: 440px) {
   /* Длинные названия способов входа не помещаются в два сегмента. */
   .method-switch { grid-template-columns: minmax(0, 1fr); }
+  .method-alts { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3098,20 +3166,16 @@ body:has(dialog[open]) { overflow: hidden; }
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin: 0 0 12px;
+  margin: 0 0 10px;
 }
-.flow-step-title {
+.flow-step-meta {
   margin: 0;
-  color: var(--ink);
-  font-family: var(--font-display);
-  font-size: var(--text-xl);
+  color: var(--accent);
+  font-size: var(--text-xs);
   font-weight: 600;
-  line-height: 26px;
-  letter-spacing: -.01em;
-  outline: none;
+  line-height: 16px;
+  letter-spacing: 0;
 }
-.flow-step-title:focus,
-.flow-step-title:focus-visible,
 .flow-head .modal-title:focus { outline: none; }
 /* --- шаг 1: одна строка навигации --- */
 .dest-nav {
@@ -3309,7 +3373,7 @@ body:has(dialog[open]) { overflow: hidden; }
   .dest-nav .folder-new { height: 44px; }
 }
 @media (max-width: 640px) {
-  .flow-step-title { font-size: var(--text-xl); }
+  .flow-step-meta { font-size: var(--text-xs); }
   .flow-foot[data-context="flow-source"] .flow-foot-note { min-height: 32px; }
 }
 @media (max-width: 520px) {
@@ -3442,6 +3506,13 @@ body:has(dialog[open]) { overflow: hidden; }
 .task-head>svg { color:var(--accent); }
 .task-head h2 { flex:1; }
 .task-head button { min-width:40px; height:40px; padding:0; background:var(--surface-sunken); border:0; }
+.task-head .job-action {
+  display:inline-flex; align-items:center; gap:6px;
+  min-width:0; width:auto; height:36px; padding:0 10px 0 8px;
+  border-radius:10px; font-size:13px; font-weight:500; line-height:1;
+}
+.task-head .job-action .icon { width:16px; height:16px; flex:none; }
+.task-head .job-action-label { white-space:nowrap; }
 .task-stats { justify-content:space-between; gap:6px 14px; flex-wrap:wrap; font-variant-numeric:tabular-nums; }
 .now-body { display:grid; gap:10px; padding:0; margin-top:8px; }
 .now-progress { height:4px; background:var(--surface-sunken); }
@@ -3544,8 +3615,8 @@ body:has(dialog[open]) { overflow: hidden; }
 .job-row .task-head h2 { font-size:15px; }
 .job-row .task-stats { font-size:13px; }
 .job-row .now-body { margin-top:2px; gap:6px; }
-.job-row .task-head button { width:40px; border-radius:10px; background:transparent; color:var(--muted); }
-.job-row .task-head button:hover { background:var(--surface-sunken); color:var(--ink); }
+.job-row .task-head .job-action { width:auto; border-radius:10px; background:transparent; color:var(--muted); }
+.job-row .task-head .job-action:hover { background:var(--surface-sunken); color:var(--ink); }
 .root-files { margin:8px 0 0; padding:0; }
 @media(max-width:460px) {
   .method-switch { grid-template-columns:repeat(auto-fit,minmax(82px,1fr)); }

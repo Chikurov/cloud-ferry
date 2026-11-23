@@ -24,18 +24,19 @@ function renderJobList(jobs) {
       row = document.createElement('article');
       row.className = 'cell cell--now job-row';
       row.dataset.id = job.id;
-      row.innerHTML = `<div class="task-head">${icon('folder')}<h2></h2><button class="btn btn--secondary" type="button"></button></div>
+      row.innerHTML = `<div class="task-head">${icon('folder')}<h2></h2><button class="btn btn--secondary job-action" type="button"></button></div>
         <div class="now-body"><div class="progress job-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div><div class="task-stats"><span></span><span></span></div><div class="job-error"></div><button type="button" class="btn btn--link destination-link" data-action="change-dest" hidden>Папка сохранения</button></div>`;
       list.append(row);
     }
     const paths = [...jobSourcePaths(job), ...jobSourceFiles(job)];
     const title = job.excludedFolders?.length ? wholeDiskLabel(job.excludedFolders) : paths.length === 1 ? shortPath(paths[0]) : jobSourceLabel(job);
     row.querySelector('h2').textContent = title;
-    const button = row.querySelector('button');
+    const button = row.querySelector('button.job-action');
     const paused = PAUSED_STATUSES.includes(job.status);
     const failed = job.status === 'failed';
     const done = job.status === 'done';
     const label = done ? 'Убрать из списка' : paused ? (failed ? 'Повторить' : 'Продолжить') : 'Приостановить';
+    const shortLabel = done ? 'Убрать' : paused ? (failed ? 'Повторить' : 'Продолжить') : 'Пауза';
     if (row.dataset.status !== job.status) {
       row.dataset.status = job.status;
       button.hidden = job.status === 'verifying';
@@ -43,7 +44,7 @@ function renderJobList(jobs) {
       button.dataset.action = done ? 'dismiss-job' : paused ? 'resume' : 'stop';
       button.title = label;
       button.setAttribute('aria-label', label + ' · ' + title);
-      button.innerHTML = icon(done ? 'close' : paused ? 'resume' : 'pause');
+      button.innerHTML = `${icon(done ? 'close' : paused ? 'resume' : 'pause')}<span class="job-action-label">${escapeHtml(shortLabel)}</span>`;
       /* В очереди кнопка остаётся доступной — пауза сработает, — но
          aria-busy честно говорит, что запуск ещё не завершён. */
       button.setAttribute('aria-busy', job.status === 'queued' ? 'true' : 'false');

@@ -237,10 +237,13 @@ def shot_connect(browser, base: str, out: Path, theme: str, name: str) -> dict:
         page.evaluate("() => { document.activeElement && document.activeElement.blur(); }")
         page.wait_for_function(
             """() => {
-              const methods = Array.from(document.querySelectorAll('.method-option')).map((el) => el.textContent.trim());
+              const methods = Array.from(document.querySelectorAll('.method-option, .method-primary, .method-alt'))
+                .map((el) => el.textContent.trim());
               const user = document.querySelector('#f-user');
               const pwd = document.querySelector('#f-pass');
+              const yandex = document.querySelector('#method-yandex');
               return methods.includes('Яндекс ID') && methods.includes('Пароль приложения') && methods.includes('Токен')
+                && yandex && yandex.classList.contains('method-primary')
                 && user && !user.value && pwd && !pwd.value;
             }"""
         )

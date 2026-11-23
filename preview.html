@@ -944,6 +944,73 @@ ul, dl, dd { margin: 0; padding: 0; }
 }
 /* Яндекс-вход — основной способ: занимает всю строку над двумя запасными. */
 .method-switch { grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); }
+.method-picker {
+  display: grid;
+  gap: 8px;
+}
+.method-picker .method-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--r-control);
+  background: var(--accent);
+  color: #fff;
+  font-size: var(--text-md);
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+  transition: background-color var(--duration), border-color var(--duration), color var(--duration), box-shadow var(--duration);
+}
+.method-picker .method-primary:hover { background: var(--accent-hover, #0052d6); }
+.method-picker .method-primary[aria-checked="false"] {
+  background: var(--surface-raised);
+  border-color: var(--border-control);
+  color: var(--ink);
+  box-shadow: none;
+}
+.method-picker .method-primary[aria-checked="false"]:hover {
+  border-color: var(--border-control-hover);
+  background: var(--surface-sunken);
+}
+.method-picker .method-primary[aria-checked="true"] {
+  box-shadow: var(--shadow);
+}
+.method-alts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.method-picker .method-alt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--r-control);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: color var(--duration), background-color var(--duration), border-color var(--duration);
+}
+.method-picker .method-alt:hover {
+  border-color: var(--border-control-hover);
+  background: var(--surface-sunken);
+}
+.method-picker .method-alt[aria-checked="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+}
 /* Вход через Яндекс: панель с кодом подтверждения. */
 .yandex-intro { display: grid; gap: 12px; justify-items: start; }
 .yandex-panel {
@@ -1147,8 +1214,8 @@ ul, dl, dd { margin: 0; padding: 0; }
   font-size: var(--text-xs);
   font-weight: 600;
   line-height: 16px;
-  letter-spacing: .04em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
 }
 /* Поля: 14/20 на десктопе, 16/20 на мобильном (без зума iOS); высота
    совпадает с кнопками, placeholder одинаковый во всех контролах.
@@ -2131,6 +2198,7 @@ body:has(dialog[open]) { overflow: hidden; }
 @media (max-width: 440px) {
   /* Длинные названия способов входа не помещаются в два сегмента. */
   .method-switch { grid-template-columns: minmax(0, 1fr); }
+  .method-alts { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3147,20 +3215,16 @@ body:has(dialog[open]) { overflow: hidden; }
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin: 0 0 12px;
+  margin: 0 0 10px;
 }
-.flow-step-title {
+.flow-step-meta {
   margin: 0;
-  color: var(--ink);
-  font-family: var(--font-display);
-  font-size: var(--text-xl);
+  color: var(--accent);
+  font-size: var(--text-xs);
   font-weight: 600;
-  line-height: 26px;
-  letter-spacing: -.01em;
-  outline: none;
+  line-height: 16px;
+  letter-spacing: 0;
 }
-.flow-step-title:focus,
-.flow-step-title:focus-visible,
 .flow-head .modal-title:focus { outline: none; }
 /* --- шаг 1: одна строка навигации --- */
 .dest-nav {
@@ -3358,7 +3422,7 @@ body:has(dialog[open]) { overflow: hidden; }
   .dest-nav .folder-new { height: 44px; }
 }
 @media (max-width: 640px) {
-  .flow-step-title { font-size: var(--text-xl); }
+  .flow-step-meta { font-size: var(--text-xs); }
   .flow-foot[data-context="flow-source"] .flow-foot-note { min-height: 32px; }
 }
 @media (max-width: 520px) {
@@ -3491,6 +3555,13 @@ body:has(dialog[open]) { overflow: hidden; }
 .task-head>svg { color:var(--accent); }
 .task-head h2 { flex:1; }
 .task-head button { min-width:40px; height:40px; padding:0; background:var(--surface-sunken); border:0; }
+.task-head .job-action {
+  display:inline-flex; align-items:center; gap:6px;
+  min-width:0; width:auto; height:36px; padding:0 10px 0 8px;
+  border-radius:10px; font-size:13px; font-weight:500; line-height:1;
+}
+.task-head .job-action .icon { width:16px; height:16px; flex:none; }
+.task-head .job-action-label { white-space:nowrap; }
 .task-stats { justify-content:space-between; gap:6px 14px; flex-wrap:wrap; font-variant-numeric:tabular-nums; }
 .now-body { display:grid; gap:10px; padding:0; margin-top:8px; }
 .now-progress { height:4px; background:var(--surface-sunken); }
@@ -3593,8 +3664,8 @@ body:has(dialog[open]) { overflow: hidden; }
 .job-row .task-head h2 { font-size:15px; }
 .job-row .task-stats { font-size:13px; }
 .job-row .now-body { margin-top:2px; gap:6px; }
-.job-row .task-head button { width:40px; border-radius:10px; background:transparent; color:var(--muted); }
-.job-row .task-head button:hover { background:var(--surface-sunken); color:var(--ink); }
+.job-row .task-head .job-action { width:auto; border-radius:10px; background:transparent; color:var(--muted); }
+.job-row .task-head .job-action:hover { background:var(--surface-sunken); color:var(--ink); }
 .root-files { margin:8px 0 0; padding:0; }
 @media(max-width:460px) {
   .method-switch { grid-template-columns:repeat(auto-fit,minmax(82px,1fr)); }
@@ -3720,8 +3791,8 @@ body:has(dialog[open]) { overflow: hidden; }
     </div>
 
     <div class="flow-content" id="flow-content">
-      <div class="flow-step-head" id="flow-step-head">
-        <h3 class="flow-step-title" id="flow-step-title" tabindex="-1">Куда сохранить</h3>
+      <div class="flow-step-head" id="flow-step-head" hidden>
+        <p class="flow-step-meta" id="flow-step-meta">Шаг 1 из 3</p>
       </div>
 
       <section class="flow-step" id="flow-step-1" data-flow-step="1" aria-labelledby="flow-title">
@@ -4038,11 +4109,25 @@ function availableMethods() {
   return Object.keys(SETUP_METHODS).filter((method) => method !== 'yandex' || yandexAuth.available === true || wizard.customOAuth);
 }
 
+function methodOption(method, extraClass = '') {
+  const active = wizard.method === method;
+  const classes = ['method-option', extraClass].filter(Boolean).join(' ');
+  return `<button class="${classes}" type="button" role="radio" id="method-${method}" data-method="${method}" aria-checked="${active ? 'true' : 'false'}" tabindex="${active ? '0' : '-1'}">${escapeHtml(SETUP_METHODS[method])}</button>`;
+}
+
+/* Когда OAuth доступен — «Яндекс ID» визуально главный, пароль и токен
+   запасные. Без OAuth остаётся равный сегментный переключатель. */
 function methodSwitch() {
-  const options = availableMethods().map((method) => {
-    const active = wizard.method === method;
-    return `<button class="method-option" type="button" role="radio" id="method-${method}" data-method="${method}" aria-checked="${active ? 'true' : 'false'}" tabindex="${active ? '0' : '-1'}">${escapeHtml(SETUP_METHODS[method])}</button>`;
-  }).join('');
+  const methods = availableMethods();
+  const yandexOn = methods.includes('yandex');
+  if (yandexOn) {
+    const alts = methods.filter((method) => method !== 'yandex');
+    return `<div class="method-picker" role="radiogroup" aria-label="Способ входа">
+      ${methodOption('yandex', 'method-primary')}
+      <div class="method-alts">${alts.map((method) => methodOption(method, 'method-alt')).join('')}</div>
+    </div>`;
+  }
+  const options = methods.map((method) => methodOption(method)).join('');
   return `<div class="method-switch" role="radiogroup" aria-label="Способ входа">${options}</div>`;
 }
 
@@ -4214,18 +4299,19 @@ function renderJobList(jobs) {
       row = document.createElement('article');
       row.className = 'cell cell--now job-row';
       row.dataset.id = job.id;
-      row.innerHTML = `<div class="task-head">${icon('folder')}<h2></h2><button class="btn btn--secondary" type="button"></button></div>
+      row.innerHTML = `<div class="task-head">${icon('folder')}<h2></h2><button class="btn btn--secondary job-action" type="button"></button></div>
         <div class="now-body"><div class="progress job-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div><div class="task-stats"><span></span><span></span></div><div class="job-error"></div><button type="button" class="btn btn--link destination-link" data-action="change-dest" hidden>Папка сохранения</button></div>`;
       list.append(row);
     }
     const paths = [...jobSourcePaths(job), ...jobSourceFiles(job)];
     const title = job.excludedFolders?.length ? wholeDiskLabel(job.excludedFolders) : paths.length === 1 ? shortPath(paths[0]) : jobSourceLabel(job);
     row.querySelector('h2').textContent = title;
-    const button = row.querySelector('button');
+    const button = row.querySelector('button.job-action');
     const paused = PAUSED_STATUSES.includes(job.status);
     const failed = job.status === 'failed';
     const done = job.status === 'done';
     const label = done ? 'Убрать из списка' : paused ? (failed ? 'Повторить' : 'Продолжить') : 'Приостановить';
+    const shortLabel = done ? 'Убрать' : paused ? (failed ? 'Повторить' : 'Продолжить') : 'Пауза';
     if (row.dataset.status !== job.status) {
       row.dataset.status = job.status;
       button.hidden = job.status === 'verifying';
@@ -4233,7 +4319,7 @@ function renderJobList(jobs) {
       button.dataset.action = done ? 'dismiss-job' : paused ? 'resume' : 'stop';
       button.title = label;
       button.setAttribute('aria-label', label + ' · ' + title);
-      button.innerHTML = icon(done ? 'close' : paused ? 'resume' : 'pause');
+      button.innerHTML = `${icon(done ? 'close' : paused ? 'resume' : 'pause')}<span class="job-action-label">${escapeHtml(shortLabel)}</span>`;
       /* В очереди кнопка остаётся доступной — пауза сработает, — но
          aria-busy честно говорит, что запуск ещё не завершён. */
       button.setAttribute('aria-busy', job.status === 'queued' ? 'true' : 'false');
@@ -4390,7 +4476,7 @@ let yandexAuth = {
 };
 const jobActionBusy = new Set();
 /* Задачи, которые пользователь продолжил в этой сессии: в очереди карточка
-   говорит «Продолжаем…», а не «Начинается». */
+   говорит «Продолжаем…», а не «В очереди». */
 const resumedJobs = new Set();
 /* Нижняя граница показанного процента: между опросами полоса не откатывается
    назад, «замирание» допустимо. */
@@ -6583,8 +6669,10 @@ function jobPreparing(job) {
 function jobStateText(job) {
   if (job.status === 'done') return 'Завершена';
   if (PAUSED_STATUSES.includes(job.status)) return statusOf(job)[0];
-  if (job.status === 'queued') return jobResumed(job) ? 'Продолжаем…' : 'Начинается';
-  if (job.status === 'running' && jobPreparing(job)) return 'Проверяем, что уже скачано…';
+  if (job.status === 'queued') return jobResumed(job) ? 'Продолжаем…' : 'В очереди';
+  if (job.status === 'running' && jobPreparing(job)) {
+    return jobResumed(job) ? 'Проверяем, что уже скачано…' : 'Начинается';
+  }
   return jobMeta(job);
 }
 
@@ -6823,7 +6911,7 @@ async function resumeJob(id, trigger, destination = '') {
     if (trigger && trigger.isConnected) setBusy(trigger, false);
   }
   if (failed) throw failed;
-  /* Карточка сразу говорит «Продолжаем…», а не «Начинается», и держит
+  /* Карточка сразу говорит «Продолжаем…», а не «В очереди», и держит
      процент, показанный до паузы, пока не придёт первый свежий пакет. */
   const job = state.jobs.find((item) => item.id === id);
   resumedJobs.add(id);
@@ -6908,13 +6996,14 @@ async function copyFailures(id, trigger) {
 
 /* --- «Новое скачивание»: один диалог, три шага ---------------------------- */
 
-/* Шаги диалога: короткий заголовок и номер для «N из 3». Название операции
-   «Новое скачивание» показывается в шапке один раз. Контекст setup — тот же
-   диалог в роли пикера папки в мастере, поэтому там номера нет. */
+/* Шаги диалога: короткий заголовок и номер для «Шаг N из 3».
+   section — id секции в разметке (flow-step-1|2|3); step — позиция в
+   пользовательском пути (источник → папка → проверка). */
+const FLOW_STEP_TOTAL = 3;
 const FLOW_STEPS = {
-  'flow-dest': { step: 1, title: 'Куда сохранить' },
-  'flow-source': { step: 2, title: 'Что скачать' },
-  'flow-review': { step: 3, title: 'Сохранить на Umbrel' },
+  'flow-source': { section: 2, step: 1, title: 'Что скачать' },
+  'flow-dest': { section: 1, step: 2, title: 'Куда сохранить' },
+  'flow-review': { section: 3, step: 3, title: 'Сохранить на Umbrel' },
 };
 /* Сколько ждём оценку, прежде чем честно сказать «Оценка ещё идёт». */
 const ESTIMATE_SLOW_MS = 20000;
@@ -7091,7 +7180,7 @@ function showFlowStep(context) {
     }
     renderFlow();
     ensurePreflight();
-    flowAnnounce('Перед скачиванием');
+    flowAnnounce('Сохранить на Umbrel');
   } else {
     renderFlow();
   }
@@ -7110,22 +7199,29 @@ function updateFlowChrome() {
   const context = folder.context || 'flow-dest';
   const info = FLOW_STEPS[context] || FLOW_STEPS['flow-dest'];
   const title = $('#flow-title');
-  const stepTitle = $('#flow-step-title');
+  const stepMeta = $('#flow-step-meta');
   const stepHead = $('#flow-step-head');
   const foot = $('#flow-foot');
   const dialog = $('#folder-dialog');
   if (title) title.textContent = info.title;
-  if (stepHead) stepHead.hidden = true;
-  if (stepTitle) stepTitle.textContent = info.title;
+  const stepNumber = info.step || 0;
+  const sectionNumber = info.section || stepNumber || 1;
+  if (stepHead && stepMeta && stepNumber) {
+    stepMeta.textContent = `Шаг\u00A0${stepNumber}\u00A0из\u00A0${FLOW_STEP_TOTAL}`;
+    stepHead.hidden = false;
+  } else if (stepHead) {
+    stepHead.hidden = true;
+  }
   for (const number of [1, 2, 3]) {
     const section = document.getElementById(`flow-step-${number}`);
-    if (section) section.hidden = number !== (info.step || 1);
+    if (section) section.hidden = number !== sectionNumber;
   }
   if (foot) foot.dataset.context = context;
   if (dialog) {
     dialog.dataset.context = context;
-    dialog.dataset.step = info.step ? String(info.step) : '';
-    dialog.removeAttribute('aria-describedby');
+    dialog.dataset.step = stepNumber ? String(stepNumber) : '';
+    if (stepMeta && stepNumber) dialog.setAttribute('aria-describedby', 'flow-step-meta');
+    else dialog.removeAttribute('aria-describedby');
   }
 }
 
@@ -7190,7 +7286,12 @@ function renderFlowFooter() {
   } else if (context === 'flow-source') {
     back.hidden = flowEditing !== 'source';
     back.disabled = false;
-    primary.textContent = 'Далее';
+    if (folder.all) primary.textContent = 'Далее · весь диск';
+    else if (!flowSelectionEmpty()) {
+      primary.textContent = `Далее · ${selectionLabel(folder.selected, folder.selectedFiles)}`;
+    } else {
+      primary.textContent = 'Далее';
+    }
     primary.disabled = folderBusy() || flowSelectionEmpty();
     noteText = folder.alert || '';
     noteTone = folder.alert ? 'alert' : '';
