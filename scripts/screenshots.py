@@ -152,15 +152,15 @@ def shot_home(page, base: str, out: Path, theme: str, name: str) -> dict:
     return capture(page, out / name)
 
 
-def shot_downloads(page, base: str, out: Path) -> dict:
-    open_preview(page, base, "downloads", "light")
+def shot_downloads(page, base: str, out: Path, theme: str, name: str) -> dict:
+    open_preview(page, base, "downloads", theme)
     page.wait_for_selector("#job-list .job-row")
     page.wait_for_function("() => document.querySelectorAll('#job-list .job-row').length >= 4")
-    return capture(page, out / "downloads-states.png")
+    return capture(page, out / name)
 
 
-def shot_connect(page, base: str, out: Path) -> dict:
-    open_preview(page, base, "connect", "light", hash_path="#/setup")
+def shot_connect(page, base: str, out: Path, theme: str, name: str) -> dict:
+    open_preview(page, base, "connect", theme, hash_path="#/setup")
     page.wait_for_selector("#setup-view:not([hidden])")
     # Prefer password method so empty fields are visible (no secrets).
     page.click("#method-webdav")
@@ -177,22 +177,25 @@ def shot_connect(page, base: str, out: Path) -> dict:
             && user && !user.value && pwd && !pwd.value;
         }"""
     )
-    return capture(page, out / "connect.png")
+    return capture(page, out / name)
 
 
-def shot_select_files(page, base: str, out: Path) -> dict:
-    open_preview(page, base, "select", "light")
+def shot_select_files(page, base: str, out: Path, theme: str, name: str) -> dict:
+    open_preview(page, base, "select", theme)
     page.wait_for_selector("#flow-start")
     page.click("#flow-start")
     page.wait_for_selector("#folder-dialog[open]")
     page.wait_for_selector("#flow-source-tree .folder-check, #flow-source-tree .folder-row")
     page.wait_for_timeout(600)
     # Check the three demo folders if present.
-    for name in ("Фотографии", "Документы", "Видео"):
-        checkbox = page.locator(f'#flow-source-tree .folder-check[data-path="{name}"], #flow-source-tree input[data-path="{name}"]')
+    for folder_name in ("Фотографии", "Документы", "Видео"):
+        checkbox = page.locator(
+            f'#flow-source-tree .folder-check[data-path="{folder_name}"], '
+            f'#flow-source-tree input[data-path="{folder_name}"]'
+        )
         if checkbox.count() == 0:
             # Fallback: click the row label text.
-            row = page.locator("#flow-source-tree").get_by_text(name, exact=True).first
+            row = page.locator("#flow-source-tree").get_by_text(folder_name, exact=True).first
             row.click()
         else:
             if not checkbox.first.is_checked():
@@ -207,11 +210,11 @@ def shot_select_files(page, base: str, out: Path) -> dict:
         }"""
     )
     page.evaluate("() => { document.activeElement && document.activeElement.blur(); }")
-    return capture(page, out / "select-files.png")
+    return capture(page, out / name)
 
 
-def shot_destination(page, base: str, out: Path) -> dict:
-    open_preview(page, base, "destination", "light")
+def shot_destination(page, base: str, out: Path, theme: str, name: str) -> dict:
+    open_preview(page, base, "destination", theme)
     page.wait_for_selector("#flow-start")
     page.click("#flow-start")
     page.wait_for_selector("#folder-dialog[open]")
@@ -241,7 +244,7 @@ def shot_destination(page, base: str, out: Path) -> dict:
         }"""
     )
     page.evaluate("() => { document.activeElement && document.activeElement.blur(); }")
-    return capture(page, out / "destination.png")
+    return capture(page, out / name)
 
 
 def main() -> int:
@@ -268,6 +271,7 @@ def main() -> int:
             if args.chromium.exists():
                 launch_kwargs["executable_path"] = str(args.chromium)
             browser = p.chromium.launch(**launch_kwargs)
+            # color_scheme follows each shot via ?theme=; start light.
             context = browser.new_context(
                 viewport=VIEWPORT,
                 device_scale_factor=DPR,
@@ -281,10 +285,14 @@ def main() -> int:
 
             reports["home-light.png"] = shot_home(page, base, out, "light", "home-light.png")
             reports["home-dark.png"] = shot_home(page, base, out, "dark", "home-dark.png")
-            reports["downloads-states.png"] = shot_downloads(page, base, out)
-            reports["connect.png"] = shot_connect(page, base, out)
-            reports["select-files.png"] = shot_select_files(page, base, out)
-            reports["destination.png"] = shot_destination(page, base, out)
+            reports["downloads-states.png"] = shot_downloads(page, base, out, "light", "downloads-states.png")
+            reports["downloads-states-dark.png"] = shot_downloads(page, base, out, "dark", "downloads-states-dark.png")
+            reports["connect.png"] = shot_connect(page, base, out, "light", "connect.png")
+            reports["connect-dark.png"] = shot_connect(page, base, out, "dark", "connect-dark.png")
+            reports["select-files.png"] = shot_select_files(page, base, out, "light", "select-files.png")
+            reports["select-files-dark.png"] = shot_select_files(page, base, out, "dark", "select-files-dark.png")
+            reports["destination.png"] = shot_destination(page, base, out, "light", "destination.png")
+            reports["destination-dark.png"] = shot_destination(page, base, out, "dark", "destination-dark.png")
 
             browser.close()
     finally:
