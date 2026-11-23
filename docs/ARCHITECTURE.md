@@ -55,7 +55,7 @@ app_proxy ──► api (Go, :3000) ──unix-сокет──► rclone (rcd)
    remote и логин, но не пароль и не токен.
 3. Вход через Яндекс по коду. `GET /api/oauth/yandex/status` сообщает,
    настроено ли своё OAuth-приложение (`available: true`); тогда мастер
-   показывает способ «Войти через Яндекс» первым и работает через
+   показывает способ «Яндекс ID» первым и работает через
    `POST /api/oauth/yandex/device/start`,
    `GET /api/oauth/yandex/device/{id}` и `DELETE /api/oauth/yandex/device/{id}`.
    Пользователь вводит код на `oauth.yandex.ru/device`, redirect URI не нужен.

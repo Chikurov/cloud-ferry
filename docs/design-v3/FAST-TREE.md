@@ -28,7 +28,7 @@ Go-код (включая `/api/cloud/sizes` и preflight) не менялся. 
   `CLOUD_SIZES_BATCH` (в обоих описаниях сессии диалога), CSS `.folder-row-meta`
   в обоих слоях, устаревший комментарий про размер в строке.
 - `POST /api/cloud/sizes` и preflight не тронуты: общий объём по-прежнему
-  считается на шаге «Перед скачиванием» (один `POST /api/preflight`).
+  считается на шаге «Сохранить на Umbrel» (один `POST /api/preflight`).
   `API_TIMEOUT.folders` остался — он используется загрузкой папок.
 
 `grep` по `internal/httpapi/web` на `cloud/sizes`, `requestCloudSizes`,
@@ -77,7 +77,7 @@ Go-код не менялся: `theme.js` попадает в существую
 через unix-socket, засеянный аккаунт и состояние; Chromium headless, чистый
 профиль, CDP Network/Log. Сценарий: открыть «Что скачать» → раскрыть три уровня
 («Фотографии» → «Фотографии/2024» → «Документы») → выбрать папку → «Весь диск» →
-шаг «Перед скачиванием». Считаются только запросы `/api/*`; фоновый опрос
+шаг «Сохранить на Umbrel». Считаются только запросы `/api/*`; фоновый опрос
 `/api/state` и `/api/system` в счётчики не входит.
 
 | Показатель | До | После |
@@ -85,7 +85,7 @@ Go-код не менялся: `theme.js` попадает в существую
 | Запросы при открытии диалога | 3: `/folders` 1, `/api/cloud/sizes` 1, `/api/jobs/existing` 1 | 2: `/folders` 1, `/api/cloud/sizes` **0**, `/api/jobs/existing` 1 |
 | Раскрытие 3 уровней (дополнительно) | `/folders` 3, `/api/cloud/sizes` 2 | `/folders` 3, `/api/cloud/sizes` **0** |
 | Выбор папки и «Весь диск» | 0 запросов | 0 запросов |
-| Шаг «Перед скачиванием» | 1 `POST /api/preflight` | 1 `POST /api/preflight` (не менялся) |
+| Шаг «Сохранить на Umbrel» | 1 `POST /api/preflight` | 1 `POST /api/preflight` (не менялся) |
 | Всего `POST /api/cloud/sizes` за сценарий | **3** | **0** |
 | `operations/size` в rclone за сценарий | **9** (8 — автозагрузка размеров 4+2+2 + 1 preflight) | **1** (только preflight) |
 
@@ -127,7 +127,7 @@ Go-код не менялся: `theme.js` попадает в существую
 
 Браузерный прогон: Chromium, 390 и 1440, светлая и тёмная темы. Для каждого
 сочетания: главный экран, открытие «Что скачать», раскрытие трёх уровней,
-выбор папки, «Весь диск», шаг «Перед скачиванием», `document.documentElement.
+выбор папки, «Весь диск», шаг «Сохранить на Umbrel», `document.documentElement.
 scrollWidth == window.innerWidth` (и `body.scrollWidth <= innerWidth`) на всех
 экранах, консоль без ошибок/исключений/CSP-предупреждений, ни одного ответа
 API ≥ 400. Скриншоты: `screens/fast-tree-{home,dialog,dialog-expanded,review}-
