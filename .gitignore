@@ -14,3 +14,9 @@ docs/setup.png
 docs/mobile.png
 docs/dialog.png
 docs/screenshot.png
+
+# Local screenshot tooling (do not vendor browsers)
+.playwright/
+playwright-report/
+test-results/
+**/ms-playwright/
